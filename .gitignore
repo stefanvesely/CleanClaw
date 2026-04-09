@@ -20,6 +20,7 @@ draft_newsletter_*
 research/
 specs/
 vdr-notes/
+cleanclaw_full_plan.md
 
 # Security: secrets, credentials, and keys
 *_ecdsa
