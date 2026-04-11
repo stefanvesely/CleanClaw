@@ -140,6 +140,14 @@ async function runPipelinePerChange(
       continue;
     }
 
+    // Re-propose with actual file content so the agent isn't guessing at line contents
+    const rawContent = fs.readFileSync(proposed.filename, 'utf-8');
+    const numberedContent = rawContent.split('\n').map((l, i) => `${i + 1}: ${l}`).join('\n');
+    const enrichedStep = `${step.body}\n\nCurrent file content (${proposed.filename}):\n${numberedContent}`;
+    const refined = await languageAgent.propose(enrichedStep, bridge);
+    refined.filename = proposed.filename;
+    Object.assign(proposed, refined);
+
     const lineNumbers = proposed.beforeLines.map(l => l.lineNumber);
     const before = captureBeforeState(proposed.filename, lineNumbers);
     const { approved, why } = await promptApproval(proposed, before);
@@ -189,6 +197,14 @@ async function runPipelinePerFile(
       console.log('[CleanClaw] New file creation rejected. Skipping step.');
       continue;
     }
+
+    // Re-propose with actual file content so the agent isn't guessing at line contents
+    const rawContent = fs.readFileSync(proposed.filename, 'utf-8');
+    const numberedContent = rawContent.split('\n').map((l, i) => `${i + 1}: ${l}`).join('\n');
+    const enrichedStep = `${step.body}\n\nCurrent file content (${proposed.filename}):\n${numberedContent}`;
+    const refined = await languageAgent.propose(enrichedStep, bridge);
+    refined.filename = proposed.filename;
+    Object.assign(proposed, refined);
 
     const lineNumbers = proposed.beforeLines.map(l => l.lineNumber);
     const before = captureBeforeState(proposed.filename, lineNumbers);
