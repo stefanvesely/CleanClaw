@@ -41,5 +41,5 @@ export async function promptApproval(
   }
 
   const why = await readLine('Why are you approving? (Enter to use agent explanation): ');
-  return { approved: true, why: why || proposed.explanation };
+  return { approved: true, why: why ? `[user] ${why}` : `[agent] ${proposed.explanation}` };
 }
