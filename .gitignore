@@ -17,8 +17,11 @@ Thumbs.db
 # CleanClaw local config (contains API keys — never commit)
 cleanclaw.config.json
 
+# CleanClaw per-project state (local only — never commit)
+.cleanclaw-state.json
+
 # CleanClaw generated plans (local artefacts — not source code)
-plans/
+/plans/
 
 # Project-specific
 .nemoclaw-maintainer/
