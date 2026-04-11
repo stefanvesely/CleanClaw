@@ -1,0 +1,7 @@
+{
+  "provider": "openai",
+  "approvalGranularity": "per-file",
+  "logFormat": "markdown",
+  "plansDir": "./plans",
+  "stack": "dotnet"
+}
