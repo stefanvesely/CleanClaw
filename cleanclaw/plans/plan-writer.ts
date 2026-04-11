@@ -38,7 +38,27 @@ function validatePlanFormat(markdown: string): void {
   }
 }
 
-// ─── Plan Parser ──────────────────────────────────────────────────────────────
+// ─── Task Plan Step Parser (numbered list format from planning-agent) ─────────
+
+export interface TaskStep {
+  number: string;
+  body: string;
+}
+
+export function parseTaskPlanSteps(planMarkdown: string): TaskStep[] {
+  const stepsSection = planMarkdown.split('## Scope Boundary')[0].split('## Steps')[1] ?? '';
+  const lines = stepsSection.split('\n').filter(l => /^\d+\./.test(l.trim()));
+
+  return lines.map(line => {
+    const match = line.match(/^(\d+)\.\s+(.+)$/);
+    return {
+      number: match?.[1] ?? '?',
+      body: match?.[2]?.trim() ?? line.trim(),
+    };
+  });
+}
+
+// ─── Build Plan Parser (### Step N.Na — format for CleanClaw's own plan) ──────
 
 export function parsePlanSteps(planMarkdown: string): PlanStep[] {
   const STEP_HEADING = /^### (Step (\d+\.\d+[a-z]?) — .+)$/m;
@@ -111,7 +131,8 @@ export function markStepComplete(planPath: string, stepHeading: string, outputPa
   );
 
   if (updated === content) {
-    throw new Error(`Step heading not found in plan: "${stepHeading}"`);
+    process.stderr.write(`[CleanClaw] Warning: step heading not found in plan, skipping completion mark: "${stepHeading.slice(0, 60)}..."\n`);
+    return;
   }
 
   fs.writeFileSync(outputPath, updated, 'utf-8');
