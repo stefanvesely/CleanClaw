@@ -56,10 +56,6 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
     logFormat: 'markdown',
   };
 
-  if (globalConfig[provider]) {
-    config[provider] = globalConfig[provider];
-  }
-
   fs.writeFileSync('cleanclaw.config.json', JSON.stringify(config, null, 2), 'utf-8');
   fs.mkdirSync('./plans', { recursive: true });
 
