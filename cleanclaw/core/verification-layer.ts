@@ -2,6 +2,9 @@ import readline from 'readline';
 import type { ProposedChange } from './language-agent.js';
 import type { DiffCapture } from '../plans/diff-capture.js';
 
+const RED = '\x1b[31m';
+const RESET = '\x1b[0m';
+
 function readLine(prompt: string): Promise<string> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise(resolve => {
@@ -21,17 +24,17 @@ export async function promptApproval(
   console.log('─────────────────────────────────────────');
   console.log(`File: ${proposed.filename}${before.isNewFile ? ' (NEW FILE)' : ''}`);
 
-  console.log('\nBEFORE:');
+  console.log(`\n${RED}BEFORE:${RESET}`);
   if (before.isNewFile || before.lines.length === 0) {
     console.log('  (file does not exist)');
   } else {
     before.lines.forEach(l => console.log(`  ${l.lineNumber}: ${l.content}`));
   }
 
-  console.log('\nAFTER:');
+  console.log(`\n${RED}AFTER:${RESET}`);
   proposed.afterLines.forEach(l => console.log(`  ${l.lineNumber}: ${l.content}`));
 
-  console.log(`\nExplanation: ${proposed.explanation}`);
+  console.log(`\n${RED}Explanation:${RESET} ${proposed.explanation}`);
   console.log('─────────────────────────────────────────');
 
   const answer = await readLine('Approve? [y]es / [n]o: ');
@@ -56,15 +59,15 @@ export async function promptApprovalForFile(
     const proposed = proposals[i];
     const before = befores[i];
     console.log(`\nChange ${i + 1}:`);
-    console.log('BEFORE:');
+    console.log(`${RED}BEFORE:${RESET}`);
     if (before.isNewFile || before.lines.length === 0) {
       console.log('  (file does not exist)');
     } else {
       before.lines.forEach(l => console.log(`  ${l.lineNumber}: ${l.content}`));
     }
-    console.log('\nAFTER:');
+    console.log(`\n${RED}AFTER:${RESET}`);
     proposed.afterLines.forEach(l => console.log(`  ${l.lineNumber}: ${l.content}`));
-    console.log(`\nExplanation: ${proposed.explanation}`);
+    console.log(`\n${RED}Explanation:${RESET} ${proposed.explanation}`);
   }
 
   console.log('─────────────────────────────────────────');
