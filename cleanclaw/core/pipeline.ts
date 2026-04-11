@@ -187,13 +187,29 @@ export async function runPipeline(taskDescription: string, config: CleanClawConf
   // Phase 2 — Parse steps
   const steps = parseTaskPlanSteps(planContent);
 
+  // Plan review — show plan content and ask to confirm before executing
   console.log('\n─────────────────────────────────────────');
+  console.log('GENERATED PLAN');
+  console.log('─────────────────────────────────────────');
+  console.log(planContent);
+  console.log('─────────────────────────────────────────');
   console.log(`Plan written: ${planPath}`);
   console.log(`Steps to execute: ${steps.length}`);
   console.log('─────────────────────────────────────────\n');
 
   if (steps.length === 0) {
     console.log('[CleanClaw] No executable steps found. Review the plan manually.');
+    return;
+  }
+
+  const { createInterface } = await import('readline');
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const proceed = await new Promise<string>(resolve => {
+    rl.question('Proceed with these steps? [y/n]: ', answer => { rl.close(); resolve(answer.trim()); });
+  });
+
+  if (proceed.toLowerCase() !== 'y') {
+    console.log('[CleanClaw] Task cancelled. Plan saved to:', planPath);
     return;
   }
 
