@@ -21,6 +21,7 @@ Rules:
 - Steps must name specific files, not vague areas ("update UserService.cs", not "update the service layer")
 - Each step must be independently approvable — one logical change per step
 - The Scope Boundary must be honest — if something is tempting to add but not requested, name it here
+- Never include test files, smoke tests, CI configuration, or infrastructure changes unless the task description explicitly asks for them
 - Respond only with the markdown. No preamble, no explanation, no code fences around the markdown.`;
 
 export class PlanningAgent {
