@@ -4,11 +4,16 @@ import { getConfig } from './config-loader.js';
 import { resolveBridge, resolveLanguageAgent } from './agent-router.js';
 import { PlanningAgent } from './planning-agent.js';
 import { BossAgent } from './boss-agent.js';
-import { promptApproval } from './verification-layer.js';
+import { promptApproval, promptApprovalForFile } from './verification-layer.js';
 import { captureBeforeState } from '../plans/diff-capture.js';
 import { appendLogEntry } from '../plans/log-writer.js';
 import { parseTaskPlanSteps, markStepComplete } from '../plans/plan-writer.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
+import type { TaskStep } from '../plans/plan-writer.js';
+import type { ProposedChange } from './language-agent.js';
+import type { DiffCapture } from '../plans/diff-capture.js';
+import type { LanguageAgent } from './language-agent.js';
+import type { Bridge } from '../bridges/anthropic-bridge.js';
 
 // ─── Task ID ──────────────────────────────────────────────────────────────────
 
@@ -19,6 +24,148 @@ function getNextTaskId(plansDir: string): string {
   const entries = fs.readdirSync(plansDir, { withFileTypes: true });
   const taskDirs = entries.filter(e => e.isDirectory() && /^task\d+$/.test(e.name));
   return String(taskDirs.length + 1).padStart(2, '0');
+}
+
+function resolveModel(config: CleanClawConfig): string {
+  if (config.provider === 'anthropic') return config.anthropic?.model ?? 'claude-sonnet-4-5';
+  if (config.provider === 'openai') return config.openai?.model ?? 'gpt-4o';
+  return 'unknown';
+}
+
+// ─── Filename validation ──────────────────────────────────────────────────────
+
+async function validateFilename(proposed: ProposedChange): Promise<boolean> {
+  if (fs.existsSync(proposed.filename)) return true;
+
+  console.log(`\n⚠ WARNING: "${proposed.filename}" does not exist on disk.`);
+  const readline = await import('readline');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const confirm = await new Promise<string>(resolve => {
+    rl.question('This would create a NEW FILE. Confirm? [y/N]: ', ans => { rl.close(); resolve(ans.trim()); });
+  });
+  return confirm.toLowerCase() === 'y';
+}
+
+// ─── Per-change pipeline ──────────────────────────────────────────────────────
+
+async function runPipelinePerChange(
+  steps: TaskStep[],
+  taskId: string,
+  variant: string,
+  planPath: string,
+  completedPlanPath: string,
+  plansDir: string,
+  config: CleanClawConfig,
+  languageAgent: LanguageAgent,
+  bridge: Bridge,
+): Promise<void> {
+  const model = resolveModel(config);
+  let changeNumber = 1;
+
+  for (const step of steps) {
+    console.log(`\n[CleanClaw] Step ${step.number}: ${step.body.slice(0, 80)}...`);
+
+    const proposed = await languageAgent.propose(step.body, bridge);
+    const accepted = await validateFilename(proposed);
+
+    if (!accepted) {
+      console.log('[CleanClaw] New file creation rejected. Skipping step.');
+      appendLogEntry(taskId, variant, changeNumber, proposed,
+        { filename: proposed.filename, lines: [], isNewFile: true },
+        'new-file creation rejected by developer', model, plansDir, config.logFormat ?? 'markdown');
+      changeNumber++;
+      continue;
+    }
+
+    const lineNumbers = proposed.beforeLines.map(l => l.lineNumber);
+    const before = captureBeforeState(proposed.filename, lineNumbers);
+    const { approved, why } = await promptApproval(proposed, before);
+
+    if (!approved) {
+      console.log('[CleanClaw] Change rejected. Moving to next step.');
+      appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
+      changeNumber++;
+      continue;
+    }
+
+    applyChange(proposed);
+    appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
+    markStepComplete(planPath, step.body, completedPlanPath);
+    console.log(`[CleanClaw] Change ${changeNumber} applied and logged.`);
+    changeNumber++;
+  }
+
+  printSummary(taskId, variant, changeNumber, plansDir);
+}
+
+// ─── Per-file pipeline ────────────────────────────────────────────────────────
+
+async function runPipelinePerFile(
+  steps: TaskStep[],
+  taskId: string,
+  variant: string,
+  planPath: string,
+  completedPlanPath: string,
+  plansDir: string,
+  config: CleanClawConfig,
+  languageAgent: LanguageAgent,
+  bridge: Bridge,
+): Promise<void> {
+  const model = resolveModel(config);
+
+  // Phase 1: collect all proposals
+  type CollectedChange = { step: TaskStep; proposed: ProposedChange; before: DiffCapture };
+  const collected: CollectedChange[] = [];
+
+  for (const step of steps) {
+    console.log(`\n[CleanClaw] Proposing step ${step.number}: ${step.body.slice(0, 80)}...`);
+    const proposed = await languageAgent.propose(step.body, bridge);
+    const accepted = await validateFilename(proposed);
+
+    if (!accepted) {
+      console.log('[CleanClaw] New file creation rejected. Skipping step.');
+      continue;
+    }
+
+    const lineNumbers = proposed.beforeLines.map(l => l.lineNumber);
+    const before = captureBeforeState(proposed.filename, lineNumbers);
+    collected.push({ step, proposed, before });
+  }
+
+  // Phase 2: group by filename
+  const fileGroups = new Map<string, CollectedChange[]>();
+  for (const item of collected) {
+    const existing = fileGroups.get(item.proposed.filename) ?? [];
+    existing.push(item);
+    fileGroups.set(item.proposed.filename, existing);
+  }
+
+  // Phase 3: prompt once per file, apply all or skip all
+  let changeNumber = 1;
+  for (const [, group] of fileGroups) {
+    const proposals = group.map(g => g.proposed);
+    const befores = group.map(g => g.before);
+    const { approved, why } = await promptApprovalForFile(proposals, befores);
+
+    if (!approved) {
+      console.log('[CleanClaw] File changes rejected. Skipping.');
+      for (const { proposed, before } of group) {
+        appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
+        changeNumber++;
+      }
+      continue;
+    }
+
+    for (const { proposed, before, step } of group) {
+      applyChange(proposed);
+      appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
+      markStepComplete(planPath, step.body, completedPlanPath);
+      console.log(`[CleanClaw] Change ${changeNumber} applied and logged.`);
+      changeNumber++;
+    }
+  }
+
+  printSummary(taskId, variant, changeNumber, plansDir);
 }
 
 // ─── Pipeline ─────────────────────────────────────────────────────────────────
@@ -37,7 +184,7 @@ export async function runPipeline(taskDescription: string, config: CleanClawConf
   const { planPath, planContent } = await boss.run(taskDescription, taskId, variant);
   const completedPlanPath = planPath.replace('_plan.md', '_plan_completed.md');
 
-  // Phase 2 — Parse steps from the plan (numbered list format from planning agent)
+  // Phase 2 — Parse steps
   const steps = parseTaskPlanSteps(planContent);
 
   console.log('\n─────────────────────────────────────────');
@@ -50,72 +197,26 @@ export async function runPipeline(taskDescription: string, config: CleanClawConf
     return;
   }
 
-  // Phase 3 — Execute each step: propose → validate filename → approve → log → mark done
-  let changeNumber = 1;
+  // Phase 3 — Execute with configured granularity
+  const granularity = config.approvalGranularity ?? 'per-change';
 
-  for (const step of steps) {
-    console.log(`\n[CleanClaw] Step ${step.number}: ${step.body.slice(0, 80)}...`);
-
-    // Delegate to language agent — never implement inline
-    const proposed = await languageAgent.propose(step.body, bridge);
-
-    // Filename validation — guard against hallucinated paths
-    if (!fs.existsSync(proposed.filename)) {
-      console.log(`\n⚠ WARNING: "${proposed.filename}" does not exist on disk.`);
-      const readline = await import('readline');
-      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-      const confirm = await new Promise<string>(resolve => {
-        rl.question('This would create a NEW FILE. Confirm? [y/N]: ', ans => { rl.close(); resolve(ans.trim()); });
-      });
-      if (confirm.toLowerCase() !== 'y') {
-        console.log('[CleanClaw] New file creation rejected. Skipping step.');
-        appendLogEntry(taskId, variant, changeNumber, proposed,
-          { filename: proposed.filename, lines: [], isNewFile: true },
-          'new-file creation rejected by developer', config.anthropic?.model ?? 'unknown',
-          plansDir, config.logFormat ?? 'markdown');
-        changeNumber++;
-        continue;
-      }
-    }
-
-    // Capture actual before state from disk
-    const lineNumbers = proposed.beforeLines.map(l => l.lineNumber);
-    const before = captureBeforeState(proposed.filename, lineNumbers);
-
-    // Present change for approval — never apply without explicit yes
-    const { approved, why } = await promptApproval(proposed, before);
-
-    if (!approved) {
-      console.log('[CleanClaw] Change rejected. Moving to next step.');
-      appendLogEntry(taskId, variant, changeNumber, proposed, before, why,
-        config.anthropic?.model ?? 'unknown', plansDir, config.logFormat ?? 'markdown');
-      changeNumber++;
-      continue;
-    }
-
-    // Apply the change to disk
-    applyChange(proposed);
-
-    // Log the approved change
-    appendLogEntry(taskId, variant, changeNumber, proposed, before, why,
-      config.anthropic?.model ?? 'unknown', plansDir, config.logFormat ?? 'markdown');
-
-    // Mark step complete in the completed plan copy
-    markStepComplete(planPath, step.body, completedPlanPath);
-
-    console.log(`[CleanClaw] Change ${changeNumber} applied and logged.`);
-    changeNumber++;
+  if (granularity === 'per-file') {
+    await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge);
+  } else {
+    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge);
   }
+}
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function printSummary(taskId: string, variant: string, changeNumber: number, plansDir: string): void {
   console.log('\n─────────────────────────────────────────');
   console.log(`[CleanClaw] Task ${taskId}${variant} complete. ${changeNumber - 1} change(s) processed.`);
   console.log(`Log: ${path.join(plansDir, `task${taskId}`, `task${taskId}${variant}_log.md`)}`);
   console.log('─────────────────────────────────────────');
 }
 
-// ─── File Write ───────────────────────────────────────────────────────────────
-
-function applyChange(proposed: import('./language-agent.js').ProposedChange): void {
+function applyChange(proposed: ProposedChange): void {
   const filePath = proposed.filename;
   const dir = path.dirname(filePath);
 
@@ -124,13 +225,11 @@ function applyChange(proposed: import('./language-agent.js').ProposedChange): vo
   }
 
   if (!fs.existsSync(filePath)) {
-    // New file — write all afterLines
     const content = proposed.afterLines.map(l => l.content).join('\n');
     fs.writeFileSync(filePath, content, 'utf-8');
     return;
   }
 
-  // Existing file — replace the specified lines
   const lines = fs.readFileSync(filePath, 'utf-8').split('\n');
   for (const after of proposed.afterLines) {
     lines[after.lineNumber - 1] = after.content;

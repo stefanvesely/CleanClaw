@@ -1,18 +1,28 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import type { CleanClawConfig } from '../config/config-schema.js';
 import defaultConfig from "../config/default-config.json";
-let userConfig: unknown = {};
+import { mergeConfigs } from './config-merger.js';
 
-const configPath = path.join(process.cwd(), "cleanclaw.config.json");
+let globalConfig: Partial<CleanClawConfig> = {};
+const globalConfigPath = path.join(os.homedir(), ".cleanclaw", "config.json");
 try {
-  const fileContents = fs.readFileSync(configPath, "utf-8");
-  userConfig = JSON.parse(fileContents);
+  globalConfig = JSON.parse(fs.readFileSync(globalConfigPath, "utf-8"));
 } catch {
-  userConfig = {};
+  globalConfig = {};
 }
 
-const mergedConfig = deepMerge(defaultConfig, userConfig) as CleanClawConfig;
+let projectConfig: Partial<CleanClawConfig> = {};
+const configPath = path.join(process.cwd(), "cleanclaw.config.json");
+try {
+  projectConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+} catch {
+  projectConfig = {};
+}
+
+const withGlobal = mergeConfigs(defaultConfig as Partial<CleanClawConfig>, globalConfig);
+const mergedConfig = mergeConfigs(withGlobal, projectConfig);
 
 const apiKey = resolveApiKey(mergedConfig);
 if (!apiKey) {

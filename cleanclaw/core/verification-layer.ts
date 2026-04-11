@@ -37,9 +37,42 @@ export async function promptApproval(
   const answer = await readLine('Approve? [y]es / [n]o: ');
 
   if (answer.toLowerCase() !== 'y') {
-    return { approved: false, why: 'rejected by developer' };
+    return { approved: false, why: '[user] rejected' };
   }
 
   const why = await readLine('Why are you approving? (Enter to use agent explanation): ');
   return { approved: true, why: why ? `[user] ${why}` : `[agent] ${proposed.explanation}` };
+}
+
+export async function promptApprovalForFile(
+  proposals: ProposedChange[],
+  befores: DiffCapture[],
+): Promise<{ approved: boolean; why: string }> {
+  console.log('\n─────────────────────────────────────────');
+  console.log(`FILE: ${proposals[0].filename} — ${proposals.length} change(s)`);
+  console.log('─────────────────────────────────────────');
+
+  for (let i = 0; i < proposals.length; i++) {
+    const proposed = proposals[i];
+    const before = befores[i];
+    console.log(`\nChange ${i + 1}:`);
+    console.log('BEFORE:');
+    if (before.isNewFile || before.lines.length === 0) {
+      console.log('  (file does not exist)');
+    } else {
+      before.lines.forEach(l => console.log(`  ${l.lineNumber}: ${l.content}`));
+    }
+    console.log('\nAFTER:');
+    proposed.afterLines.forEach(l => console.log(`  ${l.lineNumber}: ${l.content}`));
+    console.log(`\nExplanation: ${proposed.explanation}`);
+  }
+
+  console.log('─────────────────────────────────────────');
+  const answer = await readLine(`Approve all ${proposals.length} change(s) to ${proposals[0].filename}? [y]es / [n]o: `);
+  if (answer.toLowerCase() !== 'y') {
+    return { approved: false, why: '[user] rejected' };
+  }
+  const why = await readLine('Why are you approving? (Enter to use agent explanation): ');
+  const explanation = proposals.map(p => p.explanation).join('; ');
+  return { approved: true, why: why ? `[user] ${why}` : `[agent] ${explanation}` };
 }
