@@ -1,5 +1,13 @@
 # CleanClaw
 
+> **Proof of Concept — Pre-NemoClaw Full Merge**
+>
+> CleanClaw in its current form is a standalone proof of concept for the human-approval audit layer. It deliberately bypasses the full NemoClaw infrastructure (inference routing, sandbox execution, credential management, blueprint profiles, policy enforcement) to validate the core approval workflow in isolation.
+>
+> The next phase integrates CleanClaw directly into NemoClaw — using NemoClaw's credential management, inference routing via NVIDIA NIM/vLLM, sandbox execution, and blueprint profiles as the foundation. This README describes the current PoC only.
+
+---
+
 CleanClaw is a command-line tool that adds a human approval step to AI-assisted code changes. Every change proposed by an AI is shown to you as a Before/After diff. When you approve, the change and your reasoning are logged to a markdown file in your project — a permanent, auditable record of every AI-assisted decision.
 
 ## Prerequisites
@@ -29,12 +37,12 @@ cat plans/task01/task01A_log.md
 |---|---|---|
 | `projectName` | required | Your project name |
 | `provider` | `anthropic` | `anthropic` or `openai` |
-| `anthropic.apiKey` | — | Your Anthropic API key (or set `ANTHROPIC_API_KEY`) |
-| `openai.apiKey` | — | Your OpenAI API key (or set `OPENAI_API_KEY`) |
 | `approvalGranularity` | `per-file` | `per-change`, `per-file`, or `per-step` |
 | `stack` | `dotnet` | `dotnet`, `svelte`, `angular`, or `blazor` |
 | `plansDir` | `./plans` | Where plans and logs are written |
 | `logFormat` | `markdown` | `markdown` or `json` |
+
+**API keys:** Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` as environment variables, or place them in `~/.cleanclaw/config.json`. Never put API keys in `cleanclaw.config.json`.
 
 ## Approval granularity
 
