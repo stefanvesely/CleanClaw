@@ -13,7 +13,7 @@ if (fs.existsSync(testPlanDir)) {
 }
 
 // Clean up any files written by a previous run
-const testOutputDir = path.resolve('src');
+const testOutputDir = path.resolve('test/smoke/temp-project');
 if (fs.existsSync(testOutputDir)) {
   fs.rmSync(testOutputDir, { recursive: true });
   console.log('Cleaned up previous test output files.\n');
