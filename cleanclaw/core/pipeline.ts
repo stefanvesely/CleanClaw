@@ -34,12 +34,75 @@ function resolveModel(config: CleanClawConfig): string {
 
 // ─── Filename validation ──────────────────────────────────────────────────────
 
+function levenshtein(a: string, b: string): number {
+  const dp: number[][] = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+function fuzzyMatchFilename(proposed: string, searchRoot: string): string | null {
+  const name = path.basename(proposed);
+  const threshold = Math.max(2, Math.floor(name.length * 0.2));
+  let bestMatch: string | null = null;
+  let bestDist = Infinity;
+
+  function walk(dir: string): void {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else {
+        const dist = levenshtein(name, entry.name);
+        if (dist <= threshold && dist < bestDist) {
+          bestDist = dist;
+          bestMatch = full;
+        }
+      }
+    }
+  }
+
+  walk(searchRoot);
+  return bestMatch;
+}
+
 async function validateFilename(proposed: ProposedChange): Promise<boolean> {
   if (fs.existsSync(proposed.filename)) return true;
 
-  console.log(`\n⚠ WARNING: "${proposed.filename}" does not exist on disk.`);
   const readline = await import('readline');
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  const fuzzyMatch = fuzzyMatchFilename(proposed.filename, process.cwd());
+  if (fuzzyMatch) {
+    console.log(`\n⚠ "${proposed.filename}" does not exist.`);
+    console.log(`  Did you mean: "${fuzzyMatch}"?`);
+    const answer = await new Promise<string>(resolve => {
+      rl.question('  [y = use match / n = create new / c = cancel]: ', ans => { rl.close(); resolve(ans.trim().toLowerCase()); });
+    });
+    if (answer === 'y') {
+      proposed.filename = fuzzyMatch;
+      return true;
+    }
+    if (answer === 'n') {
+      const confirm = await new Promise<string>(resolve => {
+        const rl2 = readline.createInterface({ input: process.stdin, output: process.stdout });
+        rl2.question(`  Create new file "${proposed.filename}"? [y/N]: `, ans => { rl2.close(); resolve(ans.trim().toLowerCase()); });
+      });
+      return confirm === 'y';
+    }
+    return false;
+  }
+
+  console.log(`\n⚠ WARNING: "${proposed.filename}" does not exist on disk.`);
   const confirm = await new Promise<string>(resolve => {
     rl.question('This would create a NEW FILE. Confirm? [y/N]: ', ans => { rl.close(); resolve(ans.trim()); });
   });
