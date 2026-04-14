@@ -66,9 +66,9 @@ On first run you will be asked to declare your project root. CleanClaw will not 
 
 After a run, `plans/task01/` contains:
 
-**`task01A_plan.md`** — the AI-generated plan broken into numbered steps.  
-**`task01A_log.md`** — append-only audit log. Each entry records the file changed, before/after content, your approval reason, and which model proposed the change.  
-**`task01A_iter1_plan.md`** — if you triggered a follow-up iteration, each iteration gets its own plan file.
+- **`task01A_plan.md`** — the AI-generated plan broken into numbered steps.
+- **`task01A_log.md`** — append-only audit log. Each entry records the file changed, before/after content, your approval reason, and which model proposed the change.
+- **`task01A_iter1_plan.md`** — if you triggered a follow-up iteration, each iteration gets its own plan file.
 
 ## Approval granularity
 

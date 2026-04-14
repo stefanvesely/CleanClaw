@@ -44,6 +44,19 @@ export default [
     },
   },
 
+  // ── bin/cleanclaw.js — ESM override (tsx shebang; must follow the CJS catch-all) ──
+  {
+    files: ["bin/cleanclaw.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        process: "readonly",
+        console: "readonly",
+      },
+    },
+  },
+
   // ── test/ — ESM, Node.js (vitest globals come from imports) ────────────
   {
     ...js.configs.recommended,
