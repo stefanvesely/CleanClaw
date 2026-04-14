@@ -18,12 +18,12 @@
 // No silent fallback — the caller must handle the error and surface it to the user.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { getConfig } from "../../cleanclaw/core/config-loader.js";
-import { getCredential } from "../lib/credentials.js";
-import { getProviderSelectionConfig } from "../lib/inference-config.js";
-import { runPipeline } from "../../cleanclaw/core/pipeline.js";
-import type { CleanClawConfig } from "../../cleanclaw/config/config-schema.js";
-import type { ProviderSelectionConfig } from "../lib/inference-config.js";
+import { getConfig } from "../core/config-loader.js";
+import { getCredential } from "../../src/lib/credentials.js";
+import { getProviderSelectionConfig } from "../../src/lib/inference-config.js";
+import { runPipeline } from "../core/pipeline.js";
+import type { CleanClawConfig } from "../config/config-schema.js";
+import type { ProviderSelectionConfig } from "../../src/lib/inference-config.js";
 
 export interface ModeRuntime {
   run(taskDescription: string): Promise<void>;
