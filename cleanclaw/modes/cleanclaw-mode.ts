@@ -19,11 +19,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { getConfig } from "../core/config-loader.js";
-import { getCredential } from "../../src/lib/credentials.js";
-import { getProviderSelectionConfig } from "../../src/lib/inference-config.js";
 import { runPipeline } from "../core/pipeline.js";
 import type { CleanClawConfig } from "../config/config-schema.js";
-import type { ProviderSelectionConfig } from "../../src/lib/inference-config.js";
+
+// Known providers — NemoClaw sets the corresponding env var from its credential store
+const PROVIDER_CREDENTIAL_ENV: Record<string, string> = {
+  anthropic: "ANTHROPIC_API_KEY",
+  openai: "OPENAI_API_KEY",
+  "vllm-local": "OPENAI_API_KEY",
+  "ollama-local": "OLLAMA_API_KEY",
+};
 
 export interface ModeRuntime {
   run(taskDescription: string): Promise<void>;
@@ -33,9 +38,19 @@ export class CleanClawMode implements ModeRuntime {
   async run(taskDescription: string): Promise<void> {
     const config: CleanClawConfig = getConfig();
 
-    // Credential guard
-    const credentialEnv = config.provider === "anthropic" ? "ANTHROPIC_API_KEY" : "OPENAI_API_KEY";
-    const apiKey = getCredential(credentialEnv);
+    // Inference guard — reject unknown providers before touching the pipeline
+    // DEGRADED MODE: unknown provider → abort with clear message
+    const credentialEnv = PROVIDER_CREDENTIAL_ENV[config.provider];
+    if (!credentialEnv) {
+      throw new Error(
+        `Unknown provider "${config.provider}". ` +
+          `Check the "provider" field in cleanclaw.config.json. ` +
+          `Known providers: ${Object.keys(PROVIDER_CREDENTIAL_ENV).join(", ")}`,
+      );
+    }
+
+    // Credential guard — read from env (NemoClaw exports credentials as env vars)
+    const apiKey = process.env[credentialEnv];
     if (!apiKey) {
       throw new Error(
         `Missing credential for provider "${config.provider}". ` +
@@ -43,26 +58,13 @@ export class CleanClawMode implements ModeRuntime {
       );
     }
 
-    // Inference guard
-    // DEGRADED MODE: unknown provider → null → abort
-    const inferenceConfig: ProviderSelectionConfig | null = getProviderSelectionConfig(
-      config.provider,
-      config.provider === "anthropic" ? config.anthropic?.model : config.openai?.model,
-    );
-    if (!inferenceConfig) {
-      throw new Error(
-        `Unknown provider "${config.provider}". ` +
-          `Check the "provider" field in cleanclaw.config.json.`,
-      );
-    }
-
-    // Config guard — inject NemoClaw-stored key into config for anthropic if not already set
+    // Config guard — inject env key into config if not already set
     let resolvedConfig: CleanClawConfig = config;
     if (config.provider === "anthropic" && !config.anthropic?.apiKey) {
       resolvedConfig = {
         ...config,
         anthropic: {
-          ...(config.anthropic ?? { model: inferenceConfig.model }),
+          ...(config.anthropic ?? { model: "claude-sonnet-4-6" }),
           apiKey,
         },
       };
