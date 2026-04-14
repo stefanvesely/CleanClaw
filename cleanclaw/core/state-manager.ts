@@ -8,6 +8,7 @@ export interface CleanClawState {
   currentVariant: string;
   plansDir: string;
   lastUpdated: string;
+  iterationCount: number;
 }
 
 export function saveState(state: CleanClawState, projectDir: string): void {

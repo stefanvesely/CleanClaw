@@ -36,4 +36,18 @@ export class PlanningAgent {
 
     return response.content;
   }
+
+  async generateIterationPlan(
+    originalPlan: string,
+    taskDescription: string,
+    completedSteps: string[],
+  ): Promise<string> {
+    const completedList = completedSteps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+    const prompt = `Original task: ${taskDescription}\n\nOriginal plan:\n${originalPlan}\n\nCompleted steps:\n${completedList}\n\nGenerate the next iteration plan for remaining or follow-up work.`;
+    const response = await this.bridge.send(
+      [{ role: 'user', content: prompt }],
+      PLAN_SYSTEM_PROMPT
+    );
+    return response.content;
+  }
 }
