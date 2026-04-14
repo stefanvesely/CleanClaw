@@ -94,11 +94,12 @@ export function parsePlanSteps(planMarkdown: string): PlanStep[] {
 
 // ─── Write ────────────────────────────────────────────────────────────────────
 
-export function writePlan(taskId: string, variant: string, markdown: string, plansDir: string): string {
+export function writePlan(taskId: string, variant: string, markdown: string, plansDir: string, iterationNumber?: number): string {
   validatePlanFormat(markdown);
 
   const dir = path.join(plansDir, `task${taskId}`);
-  const filename = `task${taskId}${variant}_plan.md`;
+  const iterSuffix = iterationNumber !== undefined ? `_iter${iterationNumber}` : '';
+  const filename = `task${taskId}${variant}${iterSuffix}_plan.md`;
   const filepath = path.join(dir, filename);
 
   if (fs.existsSync(filepath)) {
