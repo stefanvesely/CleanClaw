@@ -65,6 +65,7 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
     currentVariant: 'A',
     plansDir: './plans',
     lastUpdated: new Date().toISOString(),
+    iterationCount: 0,
   }, process.cwd());
 
   console.log(`\nInitialised. Config written to cleanclaw.config.json`);
