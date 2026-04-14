@@ -121,5 +121,6 @@ export async function runWorkflow(taskDescription: string): Promise<void> {
     currentVariant: 'A',
     plansDir: config.plansDir,
     lastUpdated: new Date().toISOString(),
+    iterationCount: state?.iterationCount ?? 0,
   }, process.cwd());
 }

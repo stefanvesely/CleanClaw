@@ -25,6 +25,7 @@ saveState({
   currentVariant: 'A',
   plansDir: './plans',
   lastUpdated: new Date().toISOString(),
+  iterationCount: 0,
 }, tmpDir);
 
 const state = loadState(tmpDir);
