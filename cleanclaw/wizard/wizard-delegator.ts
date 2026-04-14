@@ -32,8 +32,15 @@ export async function suggestWorkflowAnswers(
   }
 }
 
-export function isOpenshellAvailable(): boolean {
-  // Openshell availability check — Phase 8 (sandbox execution) is deferred.
-  // Until sandbox integration is complete, delegation runs without openshell.
-  return true;
+export async function isOpenshellAvailable(): Promise<boolean> {
+  try {
+    // Computed path prevents TypeScript from statically tracing into src/ (CJS boundary)
+    const resolveOpenshellPath = ['../../src/lib', 'resolve-openshell.js'].join('/');
+    const { resolveOpenshell } = await import(resolveOpenshellPath) as { resolveOpenshell: () => Promise<string | null> };
+    const result = await resolveOpenshell();
+    return result !== null;
+  } catch {
+    // DEGRADED MODE: no sandbox — filesystem boundary is software-enforced only
+    return false;
+  }
 }
