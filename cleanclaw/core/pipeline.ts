@@ -8,12 +8,14 @@ import { promptApproval, promptApprovalForFile } from './verification-layer.js';
 import { captureBeforeState } from '../plans/diff-capture.js';
 import { appendLogEntry } from '../plans/log-writer.js';
 import { parseTaskPlanSteps, markStepComplete } from '../plans/plan-writer.js';
+import { checkScope, formatHaltMessage } from '../scope/scope-guard.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
 import type { TaskStep } from '../plans/plan-writer.js';
 import type { ProposedChange } from './language-agent.js';
 import type { DiffCapture } from '../plans/diff-capture.js';
 import type { LanguageAgent } from './language-agent.js';
 import type { Bridge } from '../bridges/anthropic-bridge.js';
+import type { ApprovedPlanContext } from '../scope/scope-rules.js';
 
 // ─── Task ID ──────────────────────────────────────────────────────────────────
 
@@ -121,9 +123,11 @@ async function runPipelinePerChange(
   config: CleanClawConfig,
   languageAgent: LanguageAgent,
   bridge: Bridge,
+  scopeCtx: ApprovedPlanContext,
 ): Promise<void> {
   const model = resolveModel(config);
   let changeNumber = 1;
+  let cumulativeChangeCount = 0;
 
   for (const step of steps) {
     console.log(`\n[CleanClaw] Step ${step.number}: ${step.body.slice(0, 80)}...`);
@@ -148,6 +152,38 @@ async function runPipelinePerChange(
     refined.filename = proposed.filename;
     Object.assign(proposed, refined);
 
+    // Scope check before presenting to developer
+    const diff = proposed.afterLines.map(l => `+${l.content}`).join('\n');
+    const scopeDecision = await checkScope(
+      { filename: proposed.filename, diff, cumulativeChangeCount, changeDescription: step.body },
+      scopeCtx,
+      bridge,
+    );
+
+    if (scopeDecision.action === 'halt-confirm') {
+      const readline = await import('readline');
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const answer = await new Promise<string>(resolve => {
+        rl.question(formatHaltMessage({ filename: proposed.filename, diff, cumulativeChangeCount, changeDescription: step.body }, scopeDecision), ans => { rl.close(); resolve(ans.trim().toLowerCase()); });
+      });
+
+      if (answer === 'r') {
+        console.log('[CleanClaw] Change reversed. Skipping step.');
+        changeNumber++;
+        continue;
+      }
+
+      if (answer === 'e') {
+        const rl2 = readline.createInterface({ input: process.stdin, output: process.stdout });
+        const reason = await new Promise<string>(resolve => {
+          rl2.question('Explain why this change is acceptable: ', r => { rl2.close(); resolve(r.trim()); });
+        });
+        console.log(`[CleanClaw] Explanation recorded: ${reason}`);
+        // fall through to normal approval
+      }
+      // 'a' or explained: fall through
+    }
+
     const lineNumbers = proposed.beforeLines.map(l => l.lineNumber);
     const before = captureBeforeState(proposed.filename, lineNumbers);
     const { approved, why } = await promptApproval(proposed, before);
@@ -164,6 +200,7 @@ async function runPipelinePerChange(
     markStepComplete(planPath, step.body, completedPlanPath);
     console.log(`[CleanClaw] Change ${changeNumber} applied and logged.`);
     changeNumber++;
+    cumulativeChangeCount++;
   }
 
   printSummary(taskId, variant, changeNumber, plansDir);
@@ -322,10 +359,38 @@ export async function runPipeline(
   // Phase 3 — Execute with configured granularity
   const granularity = config.approvalGranularity ?? 'per-change';
 
+  // ApprovedPlanContext built once here — pipeline and scope guard share the same reference
+  const scopeCtx: ApprovedPlanContext = {
+    approvedFiles: steps.map(s => s.body.match(/[\w./\\-]+\.\w+/g)?.[0] ?? '').filter(Boolean),
+    taskDescription,
+    planContent,
+  };
+
   if (granularity === 'per-file') {
     await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge);
   } else {
-    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge);
+    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, scopeCtx);
+
+    // Iteration loop — boss prompts for next iteration after each pipeline run
+    let iterationNumber = 1;
+    let currentPlanContent = planContent;
+    let completedSteps = steps.map(s => s.body);
+
+    while (true) {
+      const iterResult = await boss.promptNextIteration(
+        taskId, variant, currentPlanContent, taskDescription,
+        completedSteps, scopeCtx, bridge, iterationNumber,
+      );
+      if (!iterResult) break;
+
+      const iterSteps = parseTaskPlanSteps(iterResult.planContent);
+      const iterCompletedPath = iterResult.planPath.replace('_plan.md', '_plan_completed.md');
+      await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, config, languageAgent, bridge, scopeCtx);
+
+      completedSteps = [...completedSteps, ...iterSteps.map(s => s.body)];
+      currentPlanContent = iterResult.planContent;
+      iterationNumber++;
+    }
   }
 }
 
