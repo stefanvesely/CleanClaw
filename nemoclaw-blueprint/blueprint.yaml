@@ -70,10 +70,11 @@ components:
         timeout_secs: 180
 
       cleanclaw:
-        provider_type: "config-delegated"
-        config_file: "cleanclaw.config.json"
-        extra_credential_envs: []
-        description: "Delegates provider/model selection to cleanclaw.config.json"
+        provider_type: "anthropic"
+        provider_name: "anthropic-prod"
+        endpoint: "https://api.anthropic.com/v1"
+        model: "claude-sonnet-4-6"
+        credential_env: "ANTHROPIC_API_KEY"
 
   policy:
     base: "sandboxes/openclaw/policy.yaml"
