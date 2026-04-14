@@ -9,6 +9,9 @@ import { captureBeforeState } from '../plans/diff-capture.js';
 import { appendLogEntry } from '../plans/log-writer.js';
 import { parseTaskPlanSteps, markStepComplete } from '../plans/plan-writer.js';
 import { checkScope, formatHaltMessage } from '../scope/scope-guard.js';
+import { assertWithinProjectRoot, RootViolationError } from './root-guard.js';
+import { loadActiveProject } from './state-manager.js';
+import { applyRootPolicy } from './sandbox-policy.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
 import type { TaskStep } from '../plans/plan-writer.js';
 import type { ProposedChange } from './language-agent.js';
@@ -124,6 +127,7 @@ async function runPipelinePerChange(
   languageAgent: LanguageAgent,
   bridge: Bridge,
   scopeCtx: ApprovedPlanContext,
+  activeRoot: string,
 ): Promise<void> {
   const model = resolveModel(config);
   let changeNumber = 1;
@@ -193,6 +197,18 @@ async function runPipelinePerChange(
       appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
       changeNumber++;
       continue;
+    }
+
+    // Hard block — no override, no a/r/e prompt. Safety wall, not a hint.
+    try {
+      assertWithinProjectRoot(proposed.filename, activeRoot);
+    } catch (err) {
+      if (err instanceof RootViolationError) {
+        console.error(err.message);
+        changeNumber++;
+        continue;
+      }
+      throw err;
     }
 
     applyChange(proposed);
@@ -309,6 +325,10 @@ export async function runPipeline(
   const taskId = getNextTaskId(plansDir);
   const variant = 'A';
 
+  // Apply root policy before any LLM calls or file operations
+  const activeRootEarly = loadActiveProject() ?? process.cwd();
+  await applyRootPolicy(activeRootEarly);
+
   // Phase 1 — Generate and write plan
   const { planPath, planContent } = await boss.run(taskDescription, taskId, variant);
   const completedPlanPath = planPath.replace('_plan.md', '_plan_completed.md');
@@ -366,10 +386,12 @@ export async function runPipeline(
     planContent,
   };
 
+  const activeRoot = loadActiveProject() ?? process.cwd();
+
   if (granularity === 'per-file') {
     await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge);
   } else {
-    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, scopeCtx);
+    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot);
 
     // Iteration loop — boss prompts for next iteration after each pipeline run
     let iterationNumber = 1;
@@ -385,7 +407,7 @@ export async function runPipeline(
 
       const iterSteps = parseTaskPlanSteps(iterResult.planContent);
       const iterCompletedPath = iterResult.planPath.replace('_plan.md', '_plan_completed.md');
-      await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, config, languageAgent, bridge, scopeCtx);
+      await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot);
 
       completedSteps = [...completedSteps, ...iterSteps.map(s => s.body)];
       currentPlanContent = iterResult.planContent;

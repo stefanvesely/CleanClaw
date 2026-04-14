@@ -5,6 +5,8 @@ import { loadState, saveState } from '../core/state-manager.js';
 import { scanRelevantFiles } from '../core/file-scanner.js';
 import { resolveBridge } from '../core/agent-router.js';
 import { suggestWorkflowAnswers, isOpenshellAvailable } from '../wizard/wizard-delegator.js';
+import { promptDeclareProjectRoot } from '../core/root-guard.js';
+import { loadActiveProject, saveActiveProject } from '../core/state-manager.js';
 
 function ask(rl: readline.Interface, question: string): Promise<string> {
   return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())));
@@ -20,13 +22,21 @@ export async function runWorkflow(taskDescription: string): Promise<void> {
   const config = getConfig();
   const state = loadState(process.cwd());
 
+  // Ensure active project root is declared before any pipeline work
+  let activeRoot = loadActiveProject();
+  if (!activeRoot) {
+    activeRoot = await promptDeclareProjectRoot();
+    saveActiveProject(activeRoot);
+    console.log(`[CleanClaw] Active project root set: ${activeRoot}`);
+  }
+
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
   console.log(`\n[CleanClaw] Planning task: "${taskDescription}"`);
 
   // Wizard delegation — when enabled, LLM pre-populates answers; developer confirms or overrides
   let suggestions = null;
-  if (config.enableWizardDelegation && isOpenshellAvailable()) {
+  if (config.enableWizardDelegation && await isOpenshellAvailable()) {
     console.log('[CleanClaw] Wizard delegation enabled — generating suggestions...');
     const bridge = resolveBridge(config);
     suggestions = await suggestWorkflowAnswers(taskDescription, bridge);

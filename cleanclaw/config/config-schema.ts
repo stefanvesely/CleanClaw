@@ -15,4 +15,5 @@ export interface CleanClawConfig {
   planPath?: string;
   stack: string;
   enableWizardDelegation?: boolean;
+  projectRoots?: string[];
 }
