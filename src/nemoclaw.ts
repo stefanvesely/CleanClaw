@@ -83,6 +83,7 @@ const GLOBAL_COMMANDS = new Set([
   "debug",
   "uninstall",
   "credentials",
+  "create",
   "help",
   "--help",
   "-h",
@@ -1511,6 +1512,19 @@ function help() {
 `);
 }
 
+async function createDevTask(): Promise<void> {
+  const readline = await import("readline");
+  const rl = readline.default.createInterface({ input: process.stdin, output: process.stdout });
+  const taskDescription = await new Promise<string>(resolve =>
+    rl.question("What would you like to build or fix? ", answer => {
+      rl.close();
+      resolve(answer.trim());
+    }),
+  );
+  const { runWorkflow } = await import("../cleanclaw/cli/run-workflow.js");
+  await runWorkflow(taskDescription);
+}
+
 // ── Dispatch ─────────────────────────────────────────────────────
 
 const [cmd, ...args] = process.argv.slice(2);
@@ -1556,6 +1570,20 @@ const [cmd, ...args] = process.argv.slice(2);
       case "credentials":
         await credentialsCommand(args);
         break;
+      case "create": {
+        const subArgs = args;
+        if (
+          subArgs[0] === "new" &&
+          subArgs[1] === "dev" &&
+          subArgs[2] === "task"
+        ) {
+          await createDevTask();
+        } else {
+          console.error("  Usage: nemoclaw create new dev task");
+          process.exit(1);
+        }
+        break;
+      }
       case "list":
         await listSandboxes();
         break;

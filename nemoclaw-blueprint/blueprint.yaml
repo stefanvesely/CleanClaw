@@ -18,6 +18,7 @@ profiles:
   - ncp
   - nim-local
   - vllm
+  - cleanclaw
 
 description: |
   NemoClaw blueprint: orchestrates OpenClaw sandbox creation, migration,
@@ -67,6 +68,12 @@ components:
         credential_env: "OPENAI_API_KEY"
         credential_default: "dummy"
         timeout_secs: 180
+
+      cleanclaw:
+        provider_type: "config-delegated"
+        config_file: "cleanclaw.config.json"
+        extra_credential_envs: []
+        description: "Delegates provider/model selection to cleanclaw.config.json"
 
   policy:
     base: "sandboxes/openclaw/policy.yaml"
