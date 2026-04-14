@@ -87,3 +87,47 @@ export function appendLogEntry(
   fs.mkdirSync(dir, { recursive: true });
   fs.appendFileSync(filepath, entry, 'utf-8');
 }
+
+// ─── Session Header ───────────────────────────────────────────────────────────
+
+export function appendSessionHeader(
+  taskId: string,
+  taskDescription: string,
+  answers: { why: string; files: string; criteria: string; outOfScope: string },
+  scannedFiles: string[],
+  confirmedFiles: string[],
+  planContent: string,
+  plansDir: string,
+): void {
+  const dir = path.join(plansDir, taskId);
+  const filepath = path.join(dir, 'task.log');
+
+  const confirmedList = confirmedFiles.map(f => `- ${f}`).join('\n');
+
+  const block = [
+    `# Session — ${new Date().toISOString()}`,
+    '',
+    '## Task',
+    taskDescription,
+    '',
+    '## Clarification',
+    `- Why: ${answers.why}`,
+    `- Files specified: ${answers.files}`,
+    `- Acceptance criteria: ${answers.criteria}`,
+    `- Out of scope: ${answers.outOfScope}`,
+    '',
+    '## File Scan',
+    `Scanned: ${scannedFiles.length} files`,
+    'Confirmed:',
+    confirmedList,
+    '',
+    '## Plan',
+    planContent,
+    '',
+    '---',
+    '',
+  ].join('\n');
+
+  fs.mkdirSync(dir, { recursive: true });
+  fs.appendFileSync(filepath, block, 'utf-8');
+}

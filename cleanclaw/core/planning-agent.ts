@@ -22,7 +22,8 @@ Rules:
 - Each step must be independently approvable — one logical change per step
 - The Scope Boundary must be honest — if something is tempting to add but not requested, name it here
 - Never include test files, smoke tests, CI configuration, or infrastructure changes unless the task description explicitly asks for them
-- Respond only with the markdown. No preamble, no explanation, no code fences around the markdown.`;
+- Respond only with the markdown. No preamble, no explanation, no code fences around the markdown.
+- If the task description includes a 'Files confirmed:' section, treat those as the only files in scope for this plan — do not reference or modify any other files.`;
 
 export class PlanningAgent {
   constructor(private bridge: Bridge) {}

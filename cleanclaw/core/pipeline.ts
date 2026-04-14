@@ -249,7 +249,20 @@ async function runPipelinePerFile(
 
 // ─── Pipeline ─────────────────────────────────────────────────────────────────
 
-export async function runPipeline(taskDescription: string, config: CleanClawConfig): Promise<void> {
+export interface WorkflowAnswers {
+  why: string;
+  files: string;
+  criteria: string;
+  outOfScope: string;
+}
+
+export async function runPipeline(
+  taskDescription: string,
+  config: CleanClawConfig,
+  workflowAnswers?: WorkflowAnswers,
+  scannedFiles?: string[],
+  confirmedFiles?: string[],
+): Promise<void> {
   const plansDir = path.resolve(config.plansDir);
   const bridge = resolveBridge(config);
   const languageAgent = resolveLanguageAgent(config);
@@ -262,6 +275,20 @@ export async function runPipeline(taskDescription: string, config: CleanClawConf
   // Phase 1 — Generate and write plan
   const { planPath, planContent } = await boss.run(taskDescription, taskId, variant);
   const completedPlanPath = planPath.replace('_plan.md', '_plan_completed.md');
+
+  // Phase 1b — Write session header log
+  if (workflowAnswers) {
+    const { appendSessionHeader } = await import('../plans/log-writer.js');
+    appendSessionHeader(
+      `task${taskId}`,
+      taskDescription,
+      workflowAnswers,
+      scannedFiles ?? [],
+      confirmedFiles ?? [],
+      planContent,
+      plansDir,
+    );
+  }
 
   // Phase 2 — Parse steps
   const steps = parseTaskPlanSteps(planContent);
