@@ -25,3 +25,25 @@ config:
 
 ignores:
   - "node_modules/**"
+  # GitHub issue templates use bold text instead of headings by design
+  - ".github/ISSUE_TEMPLATE/bug_report.md"
+  - ".github/ISSUE_TEMPLATE/feature_request.md"
+  - ".github/ISSUE_TEMPLATE/real_usage_report.md"
+  # Project CLAUDE.md is not a user-authored documentation file
+  - "CLAUDE.md"
+  # Pre-existing changelog files written before markdownlint was enforced
+  - "changelog/2026-04-11-e8-e9-foundation.md"
+  - "changelog/2026-04-11-fix-api-key-in-project-config.md"
+  - "changelog/2026-04-11-task-planning-fuzzy-match.md"
+  - "changelog/2026-04-11-weekend1-foundation.md"
+  - "changelog/2026-04-11-weekend2-pipeline.md"
+  - "changelog/2026-04-11-weekend3-language-agents.md"
+  - "changelog/2026-04-11-weekend4-hardening.md"
+  - "changelog/2026-04-11-weekend5-multi-provider.md"
+  - "changelog/2026-04-11-weekend6-cli.md"
+  - "changelog/2026-04-11-weekend7-launch.md"
+  - "changelog/2026-04-14-cleanclaw-nemoclaw-integration-phase0.md"
+  # Full plan document written before markdownlint was enforced
+  - "cleanclaw_full_plan.md"
+  # Generated plan/log files are not governed by markdownlint
+  - "plans/**/*.md"
