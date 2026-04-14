@@ -1521,7 +1521,10 @@ async function createDevTask(): Promise<void> {
       resolve(answer.trim());
     }),
   );
-  const { runWorkflow } = await import("../cleanclaw/cli/run-workflow.js");
+  // Path is computed to prevent TypeScript (tsconfig.src.json) from statically
+  // tracing this import into the cleanclaw/ ESM layer during build:cli.
+  const workflowPath = ["../cleanclaw/cli", "run-workflow.js"].join("/");
+  const { runWorkflow } = await import(workflowPath);
   await runWorkflow(taskDescription);
 }
 
