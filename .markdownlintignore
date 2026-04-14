@@ -1,0 +1,5 @@
+# GitHub issue templates use bold text instead of headings by design
+.github/ISSUE_TEMPLATE/bug_report.md
+
+# Pre-existing changelog file written before markdownlint was enforced
+changelog/2026-04-11-e8-e9-foundation.md
