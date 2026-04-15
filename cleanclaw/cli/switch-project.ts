@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { loadState, saveActiveProject } from '../core/state-manager.js';
+import { appendToRegistry } from '../projectmap/project-registry.js';
 
 export async function switchProject(projectPath: string): Promise<void> {
   const resolved = path.resolve(projectPath);
@@ -16,6 +17,8 @@ export async function switchProject(projectPath: string): Promise<void> {
   const state = loadState(resolved);
   const projectName = state?.projectName ?? path.basename(resolved);
   const lastTask = state ? `task${state.currentTaskId}${state.currentVariant}` : 'none';
+
+  appendToRegistry(resolved, projectName, resolved);
 
   console.log(`Switched to ${projectName}. Last task: ${lastTask}.`);
 }

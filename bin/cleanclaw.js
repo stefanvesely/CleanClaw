@@ -38,4 +38,12 @@ program
     await showStatus();
   });
 
+program
+  .command("projects")
+  .description("List registered projects")
+  .action(async () => {
+    const { listProjects } = await import("../cleanclaw/projectmap/list-projects.js");
+    listProjects(process.cwd());
+  });
+
 program.parse();
