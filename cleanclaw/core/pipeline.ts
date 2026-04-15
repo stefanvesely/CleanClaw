@@ -11,6 +11,7 @@ import { parseTaskPlanSteps, markStepComplete } from '../plans/plan-writer.js';
 import { checkScope, formatHaltMessage } from '../scope/scope-guard.js';
 import { assertWithinProjectRoot, RootViolationError } from './root-guard.js';
 import { loadActiveProject } from './state-manager.js';
+import { triggerProjectMapUpdate } from '../projectmap/updater.js';
 import { applyRootPolicy } from './sandbox-policy.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
 import type { TaskStep } from '../plans/plan-writer.js';
@@ -212,6 +213,7 @@ async function runPipelinePerChange(
     }
 
     applyChange(proposed);
+    triggerProjectMapUpdate(proposed.filename, loadActiveProject() ?? process.cwd(), config);
     appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
     markStepComplete(planPath, step.body, completedPlanPath);
     console.log(`[CleanClaw] Change ${changeNumber} applied and logged.`);
@@ -290,6 +292,7 @@ async function runPipelinePerFile(
 
     for (const { proposed, before, step } of group) {
       applyChange(proposed);
+      triggerProjectMapUpdate(proposed.filename, loadActiveProject() ?? process.cwd(), config);
       appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
       markStepComplete(planPath, step.body, completedPlanPath);
       console.log(`[CleanClaw] Change ${changeNumber} applied and logged.`);

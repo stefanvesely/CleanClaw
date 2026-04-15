@@ -72,6 +72,16 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
   appendToRegistry(process.cwd(), projectName, process.cwd());
 
   console.log(`\nInitialised. Config written to cleanclaw.config.json`);
+
+  if (config.embeddings) {
+    const buildNow = await ask(rl, '\nBuild ProjectMap index now? (recommended) [y/n]: ');
+    if (buildNow.toLowerCase() === 'y') {
+      const { execFileSync } = await import('child_process');
+      const scriptPath = new URL('../projectmap/build.py', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+      execFileSync('python', [scriptPath, '--root', process.cwd(), '--config', 'cleanclaw.config.json'], { stdio: 'inherit', cwd: path.dirname(scriptPath) });
+    }
+  }
+
   console.log('Run: cleanclaw run "Your task description"');
 }
 
