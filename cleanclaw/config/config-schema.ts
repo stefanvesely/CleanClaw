@@ -16,4 +16,12 @@ export interface CleanClawConfig {
   stack: string;
   enableWizardDelegation?: boolean;
   projectRoots?: string[];
+  embeddings?: {
+    provider?: string;
+    model?: string;
+    apiKey?: string;
+    baseUrl?: string;
+  };
+  layerMap?: Record<string, string>;
+  layerKeywords?: Record<string, string[]>;
 }
