@@ -51,8 +51,68 @@ On first run you will be asked to declare your project root. CleanClaw will not 
 | `logFormat` | `markdown` | `markdown` or `json` |
 | `projectRoots` | `[]` | Declared project roots — set on first run, persisted globally |
 | `enableWizardDelegation` | `false` | When true, LLM pre-populates task scoping questions |
+| `embeddings` | — | ProjectMap embedding config (see below) |
+| `layerMap` | — | Path prefix overrides for layer classification e.g. `{ "src/Shared": "backend" }` |
+| `layerKeywords` | — | Extra keywords per layer e.g. `{ "backend": ["myservice"] }` |
 
 **API keys:** Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` as environment variables, or in `~/.cleanclaw/config.json`. Never commit API keys.
+
+## ProjectMap
+
+ProjectMap builds a persistent semantic index of your codebase so CleanClaw can reason about project structure at task-start without re-scanning from scratch every time.
+
+### Setup
+
+Install Python dependencies once:
+
+```bash
+pip install -r cleanclaw/projectmap/requirements.txt
+```
+
+Add an `embeddings` block to `cleanclaw.config.json`:
+
+```json
+"embeddings": {
+  "provider": "openai",
+  "model": "text-embedding-3-small",
+  "apiKey": "sk-..."
+}
+```
+
+Supported providers: `openai`, `vllm-local`, `ollama-local`, `http` (any OpenAI-shaped endpoint).
+
+### Build the index
+
+```bash
+python cleanclaw/projectmap/build.py --root /path/to/your/project
+```
+
+Or run `cleanclaw init` — it will offer to build the index immediately after setup.
+
+### What gets indexed
+
+Four tables, stored in `.cleanclaw/projectmap/` inside the project repo (tracked by git, travels with the codebase):
+
+| Table | Content | Columns |
+|---|---|---|
+| `backend` | API controllers, services, repositories | `method_name`, `signature`, `output`, `filename`, `full_path`, `metadata`, `algorithm` |
+| `frontend` | Components, hooks, store actions | same |
+| `mediator` | Gateways, middleware, mappers | same |
+| `misc` | Config, templates, assets | `filename`, `purpose`, `related_layer` |
+
+Layer classification uses path-segment heuristics and is overridable via `layerMap` and `layerKeywords` in config.
+
+### Commands
+
+```bash
+cleanclaw projects        # list all registered projects
+```
+
+The index updates automatically after each applied change when `embeddings` is configured. To manually update a single file:
+
+```bash
+python cleanclaw/projectmap/update.py --root /path/to/project --file /path/to/changed/file.ts
+```
 
 ## Safety layers
 
