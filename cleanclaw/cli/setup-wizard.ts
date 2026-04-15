@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import readline from 'readline';
 import { saveState } from '../core/state-manager.js';
+import { appendToRegistry } from '../projectmap/project-registry.js';
 
 const GLOBAL_CONFIG_PATH = path.join(os.homedir(), '.cleanclaw', 'config.json');
 
@@ -67,6 +68,8 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
     lastUpdated: new Date().toISOString(),
     iterationCount: 0,
   }, process.cwd());
+
+  appendToRegistry(process.cwd(), projectName, process.cwd());
 
   console.log(`\nInitialised. Config written to cleanclaw.config.json`);
   console.log('Run: cleanclaw run "Your task description"');
