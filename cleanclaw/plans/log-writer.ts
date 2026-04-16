@@ -131,3 +131,35 @@ export function appendSessionHeader(
   fs.mkdirSync(dir, { recursive: true });
   fs.appendFileSync(filepath, block, 'utf-8');
 }
+
+// ─── Rollback ─────────────────────────────────────────────────────────────────
+
+export function appendRollbackEntry(
+  taskId: string,
+  variant: string,
+  restoredFiles: string[],
+  plansDir: string,
+  logFormat: 'markdown' | 'json',
+): void {
+  const dir = path.join(plansDir, `task${taskId}`);
+  const ext = logFormat === 'json' ? 'json' : 'md';
+  const filepath = path.join(dir, `task${taskId}${variant}_log.${ext}`);
+
+  const timestamp = new Date().toISOString();
+
+  const entry = logFormat === 'json'
+    ? JSON.stringify({ type: 'rollback', taskId, restoredFiles, timestamp }) + '\n'
+    : [
+        `## Rollback`,
+        `**Task:** task${taskId}${variant}`,
+        `**Timestamp:** ${timestamp}`,
+        `**Restored files:**`,
+        restoredFiles.map(f => `- ${f}`).join('\n'),
+        '',
+        '---',
+        '',
+      ].join('\n');
+
+  fs.mkdirSync(dir, { recursive: true });
+  fs.appendFileSync(filepath, entry, 'utf-8');
+}

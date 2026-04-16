@@ -17,9 +17,10 @@ program
 program
   .command("run <task>")
   .description("Run a task")
-  .action(async (task) => {
+  .option("--headless", "Run without interactive prompts — scope violations exit with code 1")
+  .action(async (task, options) => {
     const { runWorkflow } = await import("../cleanclaw/cli/run-workflow.js");
-    await runWorkflow(task);
+    await runWorkflow(task, options.headless ?? false);
   });
 
 program
@@ -44,6 +45,14 @@ program
   .action(async () => {
     const { listProjects } = await import("../cleanclaw/projectmap/list-projects.js");
     listProjects(process.cwd());
+  });
+
+program
+  .command("undo <taskId>")
+  .description("Roll back all changes from a completed task")
+  .action(async (taskId) => {
+    const { undoTask } = await import("../cleanclaw/cli/undo.js");
+    await undoTask(taskId);
   });
 
 program.parse();

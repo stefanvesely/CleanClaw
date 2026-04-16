@@ -1,6 +1,7 @@
 import type { CleanClawConfig } from "../config/config-schema.js";
 import type { Bridge } from "../bridges/anthropic-bridge.js";
 import type { LanguageAgent } from "./language-agent.js";
+import { GenericAgent } from "./language-agent.js";
 import { AnthropicBridge } from "../bridges/anthropic-bridge.js";
 import { OpenAiBridge } from "../bridges/openai-bridge.js";
 import { DotnetAgent } from "../agents/dotnet-agent.js";
@@ -23,6 +24,11 @@ export function resolveBridge(config: CleanClawConfig): Bridge {
 }
 
 export function resolveLanguageAgent(config: CleanClawConfig): LanguageAgent {
+  const custom = config.customAgents?.find(a => a.stack === config.stack);
+  if (custom) {
+    return new GenericAgent(custom.stack, custom.systemPrompt);
+  }
+
   const agents: Record<string, LanguageAgent> = {
     dotnet: new DotnetAgent(),
     svelte: new SvelteAgent(),

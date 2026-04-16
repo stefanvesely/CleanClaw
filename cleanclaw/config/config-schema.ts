@@ -1,3 +1,8 @@
+export interface CustomAgentConfig {
+  stack: string;
+  systemPrompt: string;
+}
+
 export interface CleanClawConfig {
   provider: 'anthropic' | 'openai';
   anthropic?: {
@@ -22,6 +27,10 @@ export interface CleanClawConfig {
     apiKey?: string;
     baseUrl?: string;
   };
+  projectMap?: {
+    enabled: boolean;
+  };
   layerMap?: Record<string, string>;
   layerKeywords?: Record<string, string[]>;
+  customAgents?: CustomAgentConfig[];
 }

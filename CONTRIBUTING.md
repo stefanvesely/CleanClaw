@@ -237,3 +237,55 @@ fix(blueprint): handle missing API key gracefully
 docs: update quickstart for new install wizard
 chore(deps): bump commander to 13.2
 ```
+
+---
+
+## CleanClaw: Adding a language agent
+
+### Built-in agent (TypeScript)
+
+Create `cleanclaw/agents/<stack>-agent.ts` implementing `LanguageAgent`:
+
+```typescript
+import type { Bridge } from '../bridges/anthropic-bridge.js';
+import type { LanguageAgent, ProposedChange } from '../core/language-agent.js';
+
+export class MyStackAgent implements LanguageAgent {
+  stack = 'mystack';
+
+  async propose(stepBody: string, bridge: Bridge): Promise<ProposedChange> {
+    // Call bridge.send(), parse JSON response, return ProposedChange
+  }
+}
+```
+
+Then register it in `cleanclaw/core/agent-router.ts` inside the `agents` map.
+
+### Config-only custom agent
+
+For stacks not worth a dedicated file, add an entry to `cleanclaw.config.json`:
+
+```json
+{
+  "stack": "vue",
+  "customAgents": [
+    {
+      "stack": "vue",
+      "systemPrompt": "You are a senior Vue 3 developer working inside CleanClaw.\n\nPropose exactly one change as JSON: { filename, beforeLines, afterLines, explanation }.\nRespond with ONLY the JSON object."
+    }
+  ]
+}
+```
+
+Custom agents are matched by `stack` name before built-ins. The `systemPrompt` must instruct the model to return a single `ProposedChange` JSON object.
+
+### ProposedChange schema
+
+```json
+{
+  "filename": "relative/path/to/file.ext",
+  "beforeLines": [{ "lineNumber": 1, "content": "existing line" }],
+  "afterLines":  [{ "lineNumber": 1, "content": "replacement line" }],
+  "explanation": "One or two sentences explaining the change."
+}
+```
