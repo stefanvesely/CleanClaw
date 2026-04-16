@@ -18,7 +18,7 @@ async function askWithSuggestion(rl: readline.Interface, question: string, sugge
   return answer === '' ? suggestion : answer;
 }
 
-export async function runWorkflow(taskDescription: string): Promise<void> {
+export async function runWorkflow(taskDescription: string, headless = false): Promise<void> {
   const config = getConfig();
   const state = loadState(process.cwd());
 
@@ -113,7 +113,7 @@ export async function runWorkflow(taskDescription: string): Promise<void> {
 
   const workflowAnswers: WorkflowAnswers = { why, files, criteria, outOfScope };
 
-  await runPipeline(fullDescription, config, workflowAnswers, scannedFiles, confirmedFiles);
+  await runPipeline(fullDescription, config, workflowAnswers, scannedFiles, confirmedFiles, headless);
 
   saveState({
     projectName: config.projectName,
@@ -122,5 +122,7 @@ export async function runWorkflow(taskDescription: string): Promise<void> {
     plansDir: config.plansDir,
     lastUpdated: new Date().toISOString(),
     iterationCount: state?.iterationCount ?? 0,
+    resumable: false,
+    lastCompletedStep: 0,
   }, process.cwd());
 }

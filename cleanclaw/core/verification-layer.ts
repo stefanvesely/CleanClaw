@@ -79,3 +79,8 @@ export async function promptApprovalForFile(
   const explanation = proposals.map(p => p.explanation).join('; ');
   return { approved: true, why: why ? `[user] ${why}` : `[agent] ${explanation}` };
 }
+
+export function autoApprove(proposed: ProposedChange): { approved: boolean; why: string } {
+  console.log(`[headless] auto-approved: ${proposed.filename}`);
+  return { approved: true, why: `[agent] ${proposed.explanation}` };
+}

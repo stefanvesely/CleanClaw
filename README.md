@@ -136,6 +136,22 @@ After a run, `plans/task01/` contains:
 - **per-file** — all changes to the same file shown together, one prompt per file. Recommended.
 - **per-step** — one prompt per task step regardless of files touched.
 
+## Headless / CI mode
+
+Run CleanClaw in a CI pipeline without any interactive prompts:
+
+```bash
+cleanclaw run "your task description" --headless
+```
+
+In headless mode:
+
+- All proposed changes are auto-approved — no stdin required.
+- Any scope violation (`halt-confirm` decision) prints to stderr and exits with code `1`, failing the pipeline.
+- Resume prompts and plan-review confirmations are skipped.
+
+> **Warning:** Headless mode applies every agent-proposed change without human review. Only use it for low-risk automated tasks (doc generation, formatting, test scaffolding) where the change surface is well-understood. Never run headless on production branches without a review gate downstream.
+
 ## Supported stacks
 
 - **.NET / C#** — idiomatic C#, nullable reference types, async/await
