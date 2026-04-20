@@ -1,43 +1,49 @@
 # CleanClaw
 
-CleanClaw is an AI-assisted development workflow that runs as a mode of [NemoClaw](https://github.com/NVIDIA/NemoClaw). It adds a human approval step to every AI-proposed code change, enforces a project root boundary so the AI can only touch files you declared in scope, and maintains a permanent audit trail of every decision.
+CleanClaw is an AI-assisted development workflow. It adds a human approval step to every AI-proposed code change, enforces a project root boundary so the AI can only touch files you declared in scope, and maintains a permanent audit trail of every decision.
 
-Built on NemoClaw's infrastructure: credential management, inference routing (NVIDIA NIM / vLLM / Anthropic / OpenAI), openshell sandbox, and blueprint profiles.
+Inference routing supports Anthropic, OpenAI, NVIDIA NIM, and vLLM. ProjectMap builds a semantic index of your codebase — local embedding works out of the box with no API key required.
 
 ---
 
 ## How it works
 
-1. `nemoclaw create new dev task` — describe what you want to build or fix
-2. CleanClaw scans your repo, finds relevant files, and asks four questions to scope the task
-3. A planning agent generates a step-by-step plan — you approve before execution starts
-4. Each proposed change is shown as a Before/After diff — you approve, reject, or explain
-5. The scope guard checks every change against the approved plan. The project root guard hard-blocks any write outside your declared project directory
-6. Every decision is logged to `plans/task{N}/task{N}A_log.md` — a permanent audit trail
+1. `cleanclaw init` — declare your project root and configure inference. ProjectMap index is built automatically (embedding provider auto-detected; local model used if no API key is set)
+2. `cleanclaw run "your task"` — describe what you want to build or fix
+3. CleanClaw scans your repo, finds relevant files, and asks four questions to scope the task
+4. A planning agent generates a step-by-step plan — you approve before execution starts
+5. Each proposed change is shown as a Before/After diff — you approve, reject, or explain
+6. The scope guard checks every change against the approved plan. The project root guard hard-blocks any write outside your declared project directory
+7. Every decision is logged to `plans/task{N}/task{N}A_log.md` — a permanent audit trail
 
 ---
 
 ## Prerequisites
 
 - Node.js 22+
-- An Anthropic or OpenAI API key (or NVIDIA NIM endpoint)
-- [NemoClaw](https://github.com/NVIDIA/NemoClaw) installed
+- An Anthropic or OpenAI API key — or nothing, if you use the built-in local embedding model
 
 ## Install
 
 ```bash
 git clone https://github.com/stefanvesely/CleanClaw.git
 cd CleanClaw
-npm install --ignore-scripts
+npm install -g .
 ```
 
 ## Usage
 
 ```bash
-nemoclaw create new dev task
+# Set up a project (run once per repo)
+cleanclaw init
+
+# Start a task
+cleanclaw run "your task description"
 ```
 
-On first run you will be asked to declare your project root. CleanClaw will not write outside that directory under any circumstances.
+`cleanclaw init` walks you through declaring your project root, choosing your inference provider, and optionally configuring the ProjectMap embedding provider. If you skip the embedding provider prompt, local embedding via `all-MiniLM-L6-v2` is used automatically — no API key required.
+
+CleanClaw will not write outside the declared project root under any circumstances.
 
 ## Config reference (`cleanclaw.config.json`)
 
@@ -63,31 +69,24 @@ ProjectMap builds a persistent semantic index of your codebase so CleanClaw can 
 
 ### Setup
 
-Install Python dependencies once:
+No Python required. Run `cleanclaw init` — it will ask whether to enable embeddings and offer to build the index immediately.
 
-```bash
-pip install -r cleanclaw/projectmap/requirements.txt
-```
-
-Add an `embeddings` block to `cleanclaw.config.json`:
+To enable embeddings manually, add an `embeddings` block to `cleanclaw.config.json`:
 
 ```json
 "embeddings": {
   "provider": "openai",
-  "model": "text-embedding-3-small",
-  "apiKey": "sk-..."
+  "model": "text-embedding-3-small"
 }
 ```
 
-Supported providers: `openai`, `vllm-local`, `ollama-local`, `http` (any OpenAI-shaped endpoint).
+Supported providers: `openai`, `vllm-local`, `ollama-local`, `http` (any OpenAI-shaped endpoint), and `local` (built-in `all-MiniLM-L6-v2` via `@xenova/transformers` — no API key needed).
+
+If no `embeddings` block is present, the local model is used automatically.
 
 ### Build the index
 
-```bash
-python cleanclaw/projectmap/build.py --root /path/to/your/project
-```
-
-Or run `cleanclaw init` — it will offer to build the index immediately after setup.
+`cleanclaw init` offers to build it on first run. To rebuild manually, there is currently no standalone CLI command — re-run `cleanclaw init` and choose to rebuild when prompted.
 
 ### What gets indexed
 
@@ -108,11 +107,7 @@ Layer classification uses path-segment heuristics and is overridable via `layerM
 cleanclaw projects        # list all registered projects
 ```
 
-The index updates automatically after each applied change when `embeddings` is configured. To manually update a single file:
-
-```bash
-python cleanclaw/projectmap/update.py --root /path/to/project --file /path/to/changed/file.ts
-```
+The index updates automatically after each applied change when `embeddings` is configured. Manual single-file updates are handled internally by the pipeline — there is no separate CLI command for incremental updates.
 
 ## Safety layers
 
