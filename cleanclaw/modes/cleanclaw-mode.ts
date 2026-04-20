@@ -24,10 +24,14 @@ import type { CleanClawConfig } from "../config/config-schema.js";
 
 // Known providers — NemoClaw sets the corresponding env var from its credential store
 const PROVIDER_CREDENTIAL_ENV: Record<string, string> = {
-  anthropic: "ANTHROPIC_API_KEY",
-  openai: "OPENAI_API_KEY",
+  "anthropic-prod": "ANTHROPIC_API_KEY",
+  "openai-api": "OPENAI_API_KEY",
+  "nvidia-nim": "OPENAI_API_KEY",
+  "nvidia-prod": "OPENAI_API_KEY",
   "vllm-local": "OPENAI_API_KEY",
-  "ollama-local": "OLLAMA_API_KEY",
+  "ollama-local": "OPENAI_API_KEY",
+  "compatible-endpoint": "COMPATIBLE_API_KEY",
+  "compatible-anthropic-endpoint": "COMPATIBLE_ANTHROPIC_API_KEY",
 };
 
 export interface ModeRuntime {
@@ -45,7 +49,7 @@ export class CleanClawMode implements ModeRuntime {
     if (!credentialEnv) {
       throw new Error(
         `Unknown provider "${config.provider}". ` +
-          `Check the "provider" field in cleanclaw.config.json. ` +
+          `Check the "provider" field in cleanclaw.config.json or run: cleanclaw init. ` +
           `Known providers: ${Object.keys(PROVIDER_CREDENTIAL_ENV).join(", ")}`,
       );
     }
@@ -61,7 +65,7 @@ export class CleanClawMode implements ModeRuntime {
 
     // Config guard — inject env key into config if not already set
     let resolvedConfig: CleanClawConfig = config;
-    if (config.provider === "anthropic" && !config.anthropic?.apiKey) {
+    if (config.provider === "anthropic-prod" && !config.anthropic?.apiKey) {
       resolvedConfig = {
         ...config,
         anthropic: {
