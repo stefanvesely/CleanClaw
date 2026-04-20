@@ -31,11 +31,12 @@ const PROVIDER_CREDENTIAL_ENV: Record<string, string> = {
 };
 
 export interface ModeRuntime {
-  run(taskDescription: string): Promise<void>;
+  run(input?: string): Promise<void>;
 }
 
 export class CleanClawMode implements ModeRuntime {
-  async run(taskDescription: string): Promise<void> {
+  async run(input?: string): Promise<void> {
+    const taskDescription = input ?? "";
     const config: CleanClawConfig = getConfig();
 
     // Inference guard — reject unknown providers before touching the pipeline
