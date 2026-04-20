@@ -1,5 +1,18 @@
 # CleanClaw
 
+> **Status: Initial setup ready for testing.**
+> The core workflow, provider parity, and Python-free install are complete.
+> The following steps are still needed to fully align with NemoClaw:
+>
+> - **Credentials** — CleanClaw reads env vars only; needs fallback to NemoClaw's `~/.nemoclaw/credentials.json` registry, and `createDevTask()` must export credentials before calling CleanClaw
+> - **Logging** — Replace `console.log` with a structured logger that integrates with OpenClaw's log aggregator when running inside NemoClaw
+> - **Secret scanner** — Scan plan/log files for secrets before writing to disk
+> - **Gateway routing** — Route inference through `inference.local/v1` when running inside NemoClaw context (detected via `NEMOCLAW_SESSION_ID`)
+> - **Session context** — Pass blueprint profile and session/auth context from NemoClaw to CleanClaw
+> - **Sandbox (Phase 8)** — Move CleanClaw into the OpenShell container and enable Landlock enforcement
+
+---
+
 CleanClaw is an AI-assisted development workflow. It adds a human approval step to every AI-proposed code change, enforces a project root boundary so the AI can only touch files you declared in scope, and maintains a permanent audit trail of every decision.
 
 Inference routing supports Anthropic, OpenAI, NVIDIA NIM, and vLLM. ProjectMap builds a semantic index of your codebase — local embedding works out of the box with no API key required.
