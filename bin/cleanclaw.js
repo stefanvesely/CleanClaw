@@ -1,4 +1,4 @@
-#!/usr/bin/env -S npx tsx
+#!/usr/bin/env node
 import { program } from "commander";
 
 program
@@ -10,7 +10,7 @@ program
   .command("init")
   .description("Initialise a project")
   .action(async () => {
-    const { runSetupWizard } = await import("../cleanclaw/cli/setup-wizard.js");
+    const { runSetupWizard } = await import("../dist/cleanclaw/cli/setup-wizard.js");
     await runSetupWizard();
   });
 
@@ -19,7 +19,7 @@ program
   .description("Run a task")
   .option("--headless", "Run without interactive prompts — scope violations exit with code 1")
   .action(async (task, options) => {
-    const { runWorkflow } = await import("../cleanclaw/cli/run-workflow.js");
+    const { runWorkflow } = await import("../dist/cleanclaw/cli/run-workflow.js");
     await runWorkflow(task, options.headless ?? false);
   });
 
@@ -27,7 +27,7 @@ program
   .command("switch <project>")
   .description("Switch active project")
   .action(async (project) => {
-    const { switchProject } = await import("../cleanclaw/cli/switch-project.js");
+    const { switchProject } = await import("../dist/cleanclaw/cli/switch-project.js");
     await switchProject(project);
   });
 
@@ -35,7 +35,7 @@ program
   .command("status")
   .description("Show current project status")
   .action(async () => {
-    const { showStatus } = await import("../cleanclaw/cli/show-status.js");
+    const { showStatus } = await import("../dist/cleanclaw/cli/show-status.js");
     await showStatus();
   });
 
@@ -43,7 +43,7 @@ program
   .command("projects")
   .description("List registered projects")
   .action(async () => {
-    const { listProjects } = await import("../cleanclaw/projectmap/list-projects.js");
+    const { listProjects } = await import("../dist/cleanclaw/projectmap/list-projects.js");
     listProjects(process.cwd());
   });
 
@@ -51,7 +51,7 @@ program
   .command("undo <taskId>")
   .description("Roll back all changes from a completed task")
   .action(async (taskId) => {
-    const { undoTask } = await import("../cleanclaw/cli/undo.js");
+    const { undoTask } = await import("../dist/cleanclaw/cli/undo.js");
     await undoTask(taskId);
   });
 

@@ -48,6 +48,23 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
   const provider = (globalConfig.provider as string) || 'anthropic';
   const approvalGranularity = (globalConfig.approvalGranularity as string) || 'per-file';
 
+  const enableEmbeddingsRaw = await ask(rl, 'Enable ProjectMap embeddings? (y/n) [n]: ');
+  const enableEmbeddings = enableEmbeddingsRaw.toLowerCase() === 'y';
+
+  let embeddingsConfig: Record<string, unknown> | undefined;
+  if (enableEmbeddings) {
+    const embProviderRaw = await ask(rl, 'Embeddings provider (openai/vllm-local/ollama-local/http) [openai]: ');
+    const embProvider = embProviderRaw || 'openai';
+
+    const embModel = await ask(rl, 'Embeddings model [text-embedding-3-small]: ');
+    const embBaseUrl = await ask(rl, 'Base URL (leave blank for provider default): ');
+
+    embeddingsConfig = { provider: embProvider, model: embModel || 'text-embedding-3-small' };
+    if (embBaseUrl) {
+      embeddingsConfig.baseUrl = embBaseUrl;
+    }
+  }
+
   const config: Record<string, unknown> = {
     projectName,
     provider,
@@ -55,6 +72,7 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
     stack,
     plansDir: './plans',
     logFormat: 'markdown',
+    ...(embeddingsConfig ? { embeddings: embeddingsConfig } : {}),
   };
 
   fs.writeFileSync('cleanclaw.config.json', JSON.stringify(config, null, 2), 'utf-8');
@@ -67,6 +85,8 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
     plansDir: './plans',
     lastUpdated: new Date().toISOString(),
     iterationCount: 0,
+    resumable: false,
+    lastCompletedStep: 0,
   }, process.cwd());
 
   appendToRegistry(process.cwd(), projectName, process.cwd());
@@ -76,9 +96,8 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
   if (config.embeddings) {
     const buildNow = await ask(rl, '\nBuild ProjectMap index now? (recommended) [y/n]: ');
     if (buildNow.toLowerCase() === 'y') {
-      const { execFileSync } = await import('child_process');
-      const scriptPath = new URL('../projectmap/build.py', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
-      execFileSync('python', [scriptPath, '--root', process.cwd(), '--config', 'cleanclaw.config.json'], { stdio: 'inherit', cwd: path.dirname(scriptPath) });
+      const { build } = await import('../projectmap/build.js');
+      await build(process.cwd(), config as unknown as import('../config/config-schema.js').CleanClawConfig);
     }
   }
 

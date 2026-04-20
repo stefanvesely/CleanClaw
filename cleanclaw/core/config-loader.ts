@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import type { CleanClawConfig } from '../config/config-schema.js';
-import defaultConfig from "../config/default-config.json";
+import defaultConfig from "../config/default-config.json" with { type: "json" };
 import { mergeConfigs } from './config-merger.js';
 
 let globalConfig: Partial<CleanClawConfig> = {};

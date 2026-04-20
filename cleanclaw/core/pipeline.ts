@@ -365,10 +365,10 @@ export async function runPipeline(
   let enrichedDescription = taskDescription;
   if (config.projectMap?.enabled) {
     const activeRoot = loadActiveProject() ?? process.cwd();
-    const mapResults = queryProjectMap(taskDescription, activeRoot, config);
+    const mapResults = await queryProjectMap(taskDescription, activeRoot, config);
     if (mapResults.length > 0) {
       const context = mapResults
-        .map(r => r.method_name
+        .map(r => 'method_name' in r
           ? `- ${r.method_name}(${r.signature ?? ''}) in ${r.full_path ?? r.filename}`
           : `- ${r.filename} (${r.purpose ?? r.related_layer ?? ''})`)
         .join('\n');

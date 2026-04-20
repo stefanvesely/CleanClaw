@@ -2,8 +2,10 @@
   "extends": "./tsconfig.src.json",
   "compilerOptions": {
     "rootDir": ".",
+    "outDir": "cleanclaw/dist",
     "module": "NodeNext",
     "moduleResolution": "NodeNext"
   },
-  "include": ["cleanclaw/**/*.ts"]
+  "include": ["cleanclaw/**/*.ts"],
+  "exclude": ["cleanclaw/dist"]
 }

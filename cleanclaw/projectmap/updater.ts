@@ -1,21 +1,11 @@
-import { execFileSync } from 'child_process';
-import path from 'path';
 import type { CleanClawConfig } from '../config/config-schema.js';
+import { update } from './updater-worker.js';
 
-const SCRIPT = path.resolve(
-  new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1'),
-  '..', 'update.py'
-);
-
-export function triggerProjectMapUpdate(filePath: string, projectRoot: string, config: CleanClawConfig): void {
+export async function triggerProjectMapUpdate(filePath: string, projectRoot: string, config: CleanClawConfig): Promise<void> {
   if (!config.embeddings) return;
 
-  const configPath = path.join(projectRoot, 'cleanclaw.config.json');
   try {
-    execFileSync('python', [SCRIPT, '--root', projectRoot, '--file', filePath, '--config', configPath], {
-      stdio: 'inherit',
-      cwd: path.dirname(SCRIPT),
-    });
+    await update(projectRoot, filePath, config);
   } catch {
     // Non-fatal — log and continue. A failed index update never blocks the pipeline.
     process.stderr.write(`[ProjectMap] Update failed for ${filePath} — index may be stale.\n`);
