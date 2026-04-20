@@ -117,6 +117,10 @@ if [[ "${BASH_SOURCE[0]:-}" == "$0" ]] || { [[ -z "${BASH_SOURCE[0]:-}" ]] && { 
   if has_payload_marker "$LOCAL_PAYLOAD"; then
     main "$@"
   else
-    bootstrap_main "$@"
+    if [[ -f "${SCRIPT_DIR}/package.json" ]]; then
+      npm install -g .
+    else
+      bootstrap_main "$@"
+    fi
   fi
 fi
