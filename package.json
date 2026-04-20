@@ -1,7 +1,7 @@
 {
-  "name": "nemoclaw",
+  "name": "cleanclaw",
   "version": "1.0.0-alpha.3",
-  "description": "NemoClaw — run OpenClaw inside OpenShell with NVIDIA inference",
+  "description": "CleanClaw — OpenClaw agent runner with configurable inference backends",
   "license": "Apache-2.0",
   "bin": {
     "nemoclaw": "./bin/nemoclaw.js",
@@ -15,6 +15,7 @@
     "format:check": "prettier --check 'bin/**/*.js' 'scripts/**/*.ts' 'test/**/*.{js,ts}'",
     "typecheck": "tsc -p jsconfig.json",
     "build:cli": "tsc -p tsconfig.src.json",
+    "build:cleanclaw": "tsc -p tsconfig.cleanclaw.json",
     "typecheck:cli": "tsc -p tsconfig.cli.json",
     "validate:configs": "tsx scripts/validate-configs.ts",
     "migrate:js-to-ts": "tsx scripts/migrate-js-to-ts.ts",
@@ -23,13 +24,14 @@
     "ts-migration:guard": "tsx scripts/check-legacy-migrated-paths.ts",
     "bump:version": "tsx scripts/bump-version.ts",
     "prepare": "if command -v tsc >/dev/null 2>&1 || [ -x node_modules/.bin/tsc ]; then npm run build:cli; fi && npm install --omit=dev --ignore-scripts 2>/dev/null || true && if [ -d .git ]; then if command -v prek >/dev/null 2>&1; then prek install; else echo \"Skipping git hook setup (prek not installed)\"; fi; fi",
-    "prepublishOnly": "git describe --tags --match 'v*' | sed 's/^v//' > .version && test -s .version && cd nemoclaw && env -u npm_config_global -u npm_config_prefix -u npm_config_omit npm install --ignore-scripts && ./node_modules/.bin/tsc"
+    "prepublishOnly": "git describe --tags --match 'v*' | sed 's/^v//' > .version && test -s .version && npm run build:cleanclaw && cd nemoclaw && env -u npm_config_global -u npm_config_prefix -u npm_config_omit npm install --ignore-scripts && ./node_modules/.bin/tsc"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.89.0",
     "commander": "^14.0.3",
     "js-yaml": "^4.1.1",
     "openai": "^6.34.0",
+    "@xenova/transformers": "^2",
     "p-retry": "^4.6.2",
     "yaml": "^2.8.3"
   },
