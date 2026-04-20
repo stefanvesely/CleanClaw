@@ -4,7 +4,17 @@ export interface CustomAgentConfig {
 }
 
 export interface CleanClawConfig {
-  provider: 'anthropic' | 'openai';
+  provider:
+    | 'anthropic'
+    | 'openai'
+    | 'nvidia-nim'
+    | 'nvidia-prod'
+    | 'anthropic-prod'
+    | 'openai-api'
+    | 'compatible-anthropic-endpoint'
+    | 'compatible-endpoint'
+    | 'vllm-local'
+    | 'ollama-local';
   anthropic?: {
     apiKey: string;
     model: string;
@@ -12,6 +22,7 @@ export interface CleanClawConfig {
   openai?: {
     apiKey: string;
     model: string;
+    baseURL?: string;
   };
   approvalGranularity: 'per-step' | 'per-file' | 'per-change';
   logFormat: 'markdown' | 'json';

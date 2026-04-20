@@ -15,10 +15,48 @@ export function resolveBridge(config: CleanClawConfig): Bridge {
     const model = config.openai?.model || "gpt-4o";
     return new OpenAiBridge(apiKey, model);
   }
+  if (config.provider === "openai-api") {
+    const apiKey = config.openai?.apiKey || "";
+    const model = config.openai?.model || "gpt-5.4";
+    return new OpenAiBridge(apiKey, model);
+  }
   if (config.provider === "anthropic") {
     const apiKey = config.anthropic?.apiKey || "";
     const model = config.anthropic?.model || "claude-sonnet-4-6";
     return new AnthropicBridge(apiKey, model);
+  }
+  if (config.provider === "anthropic-prod") {
+    const apiKey = config.anthropic?.apiKey || "";
+    const model = config.anthropic?.model || "claude-sonnet-4-6";
+    return new AnthropicBridge(apiKey, model);
+  }
+  if (config.provider === "nvidia-nim" || config.provider === "nvidia-prod") {
+    const apiKey = config.openai?.apiKey || "";
+    const model = config.openai?.model || "nvidia/nemotron-3-super-120b-a12b";
+    return new OpenAiBridge(apiKey, model, "https://inference.local/v1");
+  }
+  if (config.provider === "compatible-anthropic-endpoint") {
+    const apiKey = config.anthropic?.apiKey || "";
+    const model = config.anthropic?.model || "custom-anthropic-model";
+    return new AnthropicBridge(apiKey, model);
+  }
+  if (config.provider === "compatible-endpoint") {
+    const apiKey = config.openai?.apiKey || "";
+    const model = config.openai?.model || "custom-model";
+    const baseURL = config.openai?.baseURL;
+    return new OpenAiBridge(apiKey, model, baseURL);
+  }
+  if (config.provider === "vllm-local") {
+    const apiKey = config.openai?.apiKey || "";
+    const model = config.openai?.model || "vllm-local";
+    const baseURL = config.openai?.baseURL || "http://localhost:8000/v1";
+    return new OpenAiBridge(apiKey, model, baseURL);
+  }
+  if (config.provider === "ollama-local") {
+    const apiKey = config.openai?.apiKey || "";
+    const model = config.openai?.model || "llama3";
+    const baseURL = config.openai?.baseURL || "http://localhost:11434/v1";
+    return new OpenAiBridge(apiKey, model, baseURL);
   }
   throw new Error(`Unsupported provider: ${config.provider}`);
 }

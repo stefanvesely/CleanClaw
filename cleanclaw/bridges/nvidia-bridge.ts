@@ -1,12 +1,17 @@
 import OpenAI, { APIError } from 'openai';
 import type { Bridge, BridgeMessage, BridgeResponse } from './anthropic-bridge.js';
 
-export class OpenAiBridge implements Bridge {
+const NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1';
+
+export class NvidiaBridge implements Bridge {
   private client: OpenAI;
   private model: string;
 
-  constructor(apiKey: string, model: string, baseURL?: string) {
-    this.client = new OpenAI({ apiKey, ...(baseURL ? { baseURL } : {}) });
+  constructor(apiKey: string, model: string, baseUrl?: string) {
+    this.client = new OpenAI({
+      apiKey,
+      baseURL: baseUrl ?? NVIDIA_BASE_URL,
+    });
     this.model = model;
   }
 
@@ -23,9 +28,9 @@ export class OpenAiBridge implements Bridge {
       });
     } catch (err) {
       if (err instanceof APIError) {
-        if (err.status === 401) throw new Error('OpenAI authentication failed. Check your OPENAI_API_KEY.');
-        if (err.status === 429) throw new Error('OpenAI rate limit hit. Wait a moment and try again.');
-        throw new Error(`OpenAI API error: ${err.status} ${err.message}`);
+        if (err.status === 401) throw new Error('NVIDIA NIM authentication failed. Check your NVIDIA_API_KEY.');
+        if (err.status === 429) throw new Error('NVIDIA NIM rate limit hit. Wait a moment and try again.');
+        throw new Error(`NVIDIA NIM API error: ${err.status} ${err.message}`);
       }
       throw err;
     }

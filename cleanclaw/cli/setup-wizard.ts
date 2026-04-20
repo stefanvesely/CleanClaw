@@ -15,17 +15,17 @@ async function runGlobalConfigWizard(rl: readline.Interface): Promise<void> {
   console.log('\nCleanClaw — First Run Setup\n');
   console.log('No global config found. Let\'s set up your defaults.\n');
 
-  const providerRaw = await ask(rl, 'Default provider (anthropic/openai) [anthropic]: ');
-  const provider = providerRaw || 'anthropic';
-
-  const apiKey = await ask(rl, 'API key (or press Enter if using env var): ');
+  const providerRaw = await ask(rl, 'Default provider (nvidia-nim/ollama) [nvidia-nim]: ');
+  const provider = providerRaw || 'nvidia-nim';
 
   const granularityRaw = await ask(rl, 'Default approval granularity (per-change/per-file/per-step) [per-file]: ');
   const granularity = granularityRaw || 'per-file';
 
   const globalConfig: Record<string, unknown> = { provider, approvalGranularity: granularity };
-  if (apiKey) {
-    globalConfig[provider] = { apiKey };
+
+  if (provider === 'nvidia-nim') {
+    const baseUrlRaw = await ask(rl, 'NVIDIA NIM base URL [https://integrate.api.nvidia.com/v1]: ');
+    globalConfig['nvidia-nim'] = { baseUrl: baseUrlRaw || 'https://integrate.api.nvidia.com/v1' };
   }
 
   fs.mkdirSync(path.dirname(GLOBAL_CONFIG_PATH), { recursive: true });
