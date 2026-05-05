@@ -90,25 +90,24 @@ import {
   type DispatchResult,
 } from "./lib/legacy-oclif-dispatch";
 
-const GLOBAL_COMMANDS = new Set([
-  "onboard",
-  "list",
-  "deploy",
-  "setup",
-  "setup-spark",
-  "start",
-  "stop",
-  "status",
-  "debug",
-  "uninstall",
-  "credentials",
-  "create",
-  "help",
-  "--help",
-  "-h",
-  "--version",
-  "-v",
-]);
+// ── Global commands (derived from command registry) ──────────────
+
+const GLOBAL_COMMANDS = globalCommandTokens();
+
+type SpawnLikeResult = {
+  status: number | null;
+  stdout?: string;
+  stderr?: string;
+  output?: string;
+  error?: Error;
+  signal?: NodeJS.Signals | null;
+};
+
+type RecoveredSandboxMetadata = Partial<
+  Pick<SandboxEntry, "model" | "provider" | "gpuEnabled" | "policies" | "nimContainer" | "agent">
+> & {
+  policyPresets?: string[] | null;
+};
 
 const NEMOCLAW_GATEWAY_NAME = "nemoclaw";
 const DASHBOARD_FORWARD_PORT = String(DASHBOARD_PORT);
@@ -262,8 +261,6 @@ async function createDevTask(): Promise<void> {
       resolve(answer.trim());
     }),
   );
-  // Path is computed to prevent TypeScript (tsconfig.src.json) from statically
-  // tracing this import into the cleanclaw/ ESM layer during build:cli.
   const workflowPath = ["../cleanclaw/cli", "run-workflow.js"].join("/");
   const { runWorkflow } = await import(workflowPath);
   await runWorkflow(taskDescription);
@@ -287,65 +284,15 @@ async function main(argv: string[] = process.argv.slice(2)): Promise<void> {
     return;
   }
 
+  // CleanClaw: create new dev task
+  if (cmd === "create" && args[0] === "new" && args[1] === "dev" && args[2] === "task") {
+    await createDevTask();
+    return;
+  }
+
   // Global commands
   if (GLOBAL_COMMANDS.has(cmd)) {
-    switch (cmd) {
-      case "onboard":
-        await onboard(args);
-        break;
-      case "setup":
-        await setup(args);
-        break;
-      case "setup-spark":
-        await setupSpark(args);
-        break;
-      case "deploy":
-        await deploy(args[0]);
-        break;
-      case "start":
-        await start();
-        break;
-      case "stop":
-        stop();
-        break;
-      case "status":
-        showStatus();
-        break;
-      case "debug":
-        debug(args);
-        break;
-      case "uninstall":
-        uninstall(args);
-        break;
-      case "credentials":
-        await credentialsCommand(args);
-        break;
-      case "create": {
-        const subArgs = args;
-        if (
-          subArgs[0] === "new" &&
-          subArgs[1] === "dev" &&
-          subArgs[2] === "task"
-        ) {
-          await createDevTask();
-        } else {
-          console.error("  Usage: nemoclaw create new dev task");
-          process.exit(1);
-        }
-        break;
-      }
-      case "list":
-        await listSandboxes();
-        break;
-      case "--version":
-      case "-v": {
-        console.log(`nemoclaw v${getVersion()}`);
-        break;
-      }
-      default:
-        help();
-        break;
-    }
+    await runDispatchResult(resolveGlobalOclifDispatch(cmd, args));
     return;
   }
 
