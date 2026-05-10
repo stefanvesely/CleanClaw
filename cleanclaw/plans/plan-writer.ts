@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { redactPlanSecrets } from './secret-redactor.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -96,6 +97,7 @@ export function parsePlanSteps(planMarkdown: string): PlanStep[] {
 
 export function writePlan(taskId: string, variant: string, markdown: string, plansDir: string, iterationNumber?: number): string {
   validatePlanFormat(markdown);
+  const safeMarkdown = redactPlanSecrets(markdown);
 
   const dir = path.join(plansDir, `task${taskId}`);
   const iterSuffix = iterationNumber !== undefined ? `_iter${iterationNumber}` : '';
@@ -110,7 +112,7 @@ export function writePlan(taskId: string, variant: string, markdown: string, pla
   }
 
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(filepath, markdown, 'utf-8');
+  fs.writeFileSync(filepath, safeMarkdown, 'utf-8');
 
   return filepath;
 }

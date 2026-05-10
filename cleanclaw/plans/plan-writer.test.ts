@@ -37,4 +37,23 @@ describe('writePlan', () => {
     writePlan('02', 'A', validContent, tmpDir);
     expect(fs.existsSync(path.join(tmpDir, 'task02'))).toBe(true);
   });
+
+  it('redacts secrets before writing a plan file', () => {
+    const content = [
+      '## Objective',
+      'Use OPENAI_API_KEY=sk-123456789012345678901234 safely.',
+      '',
+      '## Steps',
+      '1. Add a function â€” src/utils.ts',
+      '',
+      '## Scope Boundary',
+      'Only src/utils.ts and nvapi-1234567890abcdef.',
+    ].join('\n');
+
+    writePlan('03', 'A', content, tmpDir);
+    const written = fs.readFileSync(path.join(tmpDir, 'task03', 'task03A_plan.md'), 'utf-8');
+    expect(written).toContain('<REDACTED>');
+    expect(written).not.toContain('sk-123456789012345678901234');
+    expect(written).not.toContain('nvapi-1234567890abcdef');
+  });
 });

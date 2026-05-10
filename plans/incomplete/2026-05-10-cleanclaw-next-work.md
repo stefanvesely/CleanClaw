@@ -23,9 +23,10 @@ Source: Review of `README.md`, April Claude plan files, changelog entries, and c
   - Added provider-to-env credential resolution with env-first and legacy `~/.nemoclaw/credentials.json` fallback.
   - `cleanclaw/core/config-loader.ts` no longer rejects expanded provider ids during module load.
   - `CleanClawMode` and `runWorkflow()` now inject resolved credentials before the pipeline runs.
-- [ ] Add secret scanning/redaction before plan and log writes.
-  - `cleanclaw/plans/log-writer.ts` writes content directly.
-  - Use existing NemoClaw secret/redaction patterns where practical.
+- [x] Add secret scanning/redaction before plan and log writes.
+  - Completed in `plans/complete/2026-05-10-cleanclaw-secret-redaction.md`.
+  - `cleanclaw/plans/secret-redactor.ts` uses NemoClaw's canonical secret patterns plus credential assignment and bearer-token guards.
+  - Plan writes, Markdown/JSON log entries, session headers, and rollback metadata are redacted before persistence.
 - [ ] Replace direct CleanClaw console logging with an injectable/structured logger.
   - The pipeline and CLI still use many `console.log()` calls.
   - CleanClaw should integrate with NemoClaw/OpenClaw logging when run under NemoClaw.

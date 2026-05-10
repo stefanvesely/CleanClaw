@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import type { ProposedChange } from '../core/language-agent.js';
 import type { DiffCapture } from './diff-capture.js';
+import { redactLineContent, redactPlanSecrets } from './secret-redactor.js';
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -14,15 +15,15 @@ function formatLogEntryMarkdown(
 ): string {
   const beforeContent = before.isNewFile
     ? '(new file)'
-    : before.lines.map(l => `  ${l.lineNumber}: ${l.content}`).join('\n');
+    : before.lines.map(l => `  ${l.lineNumber}: ${redactPlanSecrets(l.content)}`).join('\n');
 
   const afterContent = proposed.afterLines
-    .map(l => `  ${l.lineNumber}: ${l.content}`)
+    .map(l => `  ${l.lineNumber}: ${redactPlanSecrets(l.content)}`)
     .join('\n');
 
   return [
     `## Change ${changeNumber}`,
-    `**File:** ${proposed.filename}${before.isNewFile ? ' *(new file)*' : ''}`,
+    `**File:** ${redactPlanSecrets(proposed.filename)}${before.isNewFile ? ' *(new file)*' : ''}`,
     '',
     '**Before:**',
     '```',
@@ -34,8 +35,8 @@ function formatLogEntryMarkdown(
     afterContent,
     '```',
     '',
-    `**Why:** ${why}`,
-    `**Model:** ${model}`,
+    `**Why:** ${redactPlanSecrets(why)}`,
+    `**Model:** ${redactPlanSecrets(model)}`,
     '',
     '---',
     '',
@@ -51,13 +52,13 @@ function formatLogEntryJson(
 ): string {
   const entry = {
     changeNumber,
-    filename: proposed.filename,
+    filename: redactPlanSecrets(proposed.filename),
     isNewFile: before.isNewFile,
-    before: before.lines,
-    after: proposed.afterLines,
-    explanation: proposed.explanation,
-    why,
-    model,
+    before: before.lines.map(redactLineContent),
+    after: proposed.afterLines.map(redactLineContent),
+    explanation: redactPlanSecrets(proposed.explanation),
+    why: redactPlanSecrets(why),
+    model: redactPlanSecrets(model),
     timestamp: new Date().toISOString(),
   };
   return JSON.stringify(entry) + '\n';
@@ -108,21 +109,21 @@ export function appendSessionHeader(
     `# Session — ${new Date().toISOString()}`,
     '',
     '## Task',
-    taskDescription,
+    redactPlanSecrets(taskDescription),
     '',
     '## Clarification',
-    `- Why: ${answers.why}`,
-    `- Files specified: ${answers.files}`,
-    `- Acceptance criteria: ${answers.criteria}`,
-    `- Out of scope: ${answers.outOfScope}`,
+    `- Why: ${redactPlanSecrets(answers.why)}`,
+    `- Files specified: ${redactPlanSecrets(answers.files)}`,
+    `- Acceptance criteria: ${redactPlanSecrets(answers.criteria)}`,
+    `- Out of scope: ${redactPlanSecrets(answers.outOfScope)}`,
     '',
     '## File Scan',
     `Scanned: ${scannedFiles.length} files`,
     'Confirmed:',
-    confirmedList,
+    redactPlanSecrets(confirmedList),
     '',
     '## Plan',
-    planContent,
+    redactPlanSecrets(planContent),
     '',
     '---',
     '',
@@ -148,13 +149,13 @@ export function appendRollbackEntry(
   const timestamp = new Date().toISOString();
 
   const entry = logFormat === 'json'
-    ? JSON.stringify({ type: 'rollback', taskId, restoredFiles, timestamp }) + '\n'
+    ? JSON.stringify({ type: 'rollback', taskId, restoredFiles: restoredFiles.map(redactPlanSecrets), timestamp }) + '\n'
     : [
         `## Rollback`,
         `**Task:** task${taskId}${variant}`,
         `**Timestamp:** ${timestamp}`,
         `**Restored files:**`,
-        restoredFiles.map(f => `- ${f}`).join('\n'),
+        restoredFiles.map(f => `- ${redactPlanSecrets(f)}`).join('\n'),
         '',
         '---',
         '',
