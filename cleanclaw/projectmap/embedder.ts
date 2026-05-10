@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+﻿import OpenAI from 'openai';
 import type { CleanClawConfig } from '../config/config-schema.js';
 
 export interface EmbeddingProvider {
@@ -91,8 +91,9 @@ export class LocalEmbeddingProvider implements EmbeddingProvider {
 
 export async function getProvider(config: CleanClawConfig): Promise<EmbeddingProvider> {
   const emb = config.embeddings ?? {};
-  const provider = emb.provider ?? 'openai';
-  const model = emb.model ?? DEFAULT_MODELS[provider] ?? 'text-embedding-3-small';
+  const provider = emb.provider ?? 'local';
+  const defaultModel = provider === 'local' ? LOCAL_MODEL : DEFAULT_MODELS[provider] ?? 'text-embedding-3-small';
+  const model = emb.model ?? defaultModel;
   const apiKey = emb.apiKey ?? '';
 
   if (provider === 'local') {
@@ -113,3 +114,4 @@ export async function getProvider(config: CleanClawConfig): Promise<EmbeddingPro
     `Unknown embedding provider: ${JSON.stringify(provider)}. Supported: http, local, ollama-local, openai, vllm-local`
   );
 }
+

@@ -1,4 +1,4 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import readline from 'readline';
@@ -12,7 +12,7 @@ function ask(rl: readline.Interface, question: string): Promise<string> {
 }
 
 async function runGlobalConfigWizard(rl: readline.Interface): Promise<void> {
-  console.log('\nCleanClaw — First Run Setup\n');
+  console.log('\nCleanClaw â€” First Run Setup\n');
   console.log('No global config found. Let\'s set up your defaults.\n');
 
   const providerRaw = await ask(rl, 'Default provider (nvidia-nim/ollama) [nvidia-nim]: ');
@@ -34,7 +34,7 @@ async function runGlobalConfigWizard(rl: readline.Interface): Promise<void> {
 }
 
 async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
-  console.log('\nCleanClaw — Project Setup\n');
+  console.log('\nCleanClaw â€” Project Setup\n');
 
   let projectName = await ask(rl, 'Project name: ');
   while (!projectName) {
@@ -53,13 +53,14 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
 
   let embeddingsConfig: Record<string, unknown> | undefined;
   if (enableEmbeddings) {
-    const embProviderRaw = await ask(rl, 'Embeddings provider (openai/vllm-local/ollama-local/http) [openai]: ');
-    const embProvider = embProviderRaw || 'openai';
+    const embProviderRaw = await ask(rl, 'Embeddings provider (local/openai/vllm-local/ollama-local/http) [local]: ');
+    const embProvider = embProviderRaw || 'local';
 
-    const embModel = await ask(rl, 'Embeddings model [text-embedding-3-small]: ');
+    const defaultEmbeddingModel = embProvider === 'local' ? 'Xenova/all-MiniLM-L6-v2' : 'text-embedding-3-small';
+    const embModel = await ask(rl, Embeddings model []: );
     const embBaseUrl = await ask(rl, 'Base URL (leave blank for provider default): ');
 
-    embeddingsConfig = { provider: embProvider, model: embModel || 'text-embedding-3-small' };
+    embeddingsConfig = { provider: embProvider, model: embModel || defaultEmbeddingModel };
     if (embBaseUrl) {
       embeddingsConfig.baseUrl = embBaseUrl;
     }
@@ -122,3 +123,4 @@ export async function runSetupWizard(): Promise<void> {
 
   rl.close();
 }
+

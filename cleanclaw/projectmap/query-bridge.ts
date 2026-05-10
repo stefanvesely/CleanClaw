@@ -1,4 +1,4 @@
-import path from 'path';
+﻿import path from 'path';
 import type { CleanClawConfig } from '../config/config-schema.js';
 import { getProvider } from './embedder.js';
 import { queryTable } from './store.js';
@@ -13,7 +13,7 @@ export async function queryProjectMap(
   layers: string[] = ['backend', 'frontend', 'mediator'],
   topK = 10
 ): Promise<QueryResult[]> {
-  if (!config.projectMap?.enabled || !config.embeddings) return [];
+  if (!config.projectMap?.enabled) return [];
 
   const storeDir = path.join(projectRoot, '.cleanclaw', 'projectmap');
   const provider = await getProvider(config);
@@ -25,10 +25,11 @@ export async function queryProjectMap(
       const rows = queryTable(storeDir, layer, queryVector, topK);
       results.push(...rows);
     } catch {
-      // Non-fatal — missing index or embedding failure never blocks the pipeline
-      process.stderr.write(`[ProjectMap] Query failed for layer ${layer} — skipping.\n`);
+      // Non-fatal â€” missing index or embedding failure never blocks the pipeline
+      process.stderr.write(`[ProjectMap] Query failed for layer ${layer} â€” skipping.\n`);
     }
   }
 
   return results;
 }
+

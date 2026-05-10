@@ -1,9 +1,10 @@
-import readline from 'readline';
+﻿import readline from 'readline';
 import { getConfig } from '../core/config-loader.js';
 import { runPipeline, type WorkflowAnswers } from '../core/pipeline.js';
 import { loadState, saveState } from '../core/state-manager.js';
 import { scanRelevantFiles } from '../core/file-scanner.js';
 import { resolveBridge } from '../core/agent-router.js';
+import { resolveConfigCredential } from '../core/credential-resolver.js';
 import { suggestWorkflowAnswers, isOpenshellAvailable } from '../wizard/wizard-delegator.js';
 import { promptDeclareProjectRoot } from '../core/root-guard.js';
 import { loadActiveProject, saveActiveProject } from '../core/state-manager.js';
@@ -19,7 +20,11 @@ async function askWithSuggestion(rl: readline.Interface, question: string, sugge
 }
 
 export async function runWorkflow(taskDescription: string, headless = false): Promise<void> {
-  const config = getConfig();
+  const baseConfig = getConfig();
+  const { config, credentialEnv, credentialValue } = resolveConfigCredential(baseConfig);
+  if (!credentialValue) {
+    throw new Error(`Missing credential for provider "${baseConfig.provider}". Set ${credentialEnv} before running CleanClaw.`);
+  }
   const state = loadState(process.cwd());
 
   // Ensure active project root is declared before any pipeline work
@@ -34,19 +39,19 @@ export async function runWorkflow(taskDescription: string, headless = false): Pr
 
   console.log(`\n[CleanClaw] Planning task: "${taskDescription}"`);
 
-  // Wizard delegation — when enabled, LLM pre-populates answers; developer confirms or overrides
+  // Wizard delegation â€” when enabled, LLM pre-populates answers; developer confirms or overrides
   let suggestions = null;
   if (config.enableWizardDelegation && await isOpenshellAvailable()) {
-    console.log('[CleanClaw] Wizard delegation enabled — generating suggestions...');
+    console.log('[CleanClaw] Wizard delegation enabled â€” generating suggestions...');
     const bridge = resolveBridge(config);
     suggestions = await suggestWorkflowAnswers(taskDescription, bridge);
     if (!suggestions) {
-      console.log('[CleanClaw] Delegation failed — falling back to manual input.\n');
+      console.log('[CleanClaw] Delegation failed â€” falling back to manual input.\n');
     }
   }
 
   if (!suggestions) {
-    console.log('Answer each question — press Enter to skip optional ones.\n');
+    console.log('Answer each question â€” press Enter to skip optional ones.\n');
   }
 
   const why = suggestions
@@ -91,11 +96,11 @@ export async function runWorkflow(taskDescription: string, headless = false): Pr
     files = await ask(rl, '2. Which files should be changed? (Enter = let the agent decide) ');
   }
   const criteria = suggestions
-    ? await askWithSuggestion(rl, '3. Acceptance criteria — what does "done" look like?', suggestions.criteria)
-    : await ask(rl, '3. Acceptance criteria — what does "done" look like? ');
+    ? await askWithSuggestion(rl, '3. Acceptance criteria â€” what does "done" look like?', suggestions.criteria)
+    : await ask(rl, '3. Acceptance criteria â€” what does "done" look like? ');
   const outOfScope = suggestions
-    ? await askWithSuggestion(rl, '4. Out of scope — what should NOT change?', suggestions.outOfScope)
-    : await ask(rl, '4. Out of scope — what should NOT change? (Enter to skip) ');
+    ? await askWithSuggestion(rl, '4. Out of scope â€” what should NOT change?', suggestions.outOfScope)
+    : await ask(rl, '4. Out of scope â€” what should NOT change? (Enter to skip) ');
   rl.close();
 
   const parts: string[] = [`Task: ${taskDescription}`];
@@ -126,3 +131,5 @@ export async function runWorkflow(taskDescription: string, headless = false): Pr
     lastCompletedStep: 0,
   }, process.cwd());
 }
+
+
