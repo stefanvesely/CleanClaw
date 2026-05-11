@@ -35,9 +35,11 @@ Source: Review of `README.md`, April Claude plan files, changelog entries, and c
   - Completed in `plans/complete/2026-05-11-cleanclaw-context-handoff.md`.
   - Added a redacted `CleanClawRuntimeContext` carrying session id, agent/sandbox, gateway/profile, policy presets, auth env, provider/model, active root, and credential presence.
   - `CleanClawMode`, NemoClaw `create new dev task`, workflow, pipeline logs, and CleanClaw state now receive the runtime-context summary.
-- [ ] Decide and implement gateway routing policy.
-  - CleanClaw currently has mixed direct provider/gateway assumptions.
-  - When running inside NemoClaw/OpenShell, route inference through the NemoClaw gateway consistently.
+- [x] Decide and implement gateway routing policy.
+  - Completed in `plans/complete/2026-05-11-cleanclaw-gateway-routing-policy.md`.
+  - Added explicit `auto`, `gateway`, and `direct` routing modes.
+  - Embedded NemoClaw mode and `create new dev task` force gateway routing through `https://inference.local`.
+  - Standalone CleanClaw keeps automatic/direct behavior unless callers opt into gateway routing.
 - [ ] Implement sandbox Phase 8 runtime.
   - `cleanclaw/core/sandbox-policy.ts` is software-boundary only today.
   - Run CleanClaw inside OpenShell and apply Landlock enforcement when available.

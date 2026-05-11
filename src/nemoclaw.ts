@@ -266,6 +266,7 @@ async function createDevTask(): Promise<void> {
   await runWorkflow(taskDescription, false, undefined, {
     source: "nemoclaw-create-dev-task",
     session: onboardSession.loadSession(),
+    gatewayRouting: "gateway",
   });
 }
 

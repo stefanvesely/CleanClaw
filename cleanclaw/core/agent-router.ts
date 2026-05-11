@@ -13,32 +13,32 @@ export function resolveBridge(config: CleanClawConfig): Bridge {
   if (config.provider === "openai") {
     const apiKey = config.openai?.apiKey || "";
     const model = config.openai?.model || "gpt-4o";
-    return new OpenAiBridge(apiKey, model);
+    return new OpenAiBridge(apiKey, model, config.openai?.baseURL);
   }
   if (config.provider === "openai-api") {
     const apiKey = config.openai?.apiKey || "";
     const model = config.openai?.model || "gpt-5.4";
-    return new OpenAiBridge(apiKey, model);
+    return new OpenAiBridge(apiKey, model, config.openai?.baseURL);
   }
   if (config.provider === "anthropic") {
     const apiKey = config.anthropic?.apiKey || "";
     const model = config.anthropic?.model || "claude-sonnet-4-6";
-    return new AnthropicBridge(apiKey, model);
+    return new AnthropicBridge(apiKey, model, config.anthropic?.baseURL);
   }
   if (config.provider === "anthropic-prod") {
     const apiKey = config.anthropic?.apiKey || "";
     const model = config.anthropic?.model || "claude-sonnet-4-6";
-    return new AnthropicBridge(apiKey, model);
+    return new AnthropicBridge(apiKey, model, config.anthropic?.baseURL);
   }
   if (config.provider === "nvidia-nim" || config.provider === "nvidia-prod") {
     const apiKey = config.openai?.apiKey || "";
     const model = config.openai?.model || "nvidia/nemotron-3-super-120b-a12b";
-    return new OpenAiBridge(apiKey, model, "https://inference.local/v1");
+    return new OpenAiBridge(apiKey, model, config.openai?.baseURL);
   }
   if (config.provider === "compatible-anthropic-endpoint") {
     const apiKey = config.anthropic?.apiKey || "";
     const model = config.anthropic?.model || "custom-anthropic-model";
-    return new AnthropicBridge(apiKey, model);
+    return new AnthropicBridge(apiKey, model, config.anthropic?.baseURL);
   }
   if (config.provider === "compatible-endpoint") {
     const apiKey = config.openai?.apiKey || "";

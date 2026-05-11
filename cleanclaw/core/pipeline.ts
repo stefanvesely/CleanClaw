@@ -16,6 +16,7 @@ import { queryProjectMap } from '../projectmap/query-bridge.js';
 import { applyRootPolicy } from './sandbox-policy.js';
 import { createConsoleLogger, type CleanClawLogger } from './logger.js';
 import { summarizeRuntimeContext, type CleanClawRuntimeContext, type CleanClawRuntimeContextSummary } from './runtime-context.js';
+import { applyGatewayRoutingPolicy, describeGatewayRouting, type GatewayRoutingMode } from './gateway-routing.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
 import type { TaskStep } from '../plans/plan-writer.js';
 import type { ProposedChange } from './language-agent.js';
@@ -27,6 +28,7 @@ import type { ApprovedPlanContext } from '../scope/scope-rules.js';
 export interface RunPipelineOptions {
   logger?: CleanClawLogger;
   runtimeContext?: CleanClawRuntimeContext | null;
+  gatewayRouting?: GatewayRoutingMode;
 }
 
 // ─── Task ID ──────────────────────────────────────────────────────────────────
@@ -358,11 +360,30 @@ export async function runPipeline(
   options: RunPipelineOptions = {},
 ): Promise<void> {
   const logger = options.logger ?? createConsoleLogger();
-  const runtimeContext = options.runtimeContext ?? null;
+  let runtimeContext = options.runtimeContext ?? null;
+  const routedConfig = applyGatewayRoutingPolicy(config, {
+    mode: options.gatewayRouting ?? 'auto',
+    runtimeContext,
+  });
+  const route = describeGatewayRouting(routedConfig);
+  logger.info(`[CleanClaw] Inference routing: ${route.mode}${route.baseURL ? ` via ${route.baseURL}` : ''}`);
+  if (runtimeContext) {
+    runtimeContext = {
+      ...runtimeContext,
+      configProvider: routedConfig.provider,
+      configModel: route.model,
+      auth: {
+        ...runtimeContext.auth,
+        model: route.model ?? runtimeContext.auth.model,
+        endpointUrl: route.baseURL ?? runtimeContext.auth.endpointUrl,
+      },
+    };
+  }
   const runtimeContextSummary = summarizeRuntimeContext(runtimeContext);
-  const plansDir = path.resolve(config.plansDir);
-  const bridge = resolveBridge(config);
-  const languageAgent = resolveLanguageAgent(config);
+
+  const plansDir = path.resolve(routedConfig.plansDir);
+  const bridge = resolveBridge(routedConfig);
+  const languageAgent = resolveLanguageAgent(routedConfig);
   const planningAgent = new PlanningAgent(bridge);
   const boss = new BossAgent(planningAgent, plansDir, logger);
 
@@ -391,9 +412,9 @@ export async function runPipeline(
 
   // Phase 1 — Augment task description with ProjectMap context (opt-in)
   let enrichedDescription = taskDescription;
-  if (config.projectMap?.enabled) {
+  if (routedConfig.projectMap?.enabled) {
     const activeRoot = loadActiveProject() ?? process.cwd();
-    const mapResults = await queryProjectMap(taskDescription, activeRoot, config, undefined, undefined, logger);
+    const mapResults = await queryProjectMap(taskDescription, activeRoot, routedConfig, undefined, undefined, logger);
     if (mapResults.length > 0) {
       const context = mapResults
         .map(r => 'method_name' in r
@@ -459,7 +480,7 @@ export async function runPipeline(
   }
 
   // Phase 3 — Execute with configured granularity
-  const granularity = config.approvalGranularity ?? 'per-change';
+  const granularity = routedConfig.approvalGranularity ?? 'per-change';
 
   // ApprovedPlanContext built once here — pipeline and scope guard share the same reference
   const scopeCtx: ApprovedPlanContext = {
@@ -471,9 +492,9 @@ export async function runPipeline(
   const activeRoot = loadActiveProject() ?? process.cwd();
 
   if (granularity === 'per-file') {
-    await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, logger);
+    await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, logger);
   } else {
-    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot, resumeFromStep, headless, logger, runtimeContextSummary);
+    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, scopeCtx, activeRoot, resumeFromStep, headless, logger, runtimeContextSummary);
 
     // Iteration loop — boss prompts for next iteration after each pipeline run
     let iterationNumber = 1;
@@ -489,7 +510,7 @@ export async function runPipeline(
 
       const iterSteps = parseTaskPlanSteps(iterResult.planContent);
       const iterCompletedPath = iterResult.planPath.replace('_plan.md', '_plan_completed.md');
-      await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot, 0, false, logger, runtimeContextSummary);
+      await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, routedConfig, languageAgent, bridge, scopeCtx, activeRoot, 0, false, logger, runtimeContextSummary);
 
       completedSteps = [...completedSteps, ...iterSteps.map(s => s.body)];
       currentPlanContent = iterResult.planContent;

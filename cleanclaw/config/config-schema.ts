@@ -18,6 +18,7 @@ export interface CleanClawConfig {
   anthropic?: {
     apiKey: string;
     model: string;
+    baseURL?: string;
   };
   openai?: {
     apiKey: string;

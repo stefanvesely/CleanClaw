@@ -15,6 +15,7 @@ export interface RunWorkflowRuntimeContextInput {
   source?: string;
   session?: CleanClawSessionLike | null;
   activeRoot?: string | null;
+  gatewayRouting?: 'auto' | 'gateway' | 'direct';
 }
 
 function ask(rl: readline.Interface, question: string): Promise<string> {
@@ -145,7 +146,11 @@ export async function runWorkflow(
 
   const workflowAnswers: WorkflowAnswers = { why, files, criteria, outOfScope };
 
-  await runPipeline(fullDescription, config, workflowAnswers, scannedFiles, confirmedFiles, headless, { logger, runtimeContext });
+  await runPipeline(fullDescription, config, workflowAnswers, scannedFiles, confirmedFiles, headless, {
+    logger,
+    runtimeContext,
+    gatewayRouting: runtimeContextInput.gatewayRouting,
+  });
 
   saveState({
     projectName: config.projectName,

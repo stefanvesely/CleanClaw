@@ -45,6 +45,9 @@ export class CleanClawMode implements ModeRuntime {
       session,
     });
 
-    await runPipeline(taskDescription, resolvedConfig, undefined, undefined, undefined, false, { runtimeContext });
+    await runPipeline(taskDescription, resolvedConfig, undefined, undefined, undefined, false, {
+      runtimeContext,
+      gatewayRouting: "gateway",
+    });
   }
 }
