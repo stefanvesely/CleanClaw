@@ -8,18 +8,28 @@ import { resolveConfigCredential } from '../core/credential-resolver.js';
 import { suggestWorkflowAnswers, isOpenshellAvailable } from '../wizard/wizard-delegator.js';
 import { promptDeclareProjectRoot } from '../core/root-guard.js';
 import { loadActiveProject, saveActiveProject } from '../core/state-manager.js';
+import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 
 function ask(rl: readline.Interface, question: string): Promise<string> {
   return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())));
 }
 
-async function askWithSuggestion(rl: readline.Interface, question: string, suggestion: string): Promise<string> {
-  console.log(`  Suggested: ${suggestion}`);
+async function askWithSuggestion(
+  rl: readline.Interface,
+  question: string,
+  suggestion: string,
+  logger: CleanClawLogger,
+): Promise<string> {
+  logger.info(`  Suggested: ${suggestion}`);
   const answer = await ask(rl, `  ${question} [Enter to accept]: `);
   return answer === '' ? suggestion : answer;
 }
 
-export async function runWorkflow(taskDescription: string, headless = false): Promise<void> {
+export async function runWorkflow(
+  taskDescription: string,
+  headless = false,
+  logger: CleanClawLogger = createConsoleLogger(),
+): Promise<void> {
   const baseConfig = getConfig();
   const { config, credentialEnv, credentialValue } = resolveConfigCredential(baseConfig);
   if (!credentialValue) {
@@ -32,39 +42,39 @@ export async function runWorkflow(taskDescription: string, headless = false): Pr
   if (!activeRoot) {
     activeRoot = await promptDeclareProjectRoot();
     saveActiveProject(activeRoot);
-    console.log(`[CleanClaw] Active project root set: ${activeRoot}`);
+    logger.info(`[CleanClaw] Active project root set: ${activeRoot}`);
   }
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-  console.log(`\n[CleanClaw] Planning task: "${taskDescription}"`);
+  logger.info(`\n[CleanClaw] Planning task: "${taskDescription}"`);
 
   // Wizard delegation â€” when enabled, LLM pre-populates answers; developer confirms or overrides
   let suggestions = null;
   if (config.enableWizardDelegation && await isOpenshellAvailable()) {
-    console.log('[CleanClaw] Wizard delegation enabled â€” generating suggestions...');
+    logger.info('[CleanClaw] Wizard delegation enabled â€” generating suggestions...');
     const bridge = resolveBridge(config);
     suggestions = await suggestWorkflowAnswers(taskDescription, bridge);
     if (!suggestions) {
-      console.log('[CleanClaw] Delegation failed â€” falling back to manual input.\n');
+      logger.info('[CleanClaw] Delegation failed â€” falling back to manual input.\n');
     }
   }
 
   if (!suggestions) {
-    console.log('Answer each question â€” press Enter to skip optional ones.\n');
+    logger.info('Answer each question â€” press Enter to skip optional ones.\n');
   }
 
   const why = suggestions
-    ? await askWithSuggestion(rl, '1. Why does this task matter?', suggestions.why)
+    ? await askWithSuggestion(rl, '1. Why does this task matter?', suggestions.why, logger)
     : await ask(rl, '1. Why does this task matter / what problem does it solve? ');
 
-  const scannedFiles = await scanRelevantFiles(taskDescription, process.cwd(), config);
+  const scannedFiles = await scanRelevantFiles(taskDescription, process.cwd(), config, logger);
 
   let files: string;
   if (scannedFiles.length > 0) {
     const showList = (list: string[]) => {
       const numbered = list.map((f, i) => `  ${i + 1}. ${f}`).join('\n');
-      console.log(`\n[CleanClaw] Scanned repo. Relevant files found:\n${numbered}\n`);
+      logger.info(`\n[CleanClaw] Scanned repo. Relevant files found:\n${numbered}\n`);
     };
     showList(scannedFiles);
 
@@ -75,7 +85,7 @@ export async function runWorkflow(taskDescription: string, headless = false): Pr
     } else if (choice === 'e') {
       const editableList = [...scannedFiles];
       showList(editableList);
-      console.log('  Type +path to add, -number to remove, blank line to finish.');
+      logger.info('  Type +path to add, -number to remove, blank line to finish.');
       while (true) {
         const line = await ask(rl, '  > ');
         if (line === '') break;
@@ -92,14 +102,14 @@ export async function runWorkflow(taskDescription: string, headless = false): Pr
       files = await ask(rl, '2. Which files should be changed? (Enter = let the agent decide) ');
     }
   } else {
-    console.log('[CleanClaw] No relevant files found automatically.');
+    logger.info('[CleanClaw] No relevant files found automatically.');
     files = await ask(rl, '2. Which files should be changed? (Enter = let the agent decide) ');
   }
   const criteria = suggestions
-    ? await askWithSuggestion(rl, '3. Acceptance criteria â€” what does "done" look like?', suggestions.criteria)
+    ? await askWithSuggestion(rl, '3. Acceptance criteria â€” what does "done" look like?', suggestions.criteria, logger)
     : await ask(rl, '3. Acceptance criteria â€” what does "done" look like? ');
   const outOfScope = suggestions
-    ? await askWithSuggestion(rl, '4. Out of scope â€” what should NOT change?', suggestions.outOfScope)
+    ? await askWithSuggestion(rl, '4. Out of scope â€” what should NOT change?', suggestions.outOfScope, logger)
     : await ask(rl, '4. Out of scope â€” what should NOT change? (Enter to skip) ');
   rl.close();
 
@@ -118,7 +128,7 @@ export async function runWorkflow(taskDescription: string, headless = false): Pr
 
   const workflowAnswers: WorkflowAnswers = { why, files, criteria, outOfScope };
 
-  await runPipeline(fullDescription, config, workflowAnswers, scannedFiles, confirmedFiles, headless);
+  await runPipeline(fullDescription, config, workflowAnswers, scannedFiles, confirmedFiles, headless, { logger });
 
   saveState({
     projectName: config.projectName,

@@ -3,6 +3,7 @@ import path from 'path';
 import readline from 'readline';
 import { getConfig } from '../core/config-loader.js';
 import { appendRollbackEntry } from '../plans/log-writer.js';
+import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 
 interface LogEntry {
   changeNumber: number;
@@ -41,21 +42,24 @@ function restoreEntry(entry: LogEntry, projectRoot: string): void {
   fs.writeFileSync(absPath, restored, 'utf-8');
 }
 
-export async function undoTask(taskId: string): Promise<void> {
+export async function undoTask(
+  taskId: string,
+  logger: CleanClawLogger = createConsoleLogger(),
+): Promise<void> {
   const config = getConfig();
   const plansDir = path.resolve(config.plansDir);
   const taskDir = path.join(plansDir, `task${taskId}`);
   const logPath = path.join(taskDir, `task${taskId}A_log.json`);
 
   if (!fs.existsSync(logPath)) {
-    console.error(`No JSON audit log found for task${taskId} at ${logPath}`);
-    console.error('Rollback requires logFormat: json in cleanclaw.config.json');
+    logger.error(`No JSON audit log found for task${taskId} at ${logPath}`);
+    logger.error('Rollback requires logFormat: json in cleanclaw.config.json');
     process.exit(1);
   }
 
   const entries = parseJsonLog(logPath).filter(e => !('type' in e));
   if (entries.length === 0) {
-    console.log(`No applied changes found in log for task${taskId}.`);
+    logger.info(`No applied changes found in log for task${taskId}.`);
     return;
   }
 
@@ -74,20 +78,20 @@ export async function undoTask(taskId: string): Promise<void> {
   }
 
   if (modifiedFiles.length > 0) {
-    console.warn('\n[CleanClaw] Warning: the following files have been modified since this task was applied:');
-    modifiedFiles.forEach(f => console.warn(`  - ${f}`));
-    console.warn('Proceeding will overwrite these changes.\n');
+    logger.warn('\n[CleanClaw] Warning: the following files have been modified since this task was applied:');
+    modifiedFiles.forEach(f => logger.warn(`  - ${f}`));
+    logger.warn('Proceeding will overwrite these changes.\n');
 
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const answer = await ask(rl, 'Proceed with rollback? [y/n]: ');
     rl.close();
     if (answer.toLowerCase() !== 'y') {
-      console.log('Rollback cancelled.');
+      logger.info('Rollback cancelled.');
       return;
     }
   }
 
-  console.log(`\n[CleanClaw] Rolling back task${taskId} (${entries.length} changes in reverse)...`);
+  logger.info(`\n[CleanClaw] Rolling back task${taskId} (${entries.length} changes in reverse)...`);
 
   const reversed = [...entries].reverse();
   const restoredFiles: string[] = [];
@@ -95,9 +99,9 @@ export async function undoTask(taskId: string): Promise<void> {
   for (const entry of reversed) {
     restoreEntry(entry, projectRoot);
     restoredFiles.push(entry.filename);
-    console.log(`  Restored: ${entry.filename}`);
+    logger.info(`  Restored: ${entry.filename}`);
   }
 
   appendRollbackEntry(taskId, 'A', restoredFiles, plansDir, config.logFormat ?? 'json');
-  console.log(`\n[CleanClaw] Rollback complete. ${restoredFiles.length} file(s) restored.`);
+  logger.info(`\n[CleanClaw] Rollback complete. ${restoredFiles.length} file(s) restored.`);
 }

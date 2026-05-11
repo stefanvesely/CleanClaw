@@ -4,6 +4,7 @@ import path from 'path';
 import readline from 'readline';
 import { saveState } from '../core/state-manager.js';
 import { appendToRegistry } from '../projectmap/project-registry.js';
+import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 
 const GLOBAL_CONFIG_PATH = path.join(os.homedir(), '.cleanclaw', 'config.json');
 
@@ -11,9 +12,12 @@ function ask(rl: readline.Interface, question: string): Promise<string> {
   return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())));
 }
 
-async function runGlobalConfigWizard(rl: readline.Interface): Promise<void> {
-  console.log('\nCleanClaw â€” First Run Setup\n');
-  console.log('No global config found. Let\'s set up your defaults.\n');
+async function runGlobalConfigWizard(
+  rl: readline.Interface,
+  logger: CleanClawLogger,
+): Promise<void> {
+  logger.info('\nCleanClaw â€” First Run Setup\n');
+  logger.info('No global config found. Let\'s set up your defaults.\n');
 
   const providerRaw = await ask(rl, 'Default provider (nvidia-nim/ollama) [nvidia-nim]: ');
   const provider = providerRaw || 'nvidia-nim';
@@ -30,11 +34,14 @@ async function runGlobalConfigWizard(rl: readline.Interface): Promise<void> {
 
   fs.mkdirSync(path.dirname(GLOBAL_CONFIG_PATH), { recursive: true });
   fs.writeFileSync(GLOBAL_CONFIG_PATH, JSON.stringify(globalConfig, null, 2), 'utf-8');
-  console.log(`\nGlobal config written to ${GLOBAL_CONFIG_PATH}`);
+  logger.info(`\nGlobal config written to ${GLOBAL_CONFIG_PATH}`);
 }
 
-async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
-  console.log('\nCleanClaw â€” Project Setup\n');
+async function runProjectInitFlow(
+  rl: readline.Interface,
+  logger: CleanClawLogger,
+): Promise<void> {
+  logger.info('\nCleanClaw â€” Project Setup\n');
 
   let projectName = await ask(rl, 'Project name: ');
   while (!projectName) {
@@ -57,7 +64,7 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
     const embProvider = embProviderRaw || 'local';
 
     const defaultEmbeddingModel = embProvider === 'local' ? 'Xenova/all-MiniLM-L6-v2' : 'text-embedding-3-small';
-    const embModel = await ask(rl, Embeddings model []: );
+    const embModel = await ask(rl, `Embeddings model [${defaultEmbeddingModel}]: `);
     const embBaseUrl = await ask(rl, 'Base URL (leave blank for provider default): ');
 
     embeddingsConfig = { provider: embProvider, model: embModel || defaultEmbeddingModel };
@@ -92,33 +99,35 @@ async function runProjectInitFlow(rl: readline.Interface): Promise<void> {
 
   appendToRegistry(process.cwd(), projectName, process.cwd());
 
-  console.log(`\nInitialised. Config written to cleanclaw.config.json`);
+  logger.info(`\nInitialised. Config written to cleanclaw.config.json`);
 
   if (config.embeddings) {
     const buildNow = await ask(rl, '\nBuild ProjectMap index now? (recommended) [y/n]: ');
     if (buildNow.toLowerCase() === 'y') {
       const { build } = await import('../projectmap/build.js');
-      await build(process.cwd(), config as unknown as import('../config/config-schema.js').CleanClawConfig);
+      await build(process.cwd(), config as unknown as import('../config/config-schema.js').CleanClawConfig, logger);
     }
   }
 
-  console.log('Run: cleanclaw run "Your task description"');
+  logger.info('Run: cleanclaw run "Your task description"');
 }
 
-export async function runSetupWizard(): Promise<void> {
+export async function runSetupWizard(
+  logger: CleanClawLogger = createConsoleLogger(),
+): Promise<void> {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
   const isFirstRun = !fs.existsSync(GLOBAL_CONFIG_PATH);
 
   if (isFirstRun) {
-    await runGlobalConfigWizard(rl);
+    await runGlobalConfigWizard(rl, logger);
 
     const initNow = await ask(rl, '\nWould you like to initialise your first project now? [y/n]: ');
     if (initNow.toLowerCase() === 'y') {
-      await runProjectInitFlow(rl);
+      await runProjectInitFlow(rl, logger);
     }
   } else {
-    await runProjectInitFlow(rl);
+    await runProjectInitFlow(rl, logger);
   }
 
   rl.close();

@@ -3,6 +3,7 @@ import { writePlan } from '../plans/plan-writer.js';
 import { checkScope } from '../scope/scope-guard.js';
 import type { Bridge } from '../bridges/anthropic-bridge.js';
 import type { ApprovedPlanContext } from '../scope/scope-rules.js';
+import { createConsoleLogger, type CleanClawLogger } from './logger.js';
 
 export interface BossResult {
   planPath: string;
@@ -20,18 +21,19 @@ export interface IterationResult {
 export class BossAgent {
   constructor(
     private planningAgent: PlanningAgent,
-    private plansDir: string
+    private plansDir: string,
+    private logger: CleanClawLogger = createConsoleLogger(),
   ) {}
 
   async run(taskDescription: string, taskId: string, variant: string): Promise<BossResult> {
     // Phase 1: Plan — delegate to planning agent, never plan inline
-    console.log(`[CleanClaw] Generating plan for task ${taskId}${variant}...`);
+    this.logger.info(`[CleanClaw] Generating plan for task ${taskId}${variant}...`);
     const planContent = await this.planningAgent.plan(taskDescription);
 
     // Phase 2: Write — commit plan to disk before any execution
     // An unwritten plan is a suggestion, not a commitment
     const planPath = writePlan(taskId, variant, planContent, this.plansDir);
-    console.log(`[CleanClaw] Plan written: ${planPath}`);
+    this.logger.info(`[CleanClaw] Plan written: ${planPath}`);
 
     return { planPath, planContent, taskId, variant };
   }
@@ -62,14 +64,14 @@ export class BossAgent {
     );
 
     if (scopeDecision.action === 'halt-confirm') {
-      console.log(`[CleanClaw] Scope boundary check flagged before iteration ${iterationNumber}. Halting.`);
+      this.logger.info(`[CleanClaw] Scope boundary check flagged before iteration ${iterationNumber}. Halting.`);
       return null;
     }
 
-    console.log(`[CleanClaw] Generating iteration ${iterationNumber} plan...`);
+    this.logger.info(`[CleanClaw] Generating iteration ${iterationNumber} plan...`);
     const planContent = await this.planningAgent.generateIterationPlan(originalPlan, taskDescription, completedSteps);
     const planPath = writePlan(taskId, variant, planContent, this.plansDir, iterationNumber);
-    console.log(`[CleanClaw] Iteration ${iterationNumber} plan written: ${planPath}`);
+    this.logger.info(`[CleanClaw] Iteration ${iterationNumber} plan written: ${planPath}`);
 
     return { planPath, planContent, iterationNumber };
   }

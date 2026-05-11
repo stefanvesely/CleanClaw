@@ -1,11 +1,13 @@
 import { execSync } from "child_process";
 import type { CleanClawConfig } from "../config/config-schema.js";
 import { resolveBridge } from "./agent-router.js";
+import { createConsoleLogger, type CleanClawLogger } from "./logger.js";
 
 export async function scanRelevantFiles(
   taskDescription: string,
   repoRoot: string,
   config: CleanClawConfig,
+  logger: CleanClawLogger = createConsoleLogger(),
 ): Promise<string[]> {
   let allFiles: string[];
 
@@ -16,7 +18,7 @@ export async function scanRelevantFiles(
     }).trim();
     allFiles = output.split("\n").filter((f) => f.length > 0);
   } catch {
-    console.warn("[file-scanner] git ls-files failed — returning empty file list");
+    logger.warn("[file-scanner] git ls-files failed - returning empty file list");
     return [];
   }
 
@@ -43,7 +45,7 @@ export async function scanRelevantFiles(
       .filter((line) => line.length > 0 && allFiles.includes(line));
     return relevant;
   } catch (err) {
-    console.warn("[file-scanner] LLM call failed — returning full file list:", err);
+    logger.warn("[file-scanner] LLM call failed - returning full file list:", err);
     return allFiles;
   }
 }

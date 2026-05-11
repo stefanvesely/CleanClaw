@@ -1,18 +1,19 @@
 import path from 'path';
 import { loadActiveProject, loadState } from '../core/state-manager.js';
+import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 
-export async function showStatus(): Promise<void> {
+export async function showStatus(logger: CleanClawLogger = createConsoleLogger()): Promise<void> {
   const projectDir = loadActiveProject() ?? process.cwd();
   const state = loadState(projectDir);
 
   if (!state) {
-    console.log('No active CleanClaw project. Run "cleanclaw init" to initialise one.');
+    logger.info('No active CleanClaw project. Run "cleanclaw init" to initialise one.');
     return;
   }
 
-  console.log(`\nActive project: ${state.projectName}`);
-  console.log(`Directory:      ${projectDir}`);
-  console.log(`Last task:      task${state.currentTaskId}${state.currentVariant}`);
-  console.log(`Plans dir:      ${state.plansDir}`);
-  console.log(`Last updated:   ${state.lastUpdated}`);
+  logger.info(`\nActive project: ${state.projectName}`);
+  logger.info(`Directory:      ${projectDir}`);
+  logger.info(`Last task:      task${state.currentTaskId}${state.currentVariant}`);
+  logger.info(`Plans dir:      ${state.plansDir}`);
+  logger.info(`Last updated:   ${state.lastUpdated}`);
 }

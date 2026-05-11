@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { redactPlanSecrets } from './secret-redactor.js';
+import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -119,7 +120,12 @@ export function writePlan(taskId: string, variant: string, markdown: string, pla
 
 // ─── Completion Tracking ──────────────────────────────────────────────────────
 
-export function markStepComplete(planPath: string, stepHeading: string, outputPath: string): void {
+export function markStepComplete(
+  planPath: string,
+  stepHeading: string,
+  outputPath: string,
+  logger: CleanClawLogger = createConsoleLogger(),
+): void {
   let content: string;
 
   if (fs.existsSync(outputPath)) {
@@ -134,7 +140,7 @@ export function markStepComplete(planPath: string, stepHeading: string, outputPa
   );
 
   if (updated === content) {
-    process.stderr.write(`[CleanClaw] Warning: step heading not found in plan, skipping completion mark: "${stepHeading.slice(0, 60)}..."\n`);
+    logger.warn(`[CleanClaw] Warning: step heading not found in plan, skipping completion mark: "${stepHeading.slice(0, 60)}..."`);
     return;
   }
 

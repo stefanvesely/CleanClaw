@@ -6,17 +6,23 @@ import { classifyFile } from './classifier.js';
 import { extractMethods, embedTextForMethod, isCodeFile } from './extractor.js';
 import { loadTable, saveTable } from './store.js';
 import type { StoreRow } from './store.js';
+import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 
 const LAYERS = ['backend', 'frontend', 'mediator'] as const;
 type Layer = (typeof LAYERS)[number];
 
-export async function update(projectRoot: string, filePath: string, config: CleanClawConfig): Promise<void> {
+export async function update(
+  projectRoot: string,
+  filePath: string,
+  config: CleanClawConfig,
+  logger: CleanClawLogger = createConsoleLogger(),
+): Promise<void> {
   if (!config.embeddings) return;
 
   const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(projectRoot, filePath);
 
   if (!fs.existsSync(absolutePath)) {
-    process.stderr.write(`[ProjectMap] File not found, skipping index: ${absolutePath}\n`);
+    logger.warn(`[ProjectMap] File not found, skipping index: ${absolutePath}`);
     return;
   }
 

@@ -14,6 +14,7 @@ import { loadActiveProject, saveState, loadState } from './state-manager.js';
 import { triggerProjectMapUpdate } from '../projectmap/updater.js';
 import { queryProjectMap } from '../projectmap/query-bridge.js';
 import { applyRootPolicy } from './sandbox-policy.js';
+import { createConsoleLogger, type CleanClawLogger } from './logger.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
 import type { TaskStep } from '../plans/plan-writer.js';
 import type { ProposedChange } from './language-agent.js';
@@ -21,6 +22,10 @@ import type { DiffCapture } from '../plans/diff-capture.js';
 import type { LanguageAgent } from './language-agent.js';
 import type { Bridge } from '../bridges/anthropic-bridge.js';
 import type { ApprovedPlanContext } from '../scope/scope-rules.js';
+
+export interface RunPipelineOptions {
+  logger?: CleanClawLogger;
+}
 
 // ─── Task ID ──────────────────────────────────────────────────────────────────
 
@@ -82,7 +87,11 @@ function fuzzyMatchFilename(proposed: string, searchRoot: string): string | null
   return bestMatch;
 }
 
-async function validateFilename(proposed: ProposedChange, headless = false): Promise<boolean> {
+async function validateFilename(
+  proposed: ProposedChange,
+  headless = false,
+  logger: CleanClawLogger = createConsoleLogger(),
+): Promise<boolean> {
   if (headless || fs.existsSync(proposed.filename)) return true;
 
   const readline = await import('readline');
@@ -90,8 +99,8 @@ async function validateFilename(proposed: ProposedChange, headless = false): Pro
 
   const fuzzyMatch = fuzzyMatchFilename(proposed.filename, process.cwd());
   if (fuzzyMatch) {
-    console.log(`\n⚠ "${proposed.filename}" does not exist.`);
-    console.log(`  Did you mean: "${fuzzyMatch}"?`);
+    logger.info(`\n⚠ "${proposed.filename}" does not exist.`);
+    logger.info(`  Did you mean: "${fuzzyMatch}"?`);
     const answer = await new Promise<string>(resolve => {
       rl.question('  [y = use match / n = create new / c = cancel]: ', ans => { rl.close(); resolve(ans.trim().toLowerCase()); });
     });
@@ -109,7 +118,7 @@ async function validateFilename(proposed: ProposedChange, headless = false): Pro
     return false;
   }
 
-  console.log(`\n⚠ WARNING: "${proposed.filename}" does not exist on disk.`);
+  logger.info(`\n⚠ WARNING: "${proposed.filename}" does not exist on disk.`);
   const confirm = await new Promise<string>(resolve => {
     rl.question('This would create a NEW FILE. Confirm? [y/N]: ', ans => { rl.close(); resolve(ans.trim()); });
   });
@@ -132,6 +141,7 @@ async function runPipelinePerChange(
   activeRoot: string,
   startStepIndex = 0,
   headless = false,
+  logger: CleanClawLogger = createConsoleLogger(),
 ): Promise<void> {
   const model = resolveModel(config);
   let changeNumber = 1;
@@ -139,13 +149,13 @@ async function runPipelinePerChange(
   let stepIndex = startStepIndex;
 
   for (const step of steps) {
-    console.log(`\n[CleanClaw] Step ${step.number}: ${step.body.slice(0, 80)}...`);
+    logger.info(`\n[CleanClaw] Step ${step.number}: ${step.body.slice(0, 80)}...`);
 
     const proposed = await languageAgent.propose(step.body, bridge);
-    const accepted = await validateFilename(proposed, headless);
+    const accepted = await validateFilename(proposed, headless, logger);
 
     if (!accepted) {
-      console.log('[CleanClaw] New file creation rejected. Skipping step.');
+      logger.info('[CleanClaw] New file creation rejected. Skipping step.');
       appendLogEntry(taskId, variant, changeNumber, proposed,
         { filename: proposed.filename, lines: [], isNewFile: true },
         'new-file creation rejected by developer', model, plansDir, config.logFormat ?? 'markdown');
@@ -171,7 +181,7 @@ async function runPipelinePerChange(
 
     if (scopeDecision.action === 'halt-confirm') {
       if (headless) {
-        console.error(`[headless] Scope violation on "${proposed.filename}": ${scopeDecision.rationale}`);
+        logger.error(`[headless] Scope violation on "${proposed.filename}": ${scopeDecision.rationale}`);
         process.exit(1);
       }
       const readline = await import('readline');
@@ -181,7 +191,7 @@ async function runPipelinePerChange(
       });
 
       if (answer === 'r') {
-        console.log('[CleanClaw] Change reversed. Skipping step.');
+        logger.info('[CleanClaw] Change reversed. Skipping step.');
         changeNumber++;
         continue;
       }
@@ -191,7 +201,7 @@ async function runPipelinePerChange(
         const reason = await new Promise<string>(resolve => {
           rl2.question('Explain why this change is acceptable: ', r => { rl2.close(); resolve(r.trim()); });
         });
-        console.log(`[CleanClaw] Explanation recorded: ${reason}`);
+        logger.info(`[CleanClaw] Explanation recorded: ${reason}`);
         // fall through to normal approval
       }
       // 'a' or explained: fall through
@@ -200,11 +210,11 @@ async function runPipelinePerChange(
     const lineNumbers = proposed.beforeLines.map(l => l.lineNumber);
     const before = captureBeforeState(proposed.filename, lineNumbers);
     const { approved, why } = headless
-      ? autoApprove(proposed)
-      : await promptApproval(proposed, before);
+      ? autoApprove(proposed, logger)
+      : await promptApproval(proposed, before, logger);
 
     if (!approved) {
-      console.log('[CleanClaw] Change rejected. Moving to next step.');
+      logger.info('[CleanClaw] Change rejected. Moving to next step.');
       appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
       changeNumber++;
       continue;
@@ -215,7 +225,7 @@ async function runPipelinePerChange(
       assertWithinProjectRoot(proposed.filename, activeRoot);
     } catch (err) {
       if (err instanceof RootViolationError) {
-        console.error(err.message);
+        logger.error(err.message);
         changeNumber++;
         continue;
       }
@@ -223,17 +233,17 @@ async function runPipelinePerChange(
     }
 
     applyChange(proposed);
-    triggerProjectMapUpdate(proposed.filename, loadActiveProject() ?? process.cwd(), config);
+    triggerProjectMapUpdate(proposed.filename, loadActiveProject() ?? process.cwd(), config, logger);
     appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
-    markStepComplete(planPath, step.body, completedPlanPath);
-    console.log(`[CleanClaw] Change ${changeNumber} applied and logged.`);
+    markStepComplete(planPath, step.body, completedPlanPath, logger);
+    logger.info(`[CleanClaw] Change ${changeNumber} applied and logged.`);
     saveState({ projectName: config.projectName, currentTaskId: taskId, currentVariant: variant, plansDir, lastUpdated: new Date().toISOString(), iterationCount: 0, resumable: true, lastCompletedStep: stepIndex }, activeRoot);
     stepIndex++;
     changeNumber++;
     cumulativeChangeCount++;
   }
 
-  printSummary(taskId, variant, changeNumber, plansDir);
+  printSummary(taskId, variant, changeNumber, plansDir, logger);
 }
 
 // ─── Per-file pipeline ────────────────────────────────────────────────────────
@@ -248,6 +258,7 @@ async function runPipelinePerFile(
   config: CleanClawConfig,
   languageAgent: LanguageAgent,
   bridge: Bridge,
+  logger: CleanClawLogger = createConsoleLogger(),
 ): Promise<void> {
   const model = resolveModel(config);
 
@@ -256,12 +267,12 @@ async function runPipelinePerFile(
   const collected: CollectedChange[] = [];
 
   for (const step of steps) {
-    console.log(`\n[CleanClaw] Proposing step ${step.number}: ${step.body.slice(0, 80)}...`);
+    logger.info(`\n[CleanClaw] Proposing step ${step.number}: ${step.body.slice(0, 80)}...`);
     const proposed = await languageAgent.propose(step.body, bridge);
-    const accepted = await validateFilename(proposed);
+    const accepted = await validateFilename(proposed, false, logger);
 
     if (!accepted) {
-      console.log('[CleanClaw] New file creation rejected. Skipping step.');
+      logger.info('[CleanClaw] New file creation rejected. Skipping step.');
       continue;
     }
 
@@ -291,10 +302,10 @@ async function runPipelinePerFile(
   for (const [, group] of fileGroups) {
     const proposals = group.map(g => g.proposed);
     const befores = group.map(g => g.before);
-    const { approved, why } = await promptApprovalForFile(proposals, befores);
+    const { approved, why } = await promptApprovalForFile(proposals, befores, logger);
 
     if (!approved) {
-      console.log('[CleanClaw] File changes rejected. Skipping.');
+      logger.info('[CleanClaw] File changes rejected. Skipping.');
       for (const { proposed, before } of group) {
         appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
         changeNumber++;
@@ -304,15 +315,15 @@ async function runPipelinePerFile(
 
     for (const { proposed, before, step } of group) {
       applyChange(proposed);
-      triggerProjectMapUpdate(proposed.filename, loadActiveProject() ?? process.cwd(), config);
+      triggerProjectMapUpdate(proposed.filename, loadActiveProject() ?? process.cwd(), config, logger);
       appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
-      markStepComplete(planPath, step.body, completedPlanPath);
-      console.log(`[CleanClaw] Change ${changeNumber} applied and logged.`);
+      markStepComplete(planPath, step.body, completedPlanPath, logger);
+      logger.info(`[CleanClaw] Change ${changeNumber} applied and logged.`);
       changeNumber++;
     }
   }
 
-  printSummary(taskId, variant, changeNumber, plansDir);
+  printSummary(taskId, variant, changeNumber, plansDir, logger);
 }
 
 // ─── Pipeline ─────────────────────────────────────────────────────────────────
@@ -331,12 +342,14 @@ export async function runPipeline(
   scannedFiles?: string[],
   confirmedFiles?: string[],
   headless = false,
+  options: RunPipelineOptions = {},
 ): Promise<void> {
+  const logger = options.logger ?? createConsoleLogger();
   const plansDir = path.resolve(config.plansDir);
   const bridge = resolveBridge(config);
   const languageAgent = resolveLanguageAgent(config);
   const planningAgent = new PlanningAgent(bridge);
-  const boss = new BossAgent(planningAgent, plansDir);
+  const boss = new BossAgent(planningAgent, plansDir, logger);
 
   // Resume detection — check for incomplete previous run
   const existingState = loadState(process.cwd());
@@ -350,7 +363,7 @@ export async function runPipeline(
     ));
     if (answer.toLowerCase() === 'y') {
       resumeFromStep = existingState.lastCompletedStep + 1;
-      console.log(`[CleanClaw] Resuming from step ${resumeFromStep}.`);
+      logger.info(`[CleanClaw] Resuming from step ${resumeFromStep}.`);
     }
   }
 
@@ -359,13 +372,13 @@ export async function runPipeline(
 
   // Apply root policy before any LLM calls or file operations
   const activeRootEarly = loadActiveProject() ?? process.cwd();
-  await applyRootPolicy(activeRootEarly);
+  await applyRootPolicy(activeRootEarly, logger);
 
   // Phase 1 — Augment task description with ProjectMap context (opt-in)
   let enrichedDescription = taskDescription;
   if (config.projectMap?.enabled) {
     const activeRoot = loadActiveProject() ?? process.cwd();
-    const mapResults = await queryProjectMap(taskDescription, activeRoot, config);
+    const mapResults = await queryProjectMap(taskDescription, activeRoot, config, undefined, undefined, logger);
     if (mapResults.length > 0) {
       const context = mapResults
         .map(r => 'method_name' in r
@@ -398,17 +411,17 @@ export async function runPipeline(
   const steps = parseTaskPlanSteps(planContent);
 
   // Plan review — show plan content and ask to confirm before executing
-  console.log('\n─────────────────────────────────────────');
-  console.log('GENERATED PLAN');
-  console.log('─────────────────────────────────────────');
-  console.log(planContent);
-  console.log('─────────────────────────────────────────');
-  console.log(`Plan written: ${planPath}`);
-  console.log(`Steps to execute: ${steps.length}`);
-  console.log('─────────────────────────────────────────\n');
+  logger.info('\n─────────────────────────────────────────');
+  logger.info('GENERATED PLAN');
+  logger.info('─────────────────────────────────────────');
+  logger.info(planContent);
+  logger.info('─────────────────────────────────────────');
+  logger.info(`Plan written: ${planPath}`);
+  logger.info(`Steps to execute: ${steps.length}`);
+  logger.info('─────────────────────────────────────────\n');
 
   if (steps.length === 0) {
-    console.log('[CleanClaw] No executable steps found. Review the plan manually.');
+    logger.info('[CleanClaw] No executable steps found. Review the plan manually.');
     return;
   }
 
@@ -419,11 +432,11 @@ export async function runPipeline(
       rl.question('Proceed with these steps? [y/n]: ', answer => { rl.close(); resolve(answer.trim()); });
     });
     if (proceed.toLowerCase() !== 'y') {
-      console.log('[CleanClaw] Task cancelled. Plan saved to:', planPath);
+      logger.info('[CleanClaw] Task cancelled. Plan saved to:', planPath);
       return;
     }
   } else {
-    console.log('[headless] Skipping plan review — proceeding automatically.');
+    logger.info('[headless] Skipping plan review — proceeding automatically.');
   }
 
   // Phase 3 — Execute with configured granularity
@@ -439,9 +452,9 @@ export async function runPipeline(
   const activeRoot = loadActiveProject() ?? process.cwd();
 
   if (granularity === 'per-file') {
-    await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge);
+    await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, logger);
   } else {
-    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot, resumeFromStep, headless);
+    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot, resumeFromStep, headless, logger);
 
     // Iteration loop — boss prompts for next iteration after each pipeline run
     let iterationNumber = 1;
@@ -457,7 +470,7 @@ export async function runPipeline(
 
       const iterSteps = parseTaskPlanSteps(iterResult.planContent);
       const iterCompletedPath = iterResult.planPath.replace('_plan.md', '_plan_completed.md');
-      await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot);
+      await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot, 0, false, logger);
 
       completedSteps = [...completedSteps, ...iterSteps.map(s => s.body)];
       currentPlanContent = iterResult.planContent;
@@ -468,11 +481,17 @@ export async function runPipeline(
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function printSummary(taskId: string, variant: string, changeNumber: number, plansDir: string): void {
-  console.log('\n─────────────────────────────────────────');
-  console.log(`[CleanClaw] Task ${taskId}${variant} complete. ${changeNumber - 1} change(s) processed.`);
-  console.log(`Log: ${path.join(plansDir, `task${taskId}`, `task${taskId}${variant}_log.md`)}`);
-  console.log('─────────────────────────────────────────');
+function printSummary(
+  taskId: string,
+  variant: string,
+  changeNumber: number,
+  plansDir: string,
+  logger: CleanClawLogger,
+): void {
+  logger.info('\n─────────────────────────────────────────');
+  logger.info(`[CleanClaw] Task ${taskId}${variant} complete. ${changeNumber - 1} change(s) processed.`);
+  logger.info(`Log: ${path.join(plansDir, `task${taskId}`, `task${taskId}${variant}_log.md`)}`);
+  logger.info('─────────────────────────────────────────');
 }
 
 function applyChange(proposed: ProposedChange): void {
@@ -499,14 +518,15 @@ function applyChange(proposed: ProposedChange): void {
 // ─── Entry point (direct run) ─────────────────────────────────────────────────
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.meta.url.replace('file://', ''))) {
+  const logger = createConsoleLogger();
   const taskDescription = process.argv[2];
   if (!taskDescription) {
-    console.error('Usage: npx tsx cleanclaw/core/pipeline.ts "Your task description"');
+    logger.error('Usage: npx tsx cleanclaw/core/pipeline.ts "Your task description"');
     process.exit(1);
   }
   const config = getConfig();
-  runPipeline(taskDescription, config).catch(err => {
-    console.error('[CleanClaw] Pipeline failed:', err.message);
+  runPipeline(taskDescription, config, undefined, undefined, undefined, false, { logger }).catch(err => {
+    logger.error('[CleanClaw] Pipeline failed:', err.message);
     process.exit(1);
   });
 }

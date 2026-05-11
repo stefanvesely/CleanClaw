@@ -1,13 +1,19 @@
 import type { CleanClawConfig } from '../config/config-schema.js';
+import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 import { update } from './updater-worker.js';
 
-export async function triggerProjectMapUpdate(filePath: string, projectRoot: string, config: CleanClawConfig): Promise<void> {
+export async function triggerProjectMapUpdate(
+  filePath: string,
+  projectRoot: string,
+  config: CleanClawConfig,
+  logger: CleanClawLogger = createConsoleLogger(),
+): Promise<void> {
   if (!config.embeddings) return;
 
   try {
-    await update(projectRoot, filePath, config);
+    await update(projectRoot, filePath, config, logger);
   } catch {
-    // Non-fatal — log and continue. A failed index update never blocks the pipeline.
-    process.stderr.write(`[ProjectMap] Update failed for ${filePath} — index may be stale.\n`);
+    // Non-fatal: a failed index update never blocks the pipeline.
+    logger.warn(`[ProjectMap] Update failed for ${filePath} - index may be stale.`);
   }
 }

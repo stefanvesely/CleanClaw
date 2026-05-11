@@ -3,6 +3,7 @@ import type { CleanClawConfig } from '../config/config-schema.js';
 import { getProvider } from './embedder.js';
 import { queryTable } from './store.js';
 import type { StoreRow } from './store.js';
+import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 
 export type QueryResult = StoreRow;
 
@@ -11,7 +12,8 @@ export async function queryProjectMap(
   projectRoot: string,
   config: CleanClawConfig,
   layers: string[] = ['backend', 'frontend', 'mediator'],
-  topK = 10
+  topK = 10,
+  logger: CleanClawLogger = createConsoleLogger(),
 ): Promise<QueryResult[]> {
   if (!config.projectMap?.enabled) return [];
 
@@ -26,7 +28,7 @@ export async function queryProjectMap(
       results.push(...rows);
     } catch {
       // Non-fatal â€” missing index or embedding failure never blocks the pipeline
-      process.stderr.write(`[ProjectMap] Query failed for layer ${layer} â€” skipping.\n`);
+      logger.warn(`[ProjectMap] Query failed for layer ${layer} â€” skipping.`);
     }
   }
 

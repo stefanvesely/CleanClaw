@@ -27,9 +27,10 @@ Source: Review of `README.md`, April Claude plan files, changelog entries, and c
   - Completed in `plans/complete/2026-05-10-cleanclaw-secret-redaction.md`.
   - `cleanclaw/plans/secret-redactor.ts` uses NemoClaw's canonical secret patterns plus credential assignment and bearer-token guards.
   - Plan writes, Markdown/JSON log entries, session headers, and rollback metadata are redacted before persistence.
-- [ ] Replace direct CleanClaw console logging with an injectable/structured logger.
-  - The pipeline and CLI still use many `console.log()` calls.
-  - CleanClaw should integrate with NemoClaw/OpenClaw logging when run under NemoClaw.
+- [x] Replace direct CleanClaw console logging with an injectable/structured logger.
+  - Completed in `plans/complete/2026-05-11-cleanclaw-structured-logger.md`.
+  - Added `cleanclaw/core/logger.ts` with console, silent, and memory logger implementations.
+  - CleanClaw core, CLI helpers, ProjectMap helpers, file scanner, undo, and plan completion warnings now accept/use `CleanClawLogger`.
 - [ ] Finish NemoClaw session/context handoff.
   - Pass blueprint profile, session id, auth context, and relevant runtime state into CleanClaw mode.
 - [ ] Decide and implement gateway routing policy.

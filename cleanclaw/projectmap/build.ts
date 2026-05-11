@@ -6,6 +6,7 @@ import { extractMethods, embedTextForMethod, embedTextForMisc, isCodeFile } from
 import { saveTable } from "./store.js";
 import type { MethodRow, MiscRow } from "./store.js";
 import type { CleanClawConfig } from "../config/config-schema.js";
+import { createConsoleLogger, type CleanClawLogger } from "../core/logger.js";
 
 const LAYERS = ["backend", "frontend", "mediator"] as const;
 type Layer = (typeof LAYERS)[number];
@@ -26,7 +27,11 @@ function* iterFiles(root: string): Generator<string> {
   }
 }
 
-export async function build(projectRoot: string, config: CleanClawConfig): Promise<void> {
+export async function build(
+  projectRoot: string,
+  config: CleanClawConfig,
+  logger: CleanClawLogger = createConsoleLogger(),
+): Promise<void> {
   const storeDir = join(projectRoot, ".cleanclaw", "projectmap");
   const layerMap = config.layerMap ?? null;
   const extraKeywords = config.layerKeywords ?? null;
@@ -37,7 +42,7 @@ export async function build(projectRoot: string, config: CleanClawConfig): Promi
   const miscRows: MiscRow[] = [];
   const miscTexts: string[] = [];
 
-  console.log(`[ProjectMap] Scanning ${projectRoot} ...`);
+  logger.info(`[ProjectMap] Scanning ${projectRoot} ...`);
 
   for (const filePath of iterFiles(projectRoot)) {
     const rel = relative(projectRoot, filePath);
@@ -71,16 +76,16 @@ export async function build(projectRoot: string, config: CleanClawConfig): Promi
 
   for (const layer of LAYERS) {
     if (layerTexts[layer].length === 0) continue;
-    console.log(`[ProjectMap] Embedding ${layerTexts[layer].length} ${layer} methods ...`);
+    logger.info(`[ProjectMap] Embedding ${layerTexts[layer].length} ${layer} methods ...`);
     const vectors = await provider.embed(layerTexts[layer]);
     saveTable(storeDir, layer, layerRows[layer], vectors);
   }
 
   if (miscTexts.length > 0) {
-    console.log(`[ProjectMap] Embedding ${miscTexts.length} misc files ...`);
+    logger.info(`[ProjectMap] Embedding ${miscTexts.length} misc files ...`);
     const vectors = await provider.embed(miscTexts);
     saveTable(storeDir, MISC_LAYER, miscRows, vectors);
   }
 
-  console.log("[ProjectMap] Build complete.");
+  logger.info("[ProjectMap] Build complete.");
 }
