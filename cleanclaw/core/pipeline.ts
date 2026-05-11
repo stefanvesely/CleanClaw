@@ -15,6 +15,7 @@ import { triggerProjectMapUpdate } from '../projectmap/updater.js';
 import { queryProjectMap } from '../projectmap/query-bridge.js';
 import { applyRootPolicy } from './sandbox-policy.js';
 import { createConsoleLogger, type CleanClawLogger } from './logger.js';
+import { summarizeRuntimeContext, type CleanClawRuntimeContext, type CleanClawRuntimeContextSummary } from './runtime-context.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
 import type { TaskStep } from '../plans/plan-writer.js';
 import type { ProposedChange } from './language-agent.js';
@@ -25,6 +26,7 @@ import type { ApprovedPlanContext } from '../scope/scope-rules.js';
 
 export interface RunPipelineOptions {
   logger?: CleanClawLogger;
+  runtimeContext?: CleanClawRuntimeContext | null;
 }
 
 // ─── Task ID ──────────────────────────────────────────────────────────────────
@@ -142,6 +144,7 @@ async function runPipelinePerChange(
   startStepIndex = 0,
   headless = false,
   logger: CleanClawLogger = createConsoleLogger(),
+  runtimeContextSummary: CleanClawRuntimeContextSummary | null = null,
 ): Promise<void> {
   const model = resolveModel(config);
   let changeNumber = 1;
@@ -237,7 +240,17 @@ async function runPipelinePerChange(
     appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
     markStepComplete(planPath, step.body, completedPlanPath, logger);
     logger.info(`[CleanClaw] Change ${changeNumber} applied and logged.`);
-    saveState({ projectName: config.projectName, currentTaskId: taskId, currentVariant: variant, plansDir, lastUpdated: new Date().toISOString(), iterationCount: 0, resumable: true, lastCompletedStep: stepIndex }, activeRoot);
+    saveState({
+      projectName: config.projectName,
+      currentTaskId: taskId,
+      currentVariant: variant,
+      plansDir,
+      lastUpdated: new Date().toISOString(),
+      iterationCount: 0,
+      resumable: true,
+      lastCompletedStep: stepIndex,
+      runtimeContext: runtimeContextSummary,
+    }, activeRoot);
     stepIndex++;
     changeNumber++;
     cumulativeChangeCount++;
@@ -345,6 +358,8 @@ export async function runPipeline(
   options: RunPipelineOptions = {},
 ): Promise<void> {
   const logger = options.logger ?? createConsoleLogger();
+  const runtimeContext = options.runtimeContext ?? null;
+  const runtimeContextSummary = summarizeRuntimeContext(runtimeContext);
   const plansDir = path.resolve(config.plansDir);
   const bridge = resolveBridge(config);
   const languageAgent = resolveLanguageAgent(config);
@@ -404,7 +419,11 @@ export async function runPipeline(
       confirmedFiles ?? [],
       planContent,
       plansDir,
+      runtimeContext,
     );
+  } else if (runtimeContext) {
+    const { appendRuntimeContextHeader } = await import('../plans/log-writer.js');
+    appendRuntimeContextHeader(`task${taskId}`, runtimeContext, plansDir);
   }
 
   // Phase 2 — Parse steps
@@ -454,7 +473,7 @@ export async function runPipeline(
   if (granularity === 'per-file') {
     await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, logger);
   } else {
-    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot, resumeFromStep, headless, logger);
+    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot, resumeFromStep, headless, logger, runtimeContextSummary);
 
     // Iteration loop — boss prompts for next iteration after each pipeline run
     let iterationNumber = 1;
@@ -470,7 +489,7 @@ export async function runPipeline(
 
       const iterSteps = parseTaskPlanSteps(iterResult.planContent);
       const iterCompletedPath = iterResult.planPath.replace('_plan.md', '_plan_completed.md');
-      await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot, 0, false, logger);
+      await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, config, languageAgent, bridge, scopeCtx, activeRoot, 0, false, logger, runtimeContextSummary);
 
       completedSteps = [...completedSteps, ...iterSteps.map(s => s.body)];
       currentPlanContent = iterResult.planContent;

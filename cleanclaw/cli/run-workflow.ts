@@ -9,6 +9,13 @@ import { suggestWorkflowAnswers, isOpenshellAvailable } from '../wizard/wizard-d
 import { promptDeclareProjectRoot } from '../core/root-guard.js';
 import { loadActiveProject, saveActiveProject } from '../core/state-manager.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
+import { buildCleanClawRuntimeContext, summarizeRuntimeContext, type CleanClawSessionLike } from '../core/runtime-context.js';
+
+export interface RunWorkflowRuntimeContextInput {
+  source?: string;
+  session?: CleanClawSessionLike | null;
+  activeRoot?: string | null;
+}
 
 function ask(rl: readline.Interface, question: string): Promise<string> {
   return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())));
@@ -29,6 +36,7 @@ export async function runWorkflow(
   taskDescription: string,
   headless = false,
   logger: CleanClawLogger = createConsoleLogger(),
+  runtimeContextInput: RunWorkflowRuntimeContextInput = {},
 ): Promise<void> {
   const baseConfig = getConfig();
   const { config, credentialEnv, credentialValue } = resolveConfigCredential(baseConfig);
@@ -44,6 +52,15 @@ export async function runWorkflow(
     saveActiveProject(activeRoot);
     logger.info(`[CleanClaw] Active project root set: ${activeRoot}`);
   }
+
+  const runtimeContext = buildCleanClawRuntimeContext({
+    source: runtimeContextInput.source ?? 'cleanclaw-cli',
+    config,
+    activeRoot: runtimeContextInput.activeRoot ?? activeRoot,
+    credentialEnv,
+    hasCredential: Boolean(credentialValue),
+    session: runtimeContextInput.session ?? null,
+  });
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -128,7 +145,7 @@ export async function runWorkflow(
 
   const workflowAnswers: WorkflowAnswers = { why, files, criteria, outOfScope };
 
-  await runPipeline(fullDescription, config, workflowAnswers, scannedFiles, confirmedFiles, headless, { logger });
+  await runPipeline(fullDescription, config, workflowAnswers, scannedFiles, confirmedFiles, headless, { logger, runtimeContext });
 
   saveState({
     projectName: config.projectName,
@@ -139,6 +156,7 @@ export async function runWorkflow(
     iterationCount: state?.iterationCount ?? 0,
     resumable: false,
     lastCompletedStep: 0,
+    runtimeContext: summarizeRuntimeContext(runtimeContext),
   }, process.cwd());
 }
 

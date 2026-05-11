@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { appendLogEntry, appendRollbackEntry, appendSessionHeader } from './log-writer.js';
+import { appendLogEntry, appendRollbackEntry, appendRuntimeContextHeader, appendSessionHeader } from './log-writer.js';
 import type { ProposedChange } from '../core/language-agent.js';
 import type { DiffCapture } from './diff-capture.js';
 
@@ -131,6 +131,53 @@ describe('appendLogEntry', () => {
     expect(content).not.toContain('nvapi-1234567890abcdef');
     expect(content).not.toContain('abcdefghijklmnop');
     expect(content).not.toContain('sk-123456789012345678901234');
+  });
+
+  it('writes redacted runtime context headers', () => {
+    appendRuntimeContextHeader(
+      'task01',
+      {
+        source: 'nemoclaw-mode',
+        activeRoot: 'D:/Projects/CC/CleanClaw',
+        projectName: 'CleanClaw',
+        configProvider: 'nvidia-nim',
+        configModel: 'nvidia/nemotron-3-super-120b-a12b',
+        session: {
+          sessionId: 'session-1',
+          status: 'complete',
+          mode: 'interactive',
+          agent: 'openclaw',
+          sandboxName: 'demo',
+          lastStepStarted: 'provider_selection',
+          lastCompletedStep: 'provider_selection',
+          resumable: false,
+        },
+        blueprint: {
+          profile: 'openai-completions',
+          policyPresets: ['npm'],
+          gatewayName: 'nemoclaw',
+          fromDockerfile: 'Dockerfile',
+        },
+        auth: {
+          provider: 'nvidia-nim',
+          model: 'nvidia/nemotron-3-super-120b-a12b',
+          endpointUrl: 'https://example.test/v1?token=<REDACTED>',
+          credentialEnv: 'OPENAI_API_KEY',
+          preferredInferenceApi: 'openai-completions',
+          hasCredential: true,
+        },
+        runtime: {
+          messagingChannels: ['telegram'],
+        },
+      },
+      tmpDir,
+    );
+
+    const content = fs.readFileSync(path.join(tmpDir, 'task01', 'task.log'), 'utf-8');
+    expect(content).toContain('## Runtime Context');
+    expect(content).toContain('- Session id: session-1');
+    expect(content).toContain('- Credential env: OPENAI_API_KEY');
+    expect(content).not.toContain('token=');
   });
 
   it('redacts secrets from rollback entries', () => {

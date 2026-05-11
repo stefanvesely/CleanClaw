@@ -4,10 +4,21 @@
 import { getConfig } from "../core/config-loader.js";
 import { PROVIDER_CREDENTIAL_ENV, resolveConfigCredential } from "../core/credential-resolver.js";
 import { runPipeline } from "../core/pipeline.js";
+import { buildCleanClawRuntimeContext, type CleanClawSessionLike } from "../core/runtime-context.js";
+import { loadActiveProject } from "../core/state-manager.js";
 import type { CleanClawConfig } from "../config/config-schema.js";
 
 export interface ModeRuntime {
   run(input?: string): Promise<void>;
+}
+
+async function loadNemoClawSession(): Promise<CleanClawSessionLike | null> {
+  try {
+    const sessionModule = await import("../../src/lib/onboard-session.js");
+    return sessionModule.loadSession();
+  } catch {
+    return null;
+  }
 }
 
 export class CleanClawMode implements ModeRuntime {
@@ -24,6 +35,16 @@ export class CleanClawMode implements ModeRuntime {
       );
     }
 
-    await runPipeline(taskDescription, resolvedConfig);
+    const session = await loadNemoClawSession();
+    const runtimeContext = buildCleanClawRuntimeContext({
+      source: "nemoclaw-mode",
+      config: resolvedConfig,
+      activeRoot: loadActiveProject() ?? process.cwd(),
+      credentialEnv,
+      hasCredential: Boolean(credentialValue),
+      session,
+    });
+
+    await runPipeline(taskDescription, resolvedConfig, undefined, undefined, undefined, false, { runtimeContext });
   }
 }

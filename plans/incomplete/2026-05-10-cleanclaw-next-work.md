@@ -31,8 +31,10 @@ Source: Review of `README.md`, April Claude plan files, changelog entries, and c
   - Completed in `plans/complete/2026-05-11-cleanclaw-structured-logger.md`.
   - Added `cleanclaw/core/logger.ts` with console, silent, and memory logger implementations.
   - CleanClaw core, CLI helpers, ProjectMap helpers, file scanner, undo, and plan completion warnings now accept/use `CleanClawLogger`.
-- [ ] Finish NemoClaw session/context handoff.
-  - Pass blueprint profile, session id, auth context, and relevant runtime state into CleanClaw mode.
+- [x] Finish NemoClaw session/context handoff.
+  - Completed in `plans/complete/2026-05-11-cleanclaw-context-handoff.md`.
+  - Added a redacted `CleanClawRuntimeContext` carrying session id, agent/sandbox, gateway/profile, policy presets, auth env, provider/model, active root, and credential presence.
+  - `CleanClawMode`, NemoClaw `create new dev task`, workflow, pipeline logs, and CleanClaw state now receive the runtime-context summary.
 - [ ] Decide and implement gateway routing policy.
   - CleanClaw currently has mixed direct provider/gateway assumptions.
   - When running inside NemoClaw/OpenShell, route inference through the NemoClaw gateway consistently.

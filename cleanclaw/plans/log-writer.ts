@@ -3,6 +3,7 @@ import path from 'path';
 import type { ProposedChange } from '../core/language-agent.js';
 import type { DiffCapture } from './diff-capture.js';
 import { redactLineContent, redactPlanSecrets } from './secret-redactor.js';
+import { formatRuntimeContextMarkdown, type CleanClawRuntimeContext } from '../core/runtime-context.js';
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -99,6 +100,7 @@ export function appendSessionHeader(
   confirmedFiles: string[],
   planContent: string,
   plansDir: string,
+  runtimeContext?: CleanClawRuntimeContext | null,
 ): void {
   const dir = path.join(plansDir, taskId);
   const filepath = path.join(dir, 'task.log');
@@ -122,15 +124,37 @@ export function appendSessionHeader(
     'Confirmed:',
     redactPlanSecrets(confirmedList),
     '',
+    formatRuntimeContextMarkdown(runtimeContext),
+    runtimeContext ? '' : undefined,
     '## Plan',
     redactPlanSecrets(planContent),
+    '',
+    '---',
+    '',
+  ].filter((line): line is string => line !== undefined).join('\n');
+
+  fs.mkdirSync(dir, { recursive: true });
+  fs.appendFileSync(filepath, block, 'utf-8');
+}
+
+export function appendRuntimeContextHeader(
+  taskId: string,
+  runtimeContext: CleanClawRuntimeContext,
+  plansDir: string,
+): void {
+  const dir = path.join(plansDir, taskId);
+  const filepath = path.join(dir, 'task.log');
+  const block = [
+    `# Runtime Context - ${new Date().toISOString()}`,
+    '',
+    formatRuntimeContextMarkdown(runtimeContext),
     '',
     '---',
     '',
   ].join('\n');
 
   fs.mkdirSync(dir, { recursive: true });
-  fs.appendFileSync(filepath, block, 'utf-8');
+  fs.appendFileSync(filepath, redactPlanSecrets(block), 'utf-8');
 }
 
 // ─── Rollback ─────────────────────────────────────────────────────────────────

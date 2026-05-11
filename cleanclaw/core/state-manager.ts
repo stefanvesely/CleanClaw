@@ -1,6 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import type { CleanClawRuntimeContextSummary } from './runtime-context.js';
 
 export interface CleanClawState {
   projectName: string;
@@ -11,6 +12,7 @@ export interface CleanClawState {
   iterationCount: number;
   resumable: boolean;
   lastCompletedStep: number;
+  runtimeContext?: CleanClawRuntimeContextSummary | null;
 }
 
 export function saveState(state: CleanClawState, projectDir: string): void {

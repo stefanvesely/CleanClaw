@@ -263,7 +263,10 @@ async function createDevTask(): Promise<void> {
   );
   const workflowPath = ["../cleanclaw/cli", "run-workflow.js"].join("/");
   const { runWorkflow } = await import(workflowPath);
-  await runWorkflow(taskDescription);
+  await runWorkflow(taskDescription, false, undefined, {
+    source: "nemoclaw-create-dev-task",
+    session: onboardSession.loadSession(),
+  });
 }
 
 // ── Dispatch ─────────────────────────────────────────────────────
