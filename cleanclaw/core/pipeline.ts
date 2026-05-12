@@ -408,7 +408,7 @@ export async function runPipeline(
 
   // Apply root policy before any LLM calls or file operations
   const activeRootEarly = loadActiveProject() ?? process.cwd();
-  await applyRootPolicy(activeRootEarly, logger);
+  await applyRootPolicy(activeRootEarly, logger, runtimeContext);
 
   // Phase 1 — Augment task description with ProjectMap context (opt-in)
   let enrichedDescription = taskDescription;

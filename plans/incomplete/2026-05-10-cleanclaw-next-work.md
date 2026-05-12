@@ -40,9 +40,12 @@ Source: Review of `README.md`, April Claude plan files, changelog entries, and c
   - Added explicit `auto`, `gateway`, and `direct` routing modes.
   - Embedded NemoClaw mode and `create new dev task` force gateway routing through `https://inference.local`.
   - Standalone CleanClaw keeps automatic/direct behavior unless callers opt into gateway routing.
-- [ ] Implement sandbox Phase 8 runtime.
-  - `cleanclaw/core/sandbox-policy.ts` is software-boundary only today.
-  - Run CleanClaw inside OpenShell and apply Landlock enforcement when available.
+- [x] Implement sandbox Phase 8 runtime.
+  - Completed in `plans/complete/2026-05-12-cleanclaw-sandbox-phase8-runtime.md`.
+  - Added sandbox runtime delegation through `openshell sandbox exec`.
+  - `cleanclaw run` now supports `--sandbox` and `--sandbox-name`.
+  - NemoClaw `create new dev task` requests sandbox execution when a session sandbox is available.
+  - `sandbox-policy.ts` now reports host software-only, host sandbox-capable, and in-sandbox runtime states.
 - [ ] Restore local verification environment.
   - `node` exists, but `npm`, `node_modules`, `dist`, and `cleanclaw/dist` were not available during review.
   - Install dependencies and run build/test once npm is available.

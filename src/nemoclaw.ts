@@ -267,6 +267,7 @@ async function createDevTask(): Promise<void> {
     source: "nemoclaw-create-dev-task",
     session: onboardSession.loadSession(),
     gatewayRouting: "gateway",
+    sandboxExecution: true,
   });
 }
 

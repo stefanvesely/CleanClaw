@@ -18,9 +18,15 @@ program
   .command("run <task>")
   .description("Run a task")
   .option("--headless", "Run without interactive prompts — scope violations exit with code 1")
+  .option("--sandbox", "Run inside the active OpenShell sandbox when available")
+  .option("--sandbox-name <name>", "OpenShell sandbox name to use with --sandbox")
   .action(async (task, options) => {
     const { runWorkflow } = await import("../dist/cleanclaw/cli/run-workflow.js");
-    await runWorkflow(task, options.headless ?? false);
+    await runWorkflow(task, options.headless ?? false, undefined, {
+      sandboxExecution: options.sandbox ?? false,
+      sandboxName: options.sandboxName ?? null,
+      source: "cleanclaw-cli",
+    });
   });
 
 program

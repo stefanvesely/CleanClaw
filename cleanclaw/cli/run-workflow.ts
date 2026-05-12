@@ -10,12 +10,15 @@ import { promptDeclareProjectRoot } from '../core/root-guard.js';
 import { loadActiveProject, saveActiveProject } from '../core/state-manager.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 import { buildCleanClawRuntimeContext, summarizeRuntimeContext, type CleanClawSessionLike } from '../core/runtime-context.js';
+import { executeCleanClawInSandbox, isRunningInsideSandbox, resolveCleanClawSandboxName } from '../core/sandbox-runtime.js';
 
 export interface RunWorkflowRuntimeContextInput {
   source?: string;
   session?: CleanClawSessionLike | null;
   activeRoot?: string | null;
   gatewayRouting?: 'auto' | 'gateway' | 'direct';
+  sandboxExecution?: boolean;
+  sandboxName?: string | null;
 }
 
 function ask(rl: readline.Interface, question: string): Promise<string> {
@@ -62,6 +65,28 @@ export async function runWorkflow(
     hasCredential: Boolean(credentialValue),
     session: runtimeContextInput.session ?? null,
   });
+
+  if (runtimeContextInput.sandboxExecution && !isRunningInsideSandbox()) {
+    const sandboxName = runtimeContextInput.sandboxName ?? resolveCleanClawSandboxName(runtimeContext);
+    if (sandboxName) {
+      logger.info(`[CleanClaw] Delegating task to OpenShell sandbox: ${sandboxName}`);
+      const result = await executeCleanClawInSandbox({
+        sandboxName,
+        projectRoot: activeRoot,
+        taskDescription,
+        headless,
+      });
+      if (result.attempted) {
+        if (result.status !== 0) {
+          throw new Error(`CleanClaw sandbox execution failed in "${sandboxName}" with exit code ${result.status}.`);
+        }
+        return;
+      }
+      logger.warn(`[CleanClaw] Sandbox execution unavailable (${result.error ?? 'unknown reason'}). Continuing on host with software boundary.`);
+    } else {
+      logger.warn('[CleanClaw] Sandbox execution requested but no sandbox name was available. Continuing on host with software boundary.');
+    }
+  }
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
