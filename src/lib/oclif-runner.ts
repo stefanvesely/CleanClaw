@@ -6,6 +6,16 @@
 import { Config as OclifConfig } from "@oclif/core";
 
 import { CLI_NAME } from "./branding";
+import registeredCommands from "./oclif-commands";
+
+type LocalOclifCommand = {
+  run(argv: string[], root?: string): Promise<unknown>;
+  description?: string;
+  examples?: string[];
+  flags?: Record<string, unknown>;
+  summary?: string;
+  usage?: string | string[];
+};
 
 export interface OclifCommandRunOptions {
   rootDir: string;
@@ -60,6 +70,55 @@ function applyBrandedBin(config: OclifConfig): void {
   }
 }
 
+function hasHelpFlag(args: string[]): boolean {
+  return args.includes("--help") || args.includes("-h");
+}
+
+function replaceBinTemplate(value: string): string {
+  return value.replaceAll("<%= config.bin %>", CLI_NAME);
+}
+
+function toLines(value: string | string[] | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return Array.isArray(value) ? value : [value];
+}
+
+function renderLocalCommandHelp(commandId: string, command: LocalOclifCommand): void {
+  const usages = toLines(command.usage);
+  const primaryUsage = usages[0] ?? commandId.replaceAll(":", " ");
+  const descriptions = [command.summary, command.description].filter(
+    (line): line is string => typeof line === "string" && line.length > 0,
+  );
+  const flags = Object.keys(command.flags ?? {}).filter((flag) => flag !== "help");
+  const examples = toLines(command.examples);
+
+  console.log(`Usage: ${CLI_NAME} ${replaceBinTemplate(primaryUsage)}`);
+
+  if (descriptions.length > 0) {
+    console.log("");
+    console.log(descriptions.join("\n"));
+  }
+
+  if (flags.length > 0) {
+    console.log("");
+    console.log("Flags:");
+    for (const flag of flags) {
+      console.log(`  --${flag}`);
+    }
+  }
+
+  if (examples.length > 0) {
+    console.log("");
+    console.log("Examples:");
+    for (const example of examples) {
+      console.log(`  ${replaceBinTemplate(example)}`);
+    }
+  }
+}
+
 export async function runRegisteredOclifCommand(
   commandId: string,
   args: string[],
@@ -69,9 +128,19 @@ export async function runRegisteredOclifCommand(
   applyBrandedBin(config);
   const errorLine = opts.error ?? console.error;
   const exit = opts.exit ?? ((code: number) => process.exit(code));
+  const command = (registeredCommands as Record<string, LocalOclifCommand | undefined>)[commandId];
 
   try {
-    await config.runCommand(commandId, args);
+    if (command) {
+      if (hasHelpFlag(args) && command.flags) {
+        renderLocalCommandHelp(commandId, command);
+        process.exitCode = 0;
+        return;
+      }
+      await command.run(args, opts.rootDir);
+    } else {
+      await config.runCommand(commandId, args);
+    }
   } catch (error) {
     const exitCode = getOclifExitCode(error);
     if (exitCode === 0) {

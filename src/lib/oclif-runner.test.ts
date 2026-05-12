@@ -3,14 +3,26 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { loadMock, runCommandMock } = vi.hoisted(() => ({
+const { loadMock, localCommandRunMock, runCommandMock } = vi.hoisted(() => ({
   loadMock: vi.fn(),
+  localCommandRunMock: vi.fn(),
   runCommandMock: vi.fn(),
 }));
 
 vi.mock("@oclif/core", () => ({
   Config: {
     load: loadMock,
+  },
+}));
+
+vi.mock("./oclif-commands", () => ({
+  default: {
+    list: {
+      flags: { json: {} },
+      run: localCommandRunMock,
+      summary: "List all sandboxes",
+      usage: ["list [--json]"],
+    },
   },
 }));
 
@@ -43,6 +55,7 @@ class UnexpectedArgsError extends Error {
 describe("runRegisteredOclifCommand", () => {
   beforeEach(() => {
     runCommandMock.mockReset();
+    localCommandRunMock.mockReset();
     loadMock.mockReset();
     loadMock.mockResolvedValue(makeConfig());
     process.exitCode = undefined;
@@ -56,12 +69,12 @@ describe("runRegisteredOclifCommand", () => {
   it("loads the oclif config, applies branded bin metadata, and runs the command", async () => {
     const config = makeConfig();
     loadMock.mockResolvedValue(config);
-    runCommandMock.mockResolvedValue(undefined);
+    localCommandRunMock.mockResolvedValue(undefined);
 
     await runRegisteredOclifCommand("list", ["--json"], { rootDir: "/repo" });
 
     expect(loadMock).toHaveBeenCalledWith("/repo");
-    expect(runCommandMock).toHaveBeenCalledWith("list", ["--json"]);
+    expect(localCommandRunMock).toHaveBeenCalledWith(["--json"], "/repo");
     expect(config.bin).toBe("nemoclaw");
     expect(config.pjson.oclif.bin).toBe("nemoclaw");
     expect(config.options.pjson.oclif.bin).toBe("nemoclaw");
@@ -70,7 +83,7 @@ describe("runRegisteredOclifCommand", () => {
 
   it("formats oclif flag parse errors and exits with the oclif exit code", async () => {
     const error = new NonExistentFlagsError("Nonexistent flag: --bogus\nSee more help");
-    runCommandMock.mockRejectedValue(error);
+    localCommandRunMock.mockRejectedValue(error);
     const errorLine = vi.fn();
     const exit = vi.fn((code: number): never => {
       throw new Error(`exit:${code}`);
@@ -92,24 +105,26 @@ describe("runRegisteredOclifCommand", () => {
     });
 
     await expect(
-      runRegisteredOclifCommand("status", ["extra"], { rootDir: "/repo", error: errorLine, exit }),
+      runRegisteredOclifCommand("external", ["extra"], { rootDir: "/repo", error: errorLine, exit }),
     ).rejects.toThrow("exit:2");
 
     expect(errorLine).toHaveBeenCalledWith("  Unexpected argument: extra");
     expect(exit).toHaveBeenCalledWith(2);
   });
 
-  it("treats oclif help exits as success", async () => {
-    runCommandMock.mockRejectedValue({ oclif: { exit: 0 } });
+  it("renders local command help from static metadata", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     await runRegisteredOclifCommand("list", ["--help"], { rootDir: "/repo" });
 
     expect(process.exitCode).toBe(0);
+    expect(localCommandRunMock).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith("Usage: nemoclaw list [--json]");
   });
 
   it("rethrows non-parse command failures", async () => {
     const error = new Error("boom");
-    runCommandMock.mockRejectedValue(error);
+    localCommandRunMock.mockRejectedValue(error);
 
     await expect(runRegisteredOclifCommand("list", [], { rootDir: "/repo" })).rejects.toBe(error);
   });
