@@ -28,7 +28,7 @@
     "source-shape:scan": "tsx scripts/find-source-shape-tests.ts --metrics",
     "source-shape:check": "tsx scripts/find-source-shape-tests.ts --check",
     "bump:version": "tsx scripts/bump-version.ts",
-    "prepare": "if command -v tsc >/dev/null 2>&1 || [ -x node_modules/.bin/tsc ]; then npm run build:cli; fi && npm install --omit=dev --ignore-scripts 2>/dev/null || true && if [ -d .git ]; then if command -v prek >/dev/null 2>&1; then prek install; else echo \"Skipping git hook setup (prek not installed)\"; fi; fi",
+    "prepare": "node scripts/prepare-package.js",
     "prepublishOnly": "git describe --tags --match 'v*' | sed 's/^v//' > .version && test -s .version && npm run build:cleanclaw && cd nemoclaw && env -u npm_config_global -u npm_config_prefix -u npm_config_omit npm install --ignore-scripts && ./node_modules/.bin/tsc"
   },
   "dependencies": {
