@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { program } from "commander";
+const { program } = require("commander");
 
 program
   .name("cleanclaw")

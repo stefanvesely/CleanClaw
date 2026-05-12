@@ -17,7 +17,7 @@
     "check:credential-env": "tsx scripts/check-direct-credential-env.ts src/lib/onboard.ts",
     "typecheck": "tsc -p jsconfig.json",
     "build:cli": "tsc -p tsconfig.src.json",
-    "build:cleanclaw": "tsc -p tsconfig.cleanclaw.json",
+    "build:cleanclaw": "tsc -p tsconfig.cleanclaw.json && node scripts/write-cleanclaw-dist-package.js",
     "typecheck:cli": "tsc -p tsconfig.cli.json",
     "validate:configs": "tsx scripts/validate-configs.ts",
     "migrate:js-to-ts": "tsx scripts/migrate-js-to-ts.ts",
