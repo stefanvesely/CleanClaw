@@ -50,9 +50,13 @@ Source: Review of `README.md`, April Claude plan files, changelog entries, and c
   - Local `node_modules` and CleanClaw build output are now available.
   - Focused CleanClaw verification has run successfully.
   - Full suite still needs triage before this item can be marked complete.
-- [ ] Triage `plans/fails.txt`.
+- [x] Triage `plans/fails.txt`.
   - Existing failure log shows CLI, credentials, and installer-preflight failures that should be reconciled against current code.
   - Provider metadata/credential alignment has been reconciled in `plans/complete/2026-05-12-align-provider-metadata.md`.
+  - Focused triage completed in `plans/complete/2026-05-12-triage-inline-failures.md`.
+  - Old credential timeout/env failures are stale; current credential failures are Windows symlink privilege and prompt subprocess behavior.
+  - Old installer CRLF parse failures are stale; current installer failures are broad Windows shell-harness status/output failures.
+  - The gateway trust test still fails due root NemoClaw CLI/Oclif dispatch returning code `2` instead of the expected lifecycle guidance code `1`.
 
 ## Complete / Mostly Complete
 
