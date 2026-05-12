@@ -63,6 +63,10 @@ function runOptional(label, command, args) {
   }
 }
 
+function isLocalRepositoryInstall() {
+  return fs.existsSync(path.join(root, ".git")) && process.env.npm_config_global !== "true";
+}
+
 if (hasCommand("tsc") || hasLocalBin("tsc")) {
   const result = runNpm(["run", "build:cli"]);
   if (result.status !== 0) {
@@ -70,8 +74,10 @@ if (hasCommand("tsc") || hasLocalBin("tsc")) {
   }
 }
 
-const productionInstall = npmCommand(["install", "--omit=dev", "--ignore-scripts"]);
-runOptional("production dependency refresh", productionInstall.command, productionInstall.args);
+if (!isLocalRepositoryInstall()) {
+  const productionInstall = npmCommand(["install", "--omit=dev", "--ignore-scripts"]);
+  runOptional("production dependency refresh", productionInstall.command, productionInstall.args);
+}
 
 if (fs.existsSync(path.join(root, ".git"))) {
   if (hasCommand("prek") || hasLocalBin("prek")) {
