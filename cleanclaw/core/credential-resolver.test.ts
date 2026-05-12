@@ -35,6 +35,8 @@ describe('credential resolver', () => {
     expect(credentialEnvForProvider('nvidia-nim')).toBe('OPENAI_API_KEY');
     expect(credentialEnvForProvider('anthropic-prod')).toBe('ANTHROPIC_API_KEY');
     expect(credentialEnvForProvider('compatible-endpoint')).toBe('COMPATIBLE_API_KEY');
+    expect(credentialEnvForProvider('ollama-local')).toBe('NEMOCLAW_OLLAMA_PROXY_TOKEN');
+    expect(credentialEnvForProvider('vllm-local')).toBe('NEMOCLAW_VLLM_LOCAL_TOKEN');
   });
 
   it('resolves credentials from env first', () => {
@@ -75,6 +77,17 @@ describe('credential resolver', () => {
 
     expect(resolved.credentialEnv).toBe('COMPATIBLE_ANTHROPIC_API_KEY');
     expect(resolved.config.anthropic?.apiKey).toBe('anthropic-key');
+  });
+
+  it('uses NemoClaw local inference tokens for local providers', () => {
+    const resolved = resolveConfigCredential(config('ollama-local'), {
+      env: { NEMOCLAW_OLLAMA_PROXY_TOKEN: 'local-token' },
+      homeDir: tmpHome,
+    });
+
+    expect(resolved.credentialEnv).toBe('NEMOCLAW_OLLAMA_PROXY_TOKEN');
+    expect(resolved.config.openai?.apiKey).toBe('local-token');
+    expect(resolved.config.openai?.model).toBe('nemotron-3-nano:30b');
   });
 });
 

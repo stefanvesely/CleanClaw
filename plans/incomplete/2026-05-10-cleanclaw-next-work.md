@@ -47,10 +47,12 @@ Source: Review of `README.md`, April Claude plan files, changelog entries, and c
   - NemoClaw `create new dev task` requests sandbox execution when a session sandbox is available.
   - `sandbox-policy.ts` now reports host software-only, host sandbox-capable, and in-sandbox runtime states.
 - [ ] Restore local verification environment.
-  - `node` exists, but `npm`, `node_modules`, `dist`, and `cleanclaw/dist` were not available during review.
-  - Install dependencies and run build/test once npm is available.
+  - Local `node_modules` and CleanClaw build output are now available.
+  - Focused CleanClaw verification has run successfully.
+  - Full suite still needs triage before this item can be marked complete.
 - [ ] Triage `plans/fails.txt`.
   - Existing failure log shows CLI, credentials, and installer-preflight failures that should be reconciled against current code.
+  - Provider metadata/credential alignment has been reconciled in `plans/complete/2026-05-12-align-provider-metadata.md`.
 
 ## Complete / Mostly Complete
 

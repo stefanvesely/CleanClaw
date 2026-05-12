@@ -5,6 +5,11 @@ import readline from 'readline';
 import { saveState } from '../core/state-manager.js';
 import { appendToRegistry } from '../projectmap/project-registry.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
+import {
+  CLEANCLAW_PROVIDER_METADATA,
+  CLEANCLAW_WIZARD_PROVIDER_IDS,
+  type CleanClawProvider,
+} from '../core/provider-metadata.js';
 
 const GLOBAL_CONFIG_PATH = path.join(os.homedir(), '.cleanclaw', 'config.json');
 
@@ -19,17 +24,44 @@ async function runGlobalConfigWizard(
   logger.info('\nCleanClaw â€” First Run Setup\n');
   logger.info('No global config found. Let\'s set up your defaults.\n');
 
-  const providerRaw = await ask(rl, 'Default provider (nvidia-nim/ollama) [nvidia-nim]: ');
-  const provider = providerRaw || 'nvidia-nim';
+  logger.info('Supported providers:');
+  for (const providerId of CLEANCLAW_WIZARD_PROVIDER_IDS) {
+    const provider = CLEANCLAW_PROVIDER_METADATA[providerId];
+    logger.info(`  - ${provider.id}: ${provider.label}`);
+  }
+  logger.info('');
+
+  const providerPrompt = `Default provider (${CLEANCLAW_WIZARD_PROVIDER_IDS.join('/')}) [nvidia-nim]: `;
+  const providerRaw = await ask(rl, providerPrompt);
+  const provider = (providerRaw || 'nvidia-nim') as CleanClawProvider;
+  if (!CLEANCLAW_PROVIDER_METADATA[provider]?.wizardVisible) {
+    throw new Error(`Unsupported provider "${provider}". Choose one of: ${CLEANCLAW_WIZARD_PROVIDER_IDS.join(', ')}`);
+  }
 
   const granularityRaw = await ask(rl, 'Default approval granularity (per-change/per-file/per-step) [per-file]: ');
   const granularity = granularityRaw || 'per-file';
 
   const globalConfig: Record<string, unknown> = { provider, approvalGranularity: granularity };
+  const providerMetadata = CLEANCLAW_PROVIDER_METADATA[provider];
 
-  if (provider === 'nvidia-nim') {
-    const baseUrlRaw = await ask(rl, 'NVIDIA NIM base URL [https://integrate.api.nvidia.com/v1]: ');
-    globalConfig['nvidia-nim'] = { baseUrl: baseUrlRaw || 'https://integrate.api.nvidia.com/v1' };
+  if (providerMetadata.bridgeFamily === 'openai') {
+    const modelRaw = await ask(rl, `Default model [${providerMetadata.defaultModel}]: `);
+    const baseUrlRaw = providerMetadata.defaultBaseURL
+      ? await ask(rl, `${providerMetadata.label} base URL [${providerMetadata.defaultBaseURL}]: `)
+      : await ask(rl, `${providerMetadata.label} base URL (leave blank for provider default): `);
+    globalConfig.openai = {
+      model: modelRaw || providerMetadata.defaultModel,
+      ...(baseUrlRaw || providerMetadata.defaultBaseURL
+        ? { baseURL: baseUrlRaw || providerMetadata.defaultBaseURL }
+        : {}),
+    };
+  } else {
+    const modelRaw = await ask(rl, `Default model [${providerMetadata.defaultModel}]: `);
+    const baseUrlRaw = await ask(rl, `${providerMetadata.label} base URL (leave blank for provider default): `);
+    globalConfig.anthropic = {
+      model: modelRaw || providerMetadata.defaultModel,
+      ...(baseUrlRaw ? { baseURL: baseUrlRaw } : {}),
+    };
   }
 
   fs.mkdirSync(path.dirname(GLOBAL_CONFIG_PATH), { recursive: true });

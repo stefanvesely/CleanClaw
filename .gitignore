@@ -20,8 +20,9 @@ cleanclaw.config.json
 # CleanClaw per-project state (local only — never commit)
 .cleanclaw-state.json
 
-# CleanClaw per-agent plans (local only — never commit)
+# CleanClaw runtime workspace data (local only — never commit)
 .cleanclaw/plans/
+.cleanclaw/projectmap/
 
 # Project-specific
 .nemoclaw-maintainer/

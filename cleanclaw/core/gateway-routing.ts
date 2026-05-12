@@ -1,5 +1,6 @@
 import type { CleanClawConfig } from '../config/config-schema.js';
 import type { CleanClawRuntimeContext } from './runtime-context.js';
+import { providerMetadata } from './provider-metadata.js';
 
 export type GatewayRoutingMode = 'auto' | 'gateway' | 'direct';
 
@@ -41,15 +42,11 @@ function gatewayModel(model: string | null | undefined, fallback: string): strin
 }
 
 function openAiModel(config: CleanClawConfig): string {
-  if (config.provider === 'openai') return config.openai?.model ?? 'gpt-4o';
-  if (config.provider === 'openai-api') return config.openai?.model ?? 'gpt-5.4';
-  if (config.provider === 'compatible-endpoint') return config.openai?.model ?? 'custom-model';
-  return config.openai?.model ?? 'nvidia/nemotron-3-super-120b-a12b';
+  return config.openai?.model ?? providerMetadata(config.provider)?.defaultModel ?? 'gpt-5.4';
 }
 
 function anthropicModel(config: CleanClawConfig): string {
-  if (config.provider === 'compatible-anthropic-endpoint') return config.anthropic?.model ?? 'custom-anthropic-model';
-  return config.anthropic?.model ?? 'claude-sonnet-4-6';
+  return config.anthropic?.model ?? providerMetadata(config.provider)?.defaultModel ?? 'claude-sonnet-4-6';
 }
 
 export function applyGatewayRoutingPolicy(

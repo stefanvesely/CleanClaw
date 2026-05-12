@@ -2,21 +2,16 @@
 import os from 'os';
 import path from 'path';
 import type { CleanClawConfig } from '../config/config-schema.js';
+import {
+  CLEANCLAW_PROVIDER_METADATA,
+  knownProviderIds,
+  providerMetadata,
+} from './provider-metadata.js';
 
-export const PROVIDER_CREDENTIAL_ENV: Record<string, string> = {
-  anthropic: 'ANTHROPIC_API_KEY',
-  'anthropic-prod': 'ANTHROPIC_API_KEY',
-  openai: 'OPENAI_API_KEY',
-  'openai-api': 'OPENAI_API_KEY',
-  'nvidia-nim': 'OPENAI_API_KEY',
-  'nvidia-prod': 'OPENAI_API_KEY',
-  'vllm-local': 'OPENAI_API_KEY',
-  'ollama-local': 'OPENAI_API_KEY',
-  'compatible-endpoint': 'COMPATIBLE_API_KEY',
-  'compatible-anthropic-endpoint': 'COMPATIBLE_ANTHROPIC_API_KEY',
-};
+export const PROVIDER_CREDENTIAL_ENV: Record<string, string> = Object.fromEntries(
+  Object.values(CLEANCLAW_PROVIDER_METADATA).map(provider => [provider.id, provider.credentialEnv]),
+);
 
-const ANTHROPIC_COMPATIBLE = new Set(['anthropic', 'anthropic-prod', 'compatible-anthropic-endpoint']);
 const ALLOWED_CREDENTIAL_KEYS = new Set(Object.values(PROVIDER_CREDENTIAL_ENV));
 const MAX_LEGACY_CREDENTIAL_BYTES = 1024 * 1024;
 
@@ -41,19 +36,6 @@ function normalizeCredential(value: string | null | undefined): string | null {
 
 function legacyCredentialPath(homeDir: string): string {
   return path.join(homeDir, '.nemoclaw', 'credentials.json');
-}
-
-function defaultAnthropicModel(provider: string): string {
-  return provider === 'compatible-anthropic-endpoint' ? 'custom-anthropic-model' : 'claude-sonnet-4-6';
-}
-
-function defaultOpenAiModel(provider: string): string {
-  if (provider === 'nvidia-nim' || provider === 'nvidia-prod') return 'nvidia/nemotron-3-super-120b-a12b';
-  if (provider === 'compatible-endpoint') return 'custom-model';
-  if (provider === 'vllm-local') return 'vllm-local';
-  if (provider === 'ollama-local') return 'llama3';
-  if (provider === 'openai') return 'gpt-4o';
-  return 'gpt-5.4';
 }
 
 function readLegacyCredentials(homeDir: string): Record<string, string> {
@@ -90,7 +72,7 @@ function readLegacyCredentials(homeDir: string): Record<string, string> {
 }
 
 export function credentialEnvForProvider(provider: string): string | null {
-  return PROVIDER_CREDENTIAL_ENV[provider] ?? null;
+  return providerMetadata(provider)?.credentialEnv ?? null;
 }
 
 export function resolveProviderCredential(envName: string, options: ResolveOptions = {}): string | null {
@@ -113,13 +95,14 @@ export function resolveConfigCredential(
   options: ResolveOptions = {},
 ): CredentialResolution {
   const credentialEnv = credentialEnvForProvider(config.provider);
+  const metadata = providerMetadata(config.provider);
   if (!credentialEnv) {
     throw new Error(
-      `Unknown provider "${config.provider}". Known providers: ${Object.keys(PROVIDER_CREDENTIAL_ENV).join(', ')}`,
+      `Unknown provider "${config.provider}". Known providers: ${knownProviderIds().join(', ')}`,
     );
   }
 
-  const configuredValue = ANTHROPIC_COMPATIBLE.has(config.provider)
+  const configuredValue = metadata?.bridgeFamily === 'anthropic'
     ? normalizeCredential(config.anthropic?.apiKey)
     : normalizeCredential(config.openai?.apiKey);
   const credentialValue = configuredValue ?? resolveProviderCredential(credentialEnv, options);
@@ -128,12 +111,12 @@ export function resolveConfigCredential(
     return { config, credentialEnv, credentialValue: null };
   }
 
-  if (ANTHROPIC_COMPATIBLE.has(config.provider)) {
+  if (metadata?.bridgeFamily === 'anthropic') {
     return {
       config: {
         ...config,
         anthropic: {
-          model: defaultAnthropicModel(config.provider),
+          model: metadata.defaultModel,
           ...config.anthropic,
           apiKey: credentialValue,
         },
@@ -147,7 +130,7 @@ export function resolveConfigCredential(
     config: {
       ...config,
       openai: {
-        model: defaultOpenAiModel(config.provider),
+        model: metadata?.defaultModel ?? 'gpt-5.4',
         ...config.openai,
         apiKey: credentialValue,
       },
