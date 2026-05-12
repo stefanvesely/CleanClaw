@@ -1,6 +1,16 @@
 # CleanClaw
 
-> **Status: Initial setup ready for testing.**
+> **NOTE: CleanClaw is a first test project.**
+> Please log improvement tickets before treating it as production-ready. The current code is intended for setup validation, local workflow testing, and guided iteration on the CleanClaw/NemoClaw integration.
+
+CleanClaw is a coding-agent workflow layer for AI-assisted development. It is designed to sit between a developer and an implementation agent: it asks for project context, builds a scoped plan, routes work through provider and sandbox policy, requires human approval before changes land, and leaves a permanent audit trail of plans, decisions, diffs, and rollback metadata.
+
+CleanClaw is being aligned with NemoClaw so it can run as a first-class project workflow inside the OpenShell/NemoClaw environment while still working as a standalone local tool. Current integration work includes NemoClaw provider parity, gateway routing, credential handoff, structured logging, secret redaction, runtime context handoff, and sandbox-aware execution.
+
+The next major setup milestone is to make CleanClaw feel more like a coding agent that is installed once and then attached to a project: setup should request the project directory, infer the stack, use numbered menus, default to local embeddings without model selection, add broader stack-agent coverage, and provide a shorter task entrypoint so users do not have to type `cleanclaw run ...` for every task.
+
+> **Historical status note: Initial setup ready for testing.**
+> Some items in this old note have since been completed; it is retained as archival context until the documentation is fully refreshed.
 > The core workflow, provider parity, and Python-free install are complete.
 > The following steps are still needed to fully align with NemoClaw:
 >
