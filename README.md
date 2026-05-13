@@ -3,6 +3,23 @@
 > **NOTE: CleanClaw is a first test project.**
 > Please log improvement tickets before treating it as production-ready. The current code is intended for setup validation, local workflow testing, and guided iteration on the CleanClaw/NemoClaw integration.
 
+## Planned Next Steps
+
+CleanClaw is being rebuilt into its own controlled coding agent with NemoClaw/OpenShell as the backing guardrail/runtime layer. The active plan is tracked in `plans/incomplete/2026-05-12-install-project-setup-next-steps.md`.
+
+1. **Control contract and state machine** — enforce task states, approved why, granular approvals, file scope, command approval, frontier-model approval, commit approval, push approval, and project-local records before expanding agent behavior.
+2. **Project root and visible scope tree** — attach CleanClaw to an explicit project root, show planned reads/edits/new files/validation commands/out-of-root requests, and store the same scope in task state.
+3. **Planning-first project loop** — make `cleanclaw` start an interactive project-agent session that can answer project questions, create plans, execute approved plans, and return to planning after each task.
+4. **Numbered menus for non-engineers** — use numbered choices for setup, approvals, runtime decisions, validation, and headless preparation while still accepting natural language.
+5. **Stack inference, ProjectMap, and stack agents** — infer the stack from project files and ProjectMap, add broad specialist-agent coverage, reuse the per-project vector DB when fresh, and update changed/new/deleted files after tasks.
+6. **Project-local memory** — store plans, completed plans, changelogs, task logs, validation records, approval records, settings, runtime state, and ProjectMap/vector files under `.cleanclaw/` in each project repo.
+7. **ProjectMap storage policy** — treat `.cleanclaw/projectmap/` as commit-eligible project memory up to a 50 MB warning threshold; above that, ask whether to commit anyway, keep local/ignored, compact/rebuild, or exclude folders.
+8. **Local-first model routing** — use local embeddings by default, prefer NemoClaw-backed Ollama/vLLM for local chat/coding runtime, and ask before escalating to frontier models.
+9. **Headless safety** — allow headless execution only from approved plans with approved why, scope, validation, stop conditions, storage policy, and coder/reviewer model roles; warn and record risk if the same model is used for both roles.
+10. **NemoClaw runtime setup** — during setup and startup, check whether NemoClaw/OpenShell is available and running, ask before starting it unless configured otherwise, and never silently degrade sandbox/runtime protection.
+11. **Controlled execution workflow** — default to per-change approval, ask before each validation command, update ProjectMap and changelog after completion, and return to planning mode by default. Broader approval modes are saved only when the user explicitly asks for them per project.
+12. **Release gate and smoke tests** — require build/tests, setup smoke, planning smoke, controlled execution smoke, ProjectMap update smoke, NemoClaw runtime check smoke, README review, changelog review, and plan-record review before release.
+
 CleanClaw is a coding-agent workflow layer for AI-assisted development. It is designed to sit between a developer and an implementation agent: it asks for project context, builds a scoped plan, routes work through provider and sandbox policy, requires human approval before changes land, and leaves a permanent audit trail of plans, decisions, diffs, and rollback metadata.
 
 CleanClaw is being aligned with NemoClaw so it can run as a first-class project workflow inside the OpenShell/NemoClaw environment while still working as a standalone local tool. Current integration work includes NemoClaw provider parity, gateway routing, credential handoff, structured logging, secret redaction, runtime context handoff, and sandbox-aware execution.
