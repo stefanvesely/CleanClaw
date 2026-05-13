@@ -1,7 +1,7 @@
 # CleanClaw NemoClaw Alignment Remaining Work
 
 Created: 2026-04-20
-Updated: 2026-05-12T20:16:00+02:00
+Updated: 2026-05-13T00:00:00+02:00
 Status: Incomplete
 
 ## Goal
@@ -14,7 +14,7 @@ Keep the remaining CleanClaw/NemoClaw parity work visible without repeating comp
 - [ ] Run live provider smoke tests for `nvidia-nim`, `ollama-local`, `vllm-local`, `anthropic-prod`, and `openai-api`.
 - [x] Confirm CleanClaw execution through the NemoClaw/OpenShell path does not bypass session, permission, or sandbox lifecycle checks.
 - [x] Resolve the root NemoClaw CLI/Oclif dispatch failure that returned `command root:help not found` / exit code `2` in the gateway trust guidance test.
-- [ ] Finish the remaining gateway trust guidance validation on Windows, where the current fake `openshell` fixture does not execute like the POSIX test fixture.
+- [x] Finish the remaining gateway trust guidance validation on Windows, where the fake `openshell` fixture previously did not execute like the POSIX test fixture.
 
 ## Completed Alignment Records
 
@@ -29,6 +29,7 @@ Completed alignment work is recorded in `plans/complete/`, including:
 - Sandbox Phase 8 runtime delegation.
 - Blueprint/profile schema validation.
 - NemoClaw local command dispatch through the registered Oclif command map.
+- Windows gateway trust validation for fake OpenShell fixtures.
 
 ## Acceptance Criteria
 

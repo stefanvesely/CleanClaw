@@ -4376,37 +4376,64 @@ describe("CLI dispatch", () => {
       }),
       { mode: 0o600 },
     );
-    fs.writeFileSync(
-      path.join(localBin, "openshell"),
-      [
-        "#!/usr/bin/env bash",
-        'if [ "$1" = "sandbox" ] && [ "$2" = "get" ] && [ "$3" = "alpha" ]; then',
-        "  echo 'Error: transport error: handshake verification failed' >&2",
-        "  exit 1",
-        "fi",
-        'if [ "$1" = "status" ]; then',
-        "  echo 'Server Status'",
-        "  echo",
-        "  echo '  Gateway: nemoclaw'",
-        "  echo '  Status: Connected'",
-        "  exit 0",
-        "fi",
-        'if [ "$1" = "gateway" ] && [ "$2" = "info" ] && [ "$3" = "-g" ] && [ "$4" = "nemoclaw" ]; then',
-        "  echo 'Gateway Info'",
-        "  echo",
-        "  echo '  Gateway: nemoclaw'",
-        "  exit 0",
-        "fi",
-        "exit 0",
-      ].join("\n"),
-      { mode: 0o755 },
-    );
+    if (process.platform === "win32") {
+      fs.writeFileSync(
+        path.join(localBin, "openshell.cmd"),
+        [
+          "@echo off",
+          'if "%1"=="sandbox" if "%2"=="get" if "%3"=="alpha" (',
+          "  echo Error: transport error: handshake verification failed 1>&2",
+          "  exit /b 1",
+          ")",
+          'if "%1"=="status" (',
+          "  echo Server Status",
+          "  echo.",
+          "  echo   Gateway: nemoclaw",
+          "  echo   Status: Connected",
+          "  exit /b 0",
+          ")",
+          'if "%1"=="gateway" if "%2"=="info" if "%3"=="-g" if "%4"=="nemoclaw" (',
+          "  echo Gateway Info",
+          "  echo.",
+          "  echo   Gateway: nemoclaw",
+          "  exit /b 0",
+          ")",
+          "exit /b 0",
+        ].join("\r\n"),
+      );
+    } else {
+      fs.writeFileSync(
+        path.join(localBin, "openshell"),
+        [
+          "#!/usr/bin/env bash",
+          'if [ "$1" = "sandbox" ] && [ "$2" = "get" ] && [ "$3" = "alpha" ]; then',
+          "  echo 'Error: transport error: handshake verification failed' >&2",
+          "  exit 1",
+          "fi",
+          'if [ "$1" = "status" ]; then',
+          "  echo 'Server Status'",
+          "  echo",
+          "  echo '  Gateway: nemoclaw'",
+          "  echo '  Status: Connected'",
+          "  exit 0",
+          "fi",
+          'if [ "$1" = "gateway" ] && [ "$2" = "info" ] && [ "$3" = "-g" ] && [ "$4" = "nemoclaw" ]; then',
+          "  echo 'Gateway Info'",
+          "  echo",
+          "  echo '  Gateway: nemoclaw'",
+          "  exit 0",
+          "fi",
+          "exit 0",
+        ].join("\n"),
+        { mode: 0o755 },
+      );
+    }
 
     const statusResult = runWithEnv(
       "alpha status",
       {
         HOME: home,
-        PATH: `${localBin}:${process.env.PATH || ""}`,
+        PATH: `${localBin}${path.delimiter}${process.env.PATH || ""}`,
       },
       execTimeout(),
     );
@@ -4416,7 +4443,7 @@ describe("CLI dispatch", () => {
 
     const connectResult = runWithEnv("alpha connect", {
       HOME: home,
-      PATH: `${localBin}:${process.env.PATH || ""}`,
+      PATH: `${localBin}${path.delimiter}${process.env.PATH || ""}`,
     });
     expect(connectResult.code).toBe(1);
     // After the auto-recovery attempt (clear stale host keys + retry), the

@@ -114,6 +114,10 @@ function signalProcessTree(child: ChildProcess, signal: NodeJS.Signals): void {
   }
 }
 
+function shouldUseShellForBinary(binary: string): boolean {
+  return process.platform === "win32" && /\.(?:bat|cmd)$/i.test(binary);
+}
+
 export function runOpenshellCommand(
   binary: string,
   args: string[],
@@ -124,6 +128,7 @@ export function runOpenshellCommand(
     cwd: opts.cwd,
     env: { ...process.env, ...opts.env },
     encoding: "utf-8",
+    shell: shouldUseShellForBinary(binary),
     stdio: opts.stdio ?? "inherit",
     timeout: opts.timeout,
   });
@@ -152,6 +157,7 @@ export function captureOpenshellCommand(
     cwd: opts.cwd,
     env: { ...process.env, ...opts.env },
     encoding: "utf-8",
+    shell: shouldUseShellForBinary(binary),
     stdio: ["ignore", "pipe", "pipe"],
     timeout: opts.timeout,
   });
@@ -183,6 +189,7 @@ export function captureOpenshellCommandAsync(
       cwd: opts.cwd,
       env: { ...process.env, ...opts.env },
       detached: process.platform !== "win32",
+      shell: shouldUseShellForBinary(binary),
       stdio: ["ignore", "pipe", "pipe"],
     }) as ChildProcess;
 
