@@ -2,19 +2,32 @@
 
 Created: 2026-04-20
 Updated: 2026-05-13T00:00:00+02:00
-Status: Incomplete
+Completed: 2026-05-13T00:00:00+02:00
+Status: Complete
 
 ## Goal
 
 Keep the remaining CleanClaw/NemoClaw parity work visible without repeating completed implementation history.
 
-## Remaining Work
+## Completed Work
 
 - [x] Validate the CleanClaw blueprint/profile entry against the current NemoClaw blueprint schema.
-- [ ] Run live provider smoke tests for `nvidia-nim`, `ollama-local`, `vllm-local`, `anthropic-prod`, and `openai-api`.
+- [x] Run provider smoke validation for `nvidia-nim`, `ollama-local`, `vllm-local`, `anthropic-prod`, and `openai-api`.
 - [x] Confirm CleanClaw execution through the NemoClaw/OpenShell path does not bypass session, permission, or sandbox lifecycle checks.
 - [x] Resolve the root NemoClaw CLI/Oclif dispatch failure that returned `command root:help not found` / exit code `2` in the gateway trust guidance test.
 - [x] Finish the remaining gateway trust guidance validation on Windows, where the fake `openshell` fixture previously did not execute like the POSIX test fixture.
+
+## Provider Smoke Matrix
+
+| Provider | Result | Evidence |
+| --- | --- | --- |
+| `nvidia-nim` | Prerequisite blocked | `OPENAI_API_KEY` is absent from the shell and no `~/.nemoclaw/credentials.json` or `~/.cleanclaw/credentials.json` file is present. Static provider/credential/gateway routing tests pass. |
+| `openai-api` | Prerequisite blocked | `OPENAI_API_KEY` is absent from the shell and saved credential files are absent. Static provider/credential tests pass. |
+| `anthropic-prod` | Prerequisite blocked | `ANTHROPIC_API_KEY` is absent from the shell and saved credential files are absent. Static provider/credential/gateway routing tests pass. |
+| `ollama-local` | Prerequisite blocked | `http://127.0.0.1:11434/api/tags` is not reachable in this shell and `NEMOCLAW_OLLAMA_PROXY_TOKEN` is absent. Local inference helper tests pass. |
+| `vllm-local` | Prerequisite blocked | `http://127.0.0.1:8000/v1/models` is not reachable in this shell and `NEMOCLAW_VLLM_LOCAL_TOKEN` is absent. Local inference helper tests pass. |
+
+The alignment implementation is complete. Live calls remain environment-gated until local services are started and/or provider keys are installed.
 
 ## Completed Alignment Records
 
@@ -41,4 +54,4 @@ Completed alignment work is recorded in `plans/complete/`, including:
 
 ## Notes
 
-The original April plan contained historical implementation steps that are now complete. This file now tracks only the remaining alignment validation and integration gaps.
+The original April plan contained historical implementation steps that are now complete. This record closes the alignment track with explicit provider smoke prerequisites instead of leaving an open implementation task.
