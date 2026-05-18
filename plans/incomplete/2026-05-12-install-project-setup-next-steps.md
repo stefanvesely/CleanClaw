@@ -141,6 +141,9 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 
 - [x] Added `cleanclaw/core/control-contract.ts` with lifecycle states, task state shape, transition checks, why checks, file/read/command/frontier/commit/push guards, approval records, and why-alignment records.
 - [x] Added `cleanclaw/core/control-contract.test.ts` for the first Phase 0 guardrail test coverage.
+- [x] Added `cleanclaw/core/task-records.ts` to persist project-local task state, approval records, and why-alignment records under `.cleanclaw/tasks/<task-id>/`.
+- [x] Added `cleanclaw/core/task-records.test.ts` for task record persistence.
+- [x] Wired `runPipeline` task startup to save `.cleanclaw/tasks/task<id>/state.json` and record approved task why when workflow answers are present.
 
 ### Task State Shape
 
@@ -168,8 +171,8 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 
 ### Approval Records
 
-- [ ] Store the user's approval text as the source of truth for now.
-- [ ] Append approval records to the task approval log.
+- [x] Store the user's approval text as the source of truth for now.
+- [x] Append approval records to the task approval log.
 - [ ] Keep normalized approval events as a later enterprise-gateway enhancement.
 
 ```json

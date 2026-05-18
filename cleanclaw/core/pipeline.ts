@@ -15,6 +15,8 @@ import { triggerProjectMapUpdate } from '../projectmap/updater.js';
 import { queryProjectMap } from '../projectmap/query-bridge.js';
 import { applyRootPolicy } from './sandbox-policy.js';
 import { createConsoleLogger, type CleanClawLogger } from './logger.js';
+import { approveFiles, approveWhy, createTaskState, transitionTaskState } from './control-contract.js';
+import { appendApprovalRecord, saveTaskState } from './task-records.js';
 import { summarizeRuntimeContext, type CleanClawRuntimeContext, type CleanClawRuntimeContextSummary } from './runtime-context.js';
 import { applyGatewayRoutingPolicy, describeGatewayRouting, type GatewayRoutingMode } from './gateway-routing.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
@@ -409,6 +411,28 @@ export async function runPipeline(
   // Apply root policy before any LLM calls or file operations
   const activeRootEarly = loadActiveProject() ?? process.cwd();
   await applyRootPolicy(activeRootEarly, logger, runtimeContext);
+
+  let taskState = createTaskState({
+    taskId: `task${taskId}`,
+    projectRoot: activeRootEarly,
+    taskSummary: taskDescription,
+    approvalMode: routedConfig.approvalGranularity ?? 'per-change',
+  });
+  taskState = transitionTaskState(taskState, 'why_definition');
+  if (workflowAnswers?.why.trim()) {
+    taskState = approveWhy(taskState, workflowAnswers.why, workflowAnswers.why);
+    appendApprovalRecord(activeRootEarly, taskState.taskId, {
+      timestamp: new Date().toISOString(),
+      state: 'why_definition',
+      userText: workflowAnswers.why,
+      subject: 'task why',
+    });
+    taskState = transitionTaskState(taskState, 'scope');
+  }
+  if (confirmedFiles && confirmedFiles.length > 0) {
+    taskState = approveFiles(taskState, confirmedFiles);
+  }
+  saveTaskState(activeRootEarly, taskState);
 
   // Phase 1 — Augment task description with ProjectMap context (opt-in)
   let enrichedDescription = taskDescription;
