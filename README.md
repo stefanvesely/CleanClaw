@@ -30,13 +30,17 @@ Implemented so far:
 - `cleanclaw/core/task-records.ts` persists project-local task records under `.cleanclaw/tasks/<task-id>/`.
 - `cleanclaw/core/scope-tree.ts` persists visible scope trees with root directory, planned reads, planned edits, planned new files, validation commands, and out-of-root requests.
 - `runPipeline` now writes `.cleanclaw/tasks/task<id>/state.json`, records approved task why when available, and writes `.cleanclaw/tasks/task<id>/scope-tree.json` at task startup.
-- Focused tests cover the control contract, task record persistence, and scope tree persistence.
+- `runPipeline` renders the workspace scope tree before execution and pauses when execution tries to expand planned file scope.
+- `cleanclaw status` now resolves the active project from the current project folder before falling back to the global pointer, then shows legacy state, project-local settings, approval mode, and latest task-record details.
+- Project-local `.cleanclaw/settings.json` helpers are in place and setup/switch/status are wired to create or display those settings.
+- Config loading now reads `cleanclaw.config.json` from the resolved project root instead of whichever shell directory imported the module.
+- Focused tests cover the control contract, task record persistence, scope tree persistence, project-local settings, active project resolution, and root-aware config loading.
 
 Still planned:
 
-- Render the scope tree to the user before execution.
-- Make scope expansion pause instead of silently continuing.
-- Move root/project settings fully into project-local `.cleanclaw/` records.
+- Add `cleanclaw attach <path>` and make root selection/detected project markers fully interactive.
+- Expand `cleanclaw status` with ProjectMap status, runtime status, and guardrail status.
+- Move remaining legacy state/config behavior into project-local `.cleanclaw/` records.
 - Add the planning-first `cleanclaw` session loop.
 - Add numbered menus, stack inference, ProjectMap freshness, local model routing, NemoClaw startup checks, and guarded headless execution.
 
