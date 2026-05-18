@@ -1,9 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
-import { getConfig } from '../core/config-loader.js';
+import { getConfigForProject } from '../core/config-loader.js';
 import { appendRollbackEntry } from '../plans/log-writer.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
+import { resolveActiveProject } from '../core/project-resolver.js';
+import { resolveProjectSubpath } from '../core/project-paths.js';
 
 interface LogEntry {
   changeNumber: number;
@@ -46,8 +48,9 @@ export async function undoTask(
   taskId: string,
   logger: CleanClawLogger = createConsoleLogger(),
 ): Promise<void> {
-  const config = getConfig();
-  const plansDir = path.resolve(config.plansDir);
+  const projectRoot = resolveActiveProject().projectRoot ?? process.cwd();
+  const config = getConfigForProject(projectRoot);
+  const plansDir = resolveProjectSubpath(projectRoot, config.plansDir);
   const taskDir = path.join(plansDir, `task${taskId}`);
   const logPath = path.join(taskDir, `task${taskId}A_log.json`);
 
@@ -63,7 +66,6 @@ export async function undoTask(
     return;
   }
 
-  const projectRoot = process.cwd();
   const modifiedFiles: string[] = [];
 
   for (const entry of entries) {

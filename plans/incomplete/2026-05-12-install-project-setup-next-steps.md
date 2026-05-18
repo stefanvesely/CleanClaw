@@ -334,7 +334,7 @@ Outside project root requests
 - [x] Show selected directory and detected markers before saving.
 - [x] Persist active project root globally as a pointer only.
 - [x] Persist project root in project-local CleanClaw settings.
-- [ ] Ensure config/state/logs load from the active project root, not accidental shell cwd.
+- [x] Ensure config/state/logs load from the active project root, not accidental shell cwd.
 - [x] Add `cleanclaw attach <path>`.
 - [x] Update `cleanclaw status` to show active root, config path, ProjectMap status, runtime status, and guardrail status.
 - [ ] Refuse work outside active project root unless the user explicitly expands scope.
@@ -356,6 +356,7 @@ Outside project root requests
 - [x] Added `cleanclaw attach <path>` with project marker detection, selected-root output, project-local settings persistence, and global active-project pointer persistence.
 - [x] Added reusable project path resolution and writable-directory validation for `cleanclaw attach <path>`.
 - [x] Expanded `cleanclaw status` with active root, config path, ProjectMap status, runtime status, and guardrail status.
+- [x] Resolved pipeline plans/logs, pipeline resumable state, and rollback logs from the active project root instead of shell cwd.
 
 ### Scope Rules
 
@@ -372,7 +373,7 @@ Outside project root requests
 - [x] Rejects missing directory.
 - [x] Rejects file path.
 - [x] Rejects non-writable directory.
-- [ ] Loads config from active root.
+- [x] Loads config from active root.
 - [ ] Records detected markers.
 - [ ] Shows workspace scope tree before execution.
 - [ ] Blocks outside-root file scope.

@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { resolveProjectPath, validateProjectDirectory } from './project-paths.js';
+import { resolveProjectPath, resolveProjectSubpath, validateProjectDirectory } from './project-paths.js';
 
 describe('project path resolution', () => {
   let tmpDir: string;
@@ -38,6 +38,15 @@ describe('project path resolution', () => {
 
   it('rejects empty paths', () => {
     expect(() => resolveProjectPath('  ', { cwd: tmpDir })).toThrow(/required/i);
+  });
+
+  it('resolves project-relative subpaths from the active root', () => {
+    expect(resolveProjectSubpath(tmpDir, './plans')).toBe(path.join(tmpDir, 'plans'));
+  });
+
+  it('keeps absolute project subpaths absolute', () => {
+    const plansDir = path.join(tmpDir, 'custom-plans');
+    expect(resolveProjectSubpath(path.dirname(tmpDir), plansDir)).toBe(plansDir);
   });
 });
 

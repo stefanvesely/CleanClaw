@@ -35,12 +35,13 @@ Implemented so far:
 - `cleanclaw status` also reports active root, config path, ProjectMap state, runtime mode, and guardrail/sandbox status.
 - Project-local `.cleanclaw/settings.json` helpers are in place and setup/switch/status are wired to create or display those settings.
 - Config loading now reads `cleanclaw.config.json` from the resolved project root instead of whichever shell directory imported the module.
+- Pipeline plan/log directories, resumable state loading, and rollback log lookup now resolve from the active project root.
 - Focused tests cover the control contract, task record persistence, scope tree persistence, project-local settings, active project resolution, and root-aware config loading.
 
 Still planned:
 
 - Add `cleanclaw attach <path>` and make root selection/detected project markers fully interactive.
-- Move remaining legacy state/config behavior into project-local `.cleanclaw/` records.
+- Move remaining legacy state behavior into project-local `.cleanclaw/` records.
 - Add the planning-first `cleanclaw` session loop.
 - Add numbered menus, stack inference, ProjectMap freshness, local model routing, NemoClaw startup checks, and guarded headless execution.
 

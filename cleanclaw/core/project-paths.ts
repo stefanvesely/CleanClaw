@@ -53,6 +53,12 @@ export function validateProjectDirectory(
   return resolved;
 }
 
+export function resolveProjectSubpath(projectRoot: string, subpath: string): string {
+  return path.isAbsolute(subpath)
+    ? path.resolve(subpath)
+    : path.resolve(projectRoot, subpath);
+}
+
 function canWriteToDirectory(projectRoot: string): boolean {
   const probePath = path.join(projectRoot, `.cleanclaw-write-test-${process.pid}-${Date.now()}`);
 

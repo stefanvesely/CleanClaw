@@ -10,7 +10,7 @@ import { appendLogEntry } from '../plans/log-writer.js';
 import { parseTaskPlanSteps, markStepComplete } from '../plans/plan-writer.js';
 import { checkScope, formatHaltMessage } from '../scope/scope-guard.js';
 import { assertWithinProjectRoot, RootViolationError } from './root-guard.js';
-import { loadActiveProject, saveState, loadState } from './state-manager.js';
+import { saveState, loadState } from './state-manager.js';
 import { triggerProjectMapUpdate } from '../projectmap/updater.js';
 import { queryProjectMap } from '../projectmap/query-bridge.js';
 import { applyRootPolicy } from './sandbox-policy.js';
@@ -19,6 +19,7 @@ import { approveFiles, approveWhy, createTaskState, transitionTaskState } from '
 import { appendApprovalRecord, saveTaskState } from './task-records.js';
 import { addFileToScopeTree, createScopeTree, formatScopeTree, isFileInScopeTree, saveScopeTree, type ScopeTree } from './scope-tree.js';
 import { resolveActiveProject } from './project-resolver.js';
+import { resolveProjectSubpath } from './project-paths.js';
 import { summarizeRuntimeContext, type CleanClawRuntimeContext, type CleanClawRuntimeContextSummary } from './runtime-context.js';
 import { applyGatewayRoutingPolicy, describeGatewayRouting, type GatewayRoutingMode } from './gateway-routing.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
@@ -302,7 +303,7 @@ async function runPipelinePerChange(
     }
 
     applyChange(proposed);
-    triggerProjectMapUpdate(proposed.filename, resolveActiveProject().projectRoot ?? process.cwd(), config, logger);
+    triggerProjectMapUpdate(proposed.filename, activeRoot, config, logger);
     appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
     markStepComplete(planPath, step.body, completedPlanPath, logger);
     logger.info(`[CleanClaw] Change ${changeNumber} applied and logged.`);
@@ -426,6 +427,7 @@ export async function runPipeline(
 ): Promise<void> {
   const logger = options.logger ?? createConsoleLogger();
   let runtimeContext = options.runtimeContext ?? null;
+  const activeRoot = path.resolve(runtimeContext?.activeRoot ?? resolveActiveProject().projectRoot ?? process.cwd());
   const routedConfig = applyGatewayRoutingPolicy(config, {
     mode: options.gatewayRouting ?? 'auto',
     runtimeContext,
@@ -446,14 +448,14 @@ export async function runPipeline(
   }
   const runtimeContextSummary = summarizeRuntimeContext(runtimeContext);
 
-  const plansDir = path.resolve(routedConfig.plansDir);
+  const plansDir = resolveProjectSubpath(activeRoot, routedConfig.plansDir);
   const bridge = resolveBridge(routedConfig);
   const languageAgent = resolveLanguageAgent(routedConfig);
   const planningAgent = new PlanningAgent(bridge);
   const boss = new BossAgent(planningAgent, plansDir, logger);
 
   // Resume detection — check for incomplete previous run
-  const existingState = loadState(process.cwd());
+  const existingState = loadState(activeRoot);
   let resumeFromStep = 0;
   if (existingState?.resumable && !headless) {
     const { createInterface } = await import('readline');
@@ -472,19 +474,18 @@ export async function runPipeline(
   const variant = 'A';
 
   // Apply root policy before any LLM calls or file operations
-  const activeRootEarly = resolveActiveProject().projectRoot ?? process.cwd();
-  await applyRootPolicy(activeRootEarly, logger, runtimeContext);
+  await applyRootPolicy(activeRoot, logger, runtimeContext);
 
   let taskState = createTaskState({
     taskId: `task${taskId}`,
-    projectRoot: activeRootEarly,
+    projectRoot: activeRoot,
     taskSummary: taskDescription,
     approvalMode: routedConfig.approvalGranularity ?? 'per-change',
   });
   taskState = transitionTaskState(taskState, 'why_definition');
   if (workflowAnswers?.why.trim()) {
     taskState = approveWhy(taskState, workflowAnswers.why, workflowAnswers.why);
-    appendApprovalRecord(activeRootEarly, taskState.taskId, {
+    appendApprovalRecord(activeRoot, taskState.taskId, {
       timestamp: new Date().toISOString(),
       state: 'why_definition',
       userText: workflowAnswers.why,
@@ -495,19 +496,18 @@ export async function runPipeline(
   if (confirmedFiles && confirmedFiles.length > 0) {
     taskState = approveFiles(taskState, confirmedFiles);
   }
-  saveTaskState(activeRootEarly, taskState);
+  saveTaskState(activeRoot, taskState);
   let scopeTree = createScopeTree({
     taskId: taskState.taskId,
-    projectRoot: activeRootEarly,
+    projectRoot: activeRoot,
     plannedReads: scannedFiles ?? [],
     plannedEdits: confirmedFiles ?? [],
   });
-  saveScopeTree(activeRootEarly, scopeTree);
+  saveScopeTree(activeRoot, scopeTree);
 
   // Phase 1 — Augment task description with ProjectMap context (opt-in)
   let enrichedDescription = taskDescription;
   if (routedConfig.projectMap?.enabled) {
-    const activeRoot = resolveActiveProject().projectRoot ?? process.cwd();
     const mapResults = await queryProjectMap(taskDescription, activeRoot, routedConfig, undefined, undefined, logger);
     if (mapResults.length > 0) {
       const context = mapResults
@@ -587,8 +587,6 @@ export async function runPipeline(
     taskDescription,
     planContent,
   };
-
-  const activeRoot = resolveActiveProject().projectRoot ?? process.cwd();
 
   if (granularity === 'per-file') {
     await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, logger);
