@@ -12,6 +12,8 @@ import {
 import {
   appendApprovalRecord,
   appendWhyAlignmentRecord,
+  latestTaskRecordSummary,
+  listTaskRecordSummaries,
   loadApprovalRecords,
   loadTaskState,
   loadWhyAlignmentRecords,
@@ -88,5 +90,30 @@ describe('CleanClaw task records', () => {
 
     expect(alignmentPath).toBe(path.join(taskRecordDir(tmpDir, 'task-1'), 'why-alignment-records.json'));
     expect(loadWhyAlignmentRecords(tmpDir, 'task-1')).toEqual([record]);
+  });
+
+  it('summarizes task records and finds the latest task', () => {
+    const task1 = createTaskState({
+      taskId: 'task1',
+      projectRoot: tmpDir,
+      taskSummary: 'First task',
+    });
+    const task2 = createTaskState({
+      taskId: 'task2',
+      projectRoot: tmpDir,
+      taskSummary: 'Second task',
+    });
+
+    saveTaskState(tmpDir, task1);
+    saveTaskState(tmpDir, task2);
+
+    expect(listTaskRecordSummaries(tmpDir).map((summary) => summary.taskId)).toEqual(['task1', 'task2']);
+    expect(latestTaskRecordSummary(tmpDir)).toMatchObject({
+      taskId: 'task2',
+      statePath: path.join(tmpDir, '.cleanclaw', 'tasks', 'task2', 'state.json'),
+      state: {
+        taskSummary: 'Second task',
+      },
+    });
   });
 });

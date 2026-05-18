@@ -12,6 +12,14 @@ const STATE_FILE = 'state.json';
 const APPROVALS_FILE = 'approval-records.json';
 const WHY_ALIGNMENT_FILE = 'why-alignment-records.json';
 
+export interface TaskRecordSummary {
+  taskId: string;
+  directory: string;
+  statePath: string | null;
+  scopeTreePath: string | null;
+  state: CleanClawTaskState | null;
+}
+
 export function taskRecordDir(projectRoot: string, taskId: string): string {
   return path.join(projectRoot, CLEANCLAW_DIR, TASKS_DIR, taskId);
 }
@@ -33,6 +41,21 @@ export function loadTaskState(projectRoot: string, taskId: string): CleanClawTas
   const filepath = path.join(taskRecordDir(projectRoot, taskId), STATE_FILE);
   if (!fs.existsSync(filepath)) return null;
   return JSON.parse(fs.readFileSync(filepath, 'utf-8')) as CleanClawTaskState;
+}
+
+export function listTaskRecordSummaries(projectRoot: string): TaskRecordSummary[] {
+  const tasksDir = path.join(projectRoot, CLEANCLAW_DIR, TASKS_DIR);
+  if (!fs.existsSync(tasksDir)) return [];
+
+  return fs.readdirSync(tasksDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => summarizeTaskRecord(projectRoot, entry.name))
+    .sort((a, b) => a.taskId.localeCompare(b.taskId, undefined, { numeric: true }));
+}
+
+export function latestTaskRecordSummary(projectRoot: string): TaskRecordSummary | null {
+  const summaries = listTaskRecordSummaries(projectRoot);
+  return summaries[summaries.length - 1] ?? null;
 }
 
 export function appendApprovalRecord(
@@ -57,6 +80,20 @@ export function appendWhyAlignmentRecord(
 
 export function loadWhyAlignmentRecords(projectRoot: string, taskId: string): WhyAlignmentRecord[] {
   return loadJsonRecords<WhyAlignmentRecord>(projectRoot, taskId, WHY_ALIGNMENT_FILE);
+}
+
+function summarizeTaskRecord(projectRoot: string, taskId: string): TaskRecordSummary {
+  const directory = taskRecordDir(projectRoot, taskId);
+  const statePath = path.join(directory, STATE_FILE);
+  const scopeTreePath = path.join(directory, 'scope-tree.json');
+
+  return {
+    taskId,
+    directory,
+    statePath: fs.existsSync(statePath) ? statePath : null,
+    scopeTreePath: fs.existsSync(scopeTreePath) ? scopeTreePath : null,
+    state: loadTaskState(projectRoot, taskId),
+  };
 }
 
 function appendJsonRecord<T>(projectRoot: string, taskId: string, filename: string, record: T): string {

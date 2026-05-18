@@ -349,6 +349,7 @@ Outside project root requests
 - [x] Wired `runPipeline` task startup to save `.cleanclaw/tasks/task<id>/scope-tree.json` with scanned files as planned reads and confirmed files as planned edits.
 - [x] Rendered the workspace scope tree during pipeline plan review before the user is asked to proceed with execution.
 - [x] Added scope tree membership/update helpers and wired per-change execution to pause before adding an out-of-scope file to planned edits or planned new files.
+- [x] Updated `cleanclaw status` to show the latest project-local task record state, approved-why status, and scope tree path.
 
 ### Scope Rules
 
