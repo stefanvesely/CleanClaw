@@ -351,6 +351,7 @@ Outside project root requests
 - [x] Added scope tree membership/update helpers and wired per-change execution to pause before adding an out-of-scope file to planned edits or planned new files.
 - [x] Updated `cleanclaw status` to show the latest project-local task record state, approved-why status, and scope tree path.
 - [x] Added `.cleanclaw/settings.json` project settings helpers and wired setup/switch/status to create and show project-local settings.
+- [x] Added active project resolver that prefers current project settings/config markers before falling back to the global active-project pointer, then wired status, workflow scanning, and pipeline root lookups to it.
 
 ### Scope Rules
 

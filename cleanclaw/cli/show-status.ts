@@ -3,9 +3,11 @@ import { loadActiveProject, loadState } from '../core/state-manager.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 import { latestTaskRecordSummary } from '../core/task-records.js';
 import { loadProjectSettings, projectSettingsPath } from '../core/project-settings.js';
+import { resolveActiveProject } from '../core/project-resolver.js';
 
 export async function showStatus(logger: CleanClawLogger = createConsoleLogger()): Promise<void> {
-  const projectDir = loadActiveProject() ?? process.cwd();
+  const resolvedProject = resolveActiveProject();
+  const projectDir = resolvedProject.projectRoot ?? loadActiveProject() ?? process.cwd();
   const state = loadState(projectDir);
 
   if (!state) {
@@ -15,6 +17,7 @@ export async function showStatus(logger: CleanClawLogger = createConsoleLogger()
 
   logger.info(`\nActive project: ${state.projectName}`);
   logger.info(`Directory:      ${projectDir}`);
+  logger.info(`Resolved by:    ${resolvedProject.source}`);
   logger.info(`Last task:      task${state.currentTaskId}${state.currentVariant}`);
   logger.info(`Plans dir:      ${state.plansDir}`);
   logger.info(`Last updated:   ${state.lastUpdated}`);

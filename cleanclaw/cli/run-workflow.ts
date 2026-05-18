@@ -7,8 +7,9 @@ import { resolveBridge } from '../core/agent-router.js';
 import { resolveConfigCredential } from '../core/credential-resolver.js';
 import { suggestWorkflowAnswers, isOpenshellAvailable } from '../wizard/wizard-delegator.js';
 import { promptDeclareProjectRoot } from '../core/root-guard.js';
-import { loadActiveProject, saveActiveProject } from '../core/state-manager.js';
+import { saveActiveProject } from '../core/state-manager.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
+import { resolveActiveProject } from '../core/project-resolver.js';
 import { buildCleanClawRuntimeContext, summarizeRuntimeContext, type CleanClawSessionLike } from '../core/runtime-context.js';
 import { executeCleanClawInSandbox, isRunningInsideSandbox, resolveCleanClawSandboxName } from '../core/sandbox-runtime.js';
 
@@ -50,7 +51,7 @@ export async function runWorkflow(
   const state = loadState(process.cwd());
 
   // Ensure active project root is declared before any pipeline work
-  let activeRoot = loadActiveProject();
+  let activeRoot = resolveActiveProject().projectRoot;
   if (!activeRoot) {
     activeRoot = await promptDeclareProjectRoot();
     saveActiveProject(activeRoot);
@@ -111,7 +112,7 @@ export async function runWorkflow(
     ? await askWithSuggestion(rl, '1. Why does this task matter?', suggestions.why, logger)
     : await ask(rl, '1. Why does this task matter / what problem does it solve? ');
 
-  const scannedFiles = await scanRelevantFiles(taskDescription, process.cwd(), config, logger);
+  const scannedFiles = await scanRelevantFiles(taskDescription, activeRoot, config, logger);
 
   let files: string;
   if (scannedFiles.length > 0) {
@@ -187,7 +188,7 @@ export async function runWorkflow(
     resumable: false,
     lastCompletedStep: 0,
     runtimeContext: summarizeRuntimeContext(runtimeContext),
-  }, process.cwd());
+  }, activeRoot);
 }
 
 

@@ -18,6 +18,7 @@ import { createConsoleLogger, type CleanClawLogger } from './logger.js';
 import { approveFiles, approveWhy, createTaskState, transitionTaskState } from './control-contract.js';
 import { appendApprovalRecord, saveTaskState } from './task-records.js';
 import { addFileToScopeTree, createScopeTree, formatScopeTree, isFileInScopeTree, saveScopeTree, type ScopeTree } from './scope-tree.js';
+import { resolveActiveProject } from './project-resolver.js';
 import { summarizeRuntimeContext, type CleanClawRuntimeContext, type CleanClawRuntimeContextSummary } from './runtime-context.js';
 import { applyGatewayRoutingPolicy, describeGatewayRouting, type GatewayRoutingMode } from './gateway-routing.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
@@ -301,7 +302,7 @@ async function runPipelinePerChange(
     }
 
     applyChange(proposed);
-    triggerProjectMapUpdate(proposed.filename, loadActiveProject() ?? process.cwd(), config, logger);
+    triggerProjectMapUpdate(proposed.filename, resolveActiveProject().projectRoot ?? process.cwd(), config, logger);
     appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
     markStepComplete(planPath, step.body, completedPlanPath, logger);
     logger.info(`[CleanClaw] Change ${changeNumber} applied and logged.`);
@@ -394,7 +395,7 @@ async function runPipelinePerFile(
 
     for (const { proposed, before, step } of group) {
       applyChange(proposed);
-      triggerProjectMapUpdate(proposed.filename, loadActiveProject() ?? process.cwd(), config, logger);
+      triggerProjectMapUpdate(proposed.filename, resolveActiveProject().projectRoot ?? process.cwd(), config, logger);
       appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
       markStepComplete(planPath, step.body, completedPlanPath, logger);
       logger.info(`[CleanClaw] Change ${changeNumber} applied and logged.`);
@@ -471,7 +472,7 @@ export async function runPipeline(
   const variant = 'A';
 
   // Apply root policy before any LLM calls or file operations
-  const activeRootEarly = loadActiveProject() ?? process.cwd();
+  const activeRootEarly = resolveActiveProject().projectRoot ?? process.cwd();
   await applyRootPolicy(activeRootEarly, logger, runtimeContext);
 
   let taskState = createTaskState({
@@ -506,7 +507,7 @@ export async function runPipeline(
   // Phase 1 — Augment task description with ProjectMap context (opt-in)
   let enrichedDescription = taskDescription;
   if (routedConfig.projectMap?.enabled) {
-    const activeRoot = loadActiveProject() ?? process.cwd();
+    const activeRoot = resolveActiveProject().projectRoot ?? process.cwd();
     const mapResults = await queryProjectMap(taskDescription, activeRoot, routedConfig, undefined, undefined, logger);
     if (mapResults.length > 0) {
       const context = mapResults
@@ -587,7 +588,7 @@ export async function runPipeline(
     planContent,
   };
 
-  const activeRoot = loadActiveProject() ?? process.cwd();
+  const activeRoot = resolveActiveProject().projectRoot ?? process.cwd();
 
   if (granularity === 'per-file') {
     await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, logger);
