@@ -17,7 +17,19 @@ import { applyRootPolicy } from './sandbox-policy.js';
 import { createConsoleLogger, type CleanClawLogger } from './logger.js';
 import { approveFiles, approveWhy, createTaskState, transitionTaskState } from './control-contract.js';
 import { appendApprovalRecord, saveTaskState } from './task-records.js';
-import { addFileToScopeTree, createScopeTree, formatScopeTree, isFileInScopeTree, saveScopeTree, type ScopeTree } from './scope-tree.js';
+import {
+  addFileToScopeTree,
+  completeScopeTree,
+  createScopeTree,
+  formatScopeTree,
+  isFileInScopeTree,
+  markScopeTreeWhyApproved,
+  recordScopeTreeAppliedChange,
+  recordScopeTreePreEditCheck,
+  saveScopeTree,
+  setScopeTreeValidationCommands,
+  type ScopeTree,
+} from './scope-tree.js';
 import { resolveActiveProject } from './project-resolver.js';
 import { resolveProjectSubpath } from './project-paths.js';
 import { summarizeRuntimeContext, type CleanClawRuntimeContext, type CleanClawRuntimeContextSummary } from './runtime-context.js';
@@ -226,6 +238,8 @@ async function runPipelinePerChange(
     logger.info(`\n[CleanClaw] Step ${step.number}: ${step.body.slice(0, 80)}...`);
 
     const proposed = await languageAgent.propose(step.body, bridge);
+    scopeTree = recordScopeTreePreEditCheck(scopeTree);
+    saveScopeTree(activeRoot, scopeTree);
     const accepted = await validateFilename(proposed, activeRoot, headless, logger);
 
     if (!accepted) {
@@ -320,6 +334,8 @@ async function runPipelinePerChange(
     triggerProjectMapUpdate(proposed.filename, activeRoot, config, logger);
     appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
     markStepComplete(planPath, step.body, completedPlanPath, logger);
+    scopeTree = recordScopeTreeAppliedChange(scopeTree);
+    saveScopeTree(activeRoot, scopeTree);
     logger.info(`[CleanClaw] Change ${changeNumber} applied and logged.`);
     saveState({
       projectName: config.projectName,
@@ -338,7 +354,9 @@ async function runPipelinePerChange(
   }
 
   printSummary(taskId, variant, changeNumber, plansDir, logger);
-  return scopeTree;
+  const completedScopeTree = completeScopeTree(scopeTree);
+  saveScopeTree(activeRoot, completedScopeTree);
+  return completedScopeTree;
 }
 
 // ─── Per-file pipeline ────────────────────────────────────────────────────────
@@ -530,6 +548,10 @@ export async function runPipeline(
     plannedEdits: confirmedFiles ?? [],
   });
   saveScopeTree(activeRoot, scopeTree);
+  if (workflowAnswers?.why.trim()) {
+    scopeTree = markScopeTreeWhyApproved(scopeTree);
+    saveScopeTree(activeRoot, scopeTree);
+  }
 
   // Phase 1 — Augment task description with ProjectMap context (opt-in)
   let enrichedDescription = taskDescription;
@@ -569,6 +591,8 @@ export async function runPipeline(
 
   // Phase 2 — Parse steps
   const steps = parseTaskPlanSteps(planContent);
+  scopeTree = setScopeTreeValidationCommands(scopeTree, inferValidationCommands(steps));
+  saveScopeTree(activeRoot, scopeTree);
 
   // Plan review — show plan content and ask to confirm before executing
   logger.info('\n─────────────────────────────────────────');
@@ -616,6 +640,8 @@ export async function runPipeline(
 
   if (granularity === 'per-file') {
     await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, activeRoot, logger);
+    scopeTree = completeScopeTree(scopeTree);
+    saveScopeTree(activeRoot, scopeTree);
   } else {
     scopeTree = await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, scopeCtx, activeRoot, resumeFromStep, headless, logger, runtimeContextSummary, scopeTree);
 
@@ -643,6 +669,19 @@ export async function runPipeline(
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function inferValidationCommands(steps: TaskStep[]): string[] {
+  const commandPattern = /\b(?:npm|pnpm|yarn|bun|dotnet|cargo|go|pytest|python|node|vitest|jest)\s+[^\n`]+/gi;
+  const commands: string[] = [];
+
+  for (const step of steps) {
+    for (const match of step.body.matchAll(commandPattern)) {
+      commands.push(match[0].trim().replace(/[.,;:]$/, ''));
+    }
+  }
+
+  return commands;
+}
 
 function printSummary(
   taskId: string,

@@ -4,11 +4,16 @@ import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   addFileToScopeTree,
+  completeScopeTree,
   createScopeTree,
   formatScopeTree,
   isFileInScopeTree,
   loadScopeTree,
+  markScopeTreeWhyApproved,
+  recordScopeTreeAppliedChange,
+  recordScopeTreePreEditCheck,
   saveScopeTree,
+  setScopeTreeValidationCommands,
 } from './scope-tree.js';
 
 describe('CleanClaw scope tree', () => {
@@ -36,6 +41,13 @@ describe('CleanClaw scope tree', () => {
     expect(tree).toMatchObject({
       taskId: 'task-1',
       projectRoot: path.resolve(tmpDir),
+      lifecycle: {
+        whyApproved: false,
+        preEditChecks: 0,
+        appliedChanges: 0,
+        status: 'created',
+        completedAt: null,
+      },
       plannedReads: ['package.json', 'src/index.ts'],
       plannedEdits: ['src/index.ts'],
       plannedNewFiles: ['src/menu.ts'],
@@ -95,6 +107,8 @@ describe('CleanClaw scope tree', () => {
     });
 
     expect(formatScopeTree(tree)).toContain('Root directory');
+    expect(formatScopeTree(tree)).toContain('Lifecycle');
+    expect(formatScopeTree(tree)).toContain('status: created');
     expect(formatScopeTree(tree)).toContain('- README.md');
     expect(formatScopeTree(tree)).toContain('- src/index.ts');
     expect(formatScopeTree(tree)).toContain('- src/menu.ts');
@@ -148,5 +162,30 @@ describe('CleanClaw scope tree', () => {
         approved: false,
       },
     ]);
+    expect(updated.lifecycle.status).toBe('scope-expanded');
+  });
+
+  it('updates lifecycle state for why, pre-edit, validation, applied changes, and completion', () => {
+    const tree = createScopeTree({
+      taskId: 'task-1',
+      projectRoot: tmpDir,
+      updatedAt: '2026-05-18T00:00:00.000Z',
+    });
+
+    const whyApproved = markScopeTreeWhyApproved(tree, '2026-05-18T00:01:00.000Z');
+    const preEdit = recordScopeTreePreEditCheck(whyApproved, '2026-05-18T00:02:00.000Z');
+    const validation = setScopeTreeValidationCommands(preEdit, ['npm test'], '2026-05-18T00:03:00.000Z');
+    const applied = recordScopeTreeAppliedChange(validation, '2026-05-18T00:04:00.000Z');
+    const completed = completeScopeTree(applied, '2026-05-18T00:05:00.000Z');
+
+    expect(completed.lifecycle).toEqual({
+      whyApproved: true,
+      preEditChecks: 1,
+      appliedChanges: 1,
+      status: 'completed',
+      completedAt: '2026-05-18T00:05:00.000Z',
+    });
+    expect(completed.validationCommands).toEqual(['npm test']);
+    expect(completed.updatedAt).toBe('2026-05-18T00:05:00.000Z');
   });
 });

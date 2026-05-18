@@ -338,9 +338,9 @@ Outside project root requests
 - [x] Add `cleanclaw attach <path>`.
 - [x] Update `cleanclaw status` to show active root, config path, ProjectMap status, runtime status, and guardrail status.
 - [x] Refuse work outside active project root unless the user explicitly expands scope.
-- [ ] Create `scope-tree.json` for every task.
-- [ ] Render the scope tree in the plan file and terminal before execution.
-- [ ] Update the scope tree after root selection, scan, why approval, pre-edit, scope change, validation, and task completion.
+- [x] Create `scope-tree.json` for every task.
+- [x] Render the scope tree in the plan file and terminal before execution.
+- [x] Update the scope tree after root selection, scan, why approval, pre-edit, scope change, validation, and task completion.
 
 ### Implementation Progress
 
@@ -358,6 +358,7 @@ Outside project root requests
 - [x] Expanded `cleanclaw status` with active root, config path, ProjectMap status, runtime status, and guardrail status.
 - [x] Resolved pipeline plans/logs, pipeline resumable state, and rollback logs from the active project root instead of shell cwd.
 - [x] Resolved proposed relative file paths against the active root and added per-file execution root-guard enforcement.
+- [x] Added scope tree lifecycle metadata and pipeline updates for why approval, pre-edit checks, validation planning, applied changes, scope expansion, and completion.
 
 ### Scope Rules
 

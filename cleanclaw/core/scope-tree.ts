@@ -14,12 +14,21 @@ export interface OutOfRootRequest {
 export interface ScopeTree {
   taskId: string;
   projectRoot: string;
+  lifecycle: ScopeTreeLifecycle;
   plannedReads: string[];
   plannedEdits: string[];
   plannedNewFiles: string[];
   validationCommands: string[];
   outOfRootRequests: OutOfRootRequest[];
   updatedAt: string;
+}
+
+export interface ScopeTreeLifecycle {
+  whyApproved: boolean;
+  preEditChecks: number;
+  appliedChanges: number;
+  status: 'created' | 'why-approved' | 'pre-edit' | 'scope-expanded' | 'validation-planned' | 'completed';
+  completedAt: string | null;
 }
 
 export function createScopeTree(input: {
@@ -30,6 +39,7 @@ export function createScopeTree(input: {
   plannedNewFiles?: string[];
   validationCommands?: string[];
   outOfRootRequests?: OutOfRootRequest[];
+  lifecycle?: Partial<ScopeTreeLifecycle>;
   updatedAt?: string;
 }): ScopeTree {
   const projectRoot = path.resolve(input.projectRoot);
@@ -40,6 +50,13 @@ export function createScopeTree(input: {
   return {
     taskId: input.taskId,
     projectRoot,
+    lifecycle: {
+      whyApproved: input.lifecycle?.whyApproved ?? false,
+      preEditChecks: input.lifecycle?.preEditChecks ?? 0,
+      appliedChanges: input.lifecycle?.appliedChanges ?? 0,
+      status: input.lifecycle?.status ?? 'created',
+      completedAt: input.lifecycle?.completedAt ?? null,
+    },
     plannedReads: plannedReads.inRoot,
     plannedEdits: plannedEdits.inRoot,
     plannedNewFiles: plannedNewFiles.inRoot,
@@ -96,6 +113,10 @@ export function addFileToScopeTree(
           approved: false,
         },
       ],
+      lifecycle: {
+        ...scopeTree.lifecycle,
+        status: 'scope-expanded',
+      },
       updatedAt,
     };
   }
@@ -104,6 +125,10 @@ export function addFileToScopeTree(
     return {
       ...scopeTree,
       plannedNewFiles: unique([...scopeTree.plannedNewFiles, normalized.path]),
+      lifecycle: {
+        ...scopeTree.lifecycle,
+        status: 'scope-expanded',
+      },
       updatedAt,
     };
   }
@@ -111,7 +136,74 @@ export function addFileToScopeTree(
   return {
     ...scopeTree,
     plannedEdits: unique([...scopeTree.plannedEdits, normalized.path]),
+    lifecycle: {
+      ...scopeTree.lifecycle,
+      status: 'scope-expanded',
+    },
     updatedAt,
+  };
+}
+
+export function markScopeTreeWhyApproved(scopeTree: ScopeTree, updatedAt = new Date().toISOString()): ScopeTree {
+  return {
+    ...scopeTree,
+    lifecycle: {
+      ...scopeTree.lifecycle,
+      whyApproved: true,
+      status: 'why-approved',
+    },
+    updatedAt,
+  };
+}
+
+export function recordScopeTreePreEditCheck(scopeTree: ScopeTree, updatedAt = new Date().toISOString()): ScopeTree {
+  return {
+    ...scopeTree,
+    lifecycle: {
+      ...scopeTree.lifecycle,
+      preEditChecks: scopeTree.lifecycle.preEditChecks + 1,
+      status: 'pre-edit',
+    },
+    updatedAt,
+  };
+}
+
+export function recordScopeTreeAppliedChange(scopeTree: ScopeTree, updatedAt = new Date().toISOString()): ScopeTree {
+  return {
+    ...scopeTree,
+    lifecycle: {
+      ...scopeTree.lifecycle,
+      appliedChanges: scopeTree.lifecycle.appliedChanges + 1,
+    },
+    updatedAt,
+  };
+}
+
+export function setScopeTreeValidationCommands(
+  scopeTree: ScopeTree,
+  validationCommands: string[],
+  updatedAt = new Date().toISOString(),
+): ScopeTree {
+  return {
+    ...scopeTree,
+    validationCommands: unique([...scopeTree.validationCommands, ...validationCommands]),
+    lifecycle: {
+      ...scopeTree.lifecycle,
+      status: validationCommands.length > 0 ? 'validation-planned' : scopeTree.lifecycle.status,
+    },
+    updatedAt,
+  };
+}
+
+export function completeScopeTree(scopeTree: ScopeTree, completedAt = new Date().toISOString()): ScopeTree {
+  return {
+    ...scopeTree,
+    lifecycle: {
+      ...scopeTree.lifecycle,
+      status: 'completed',
+      completedAt,
+    },
+    updatedAt: completedAt,
   };
 }
 
@@ -119,6 +211,13 @@ export function formatScopeTree(scopeTree: ScopeTree): string {
   return [
     'Root directory',
     `  ${scopeTree.projectRoot}`,
+    '',
+    'Lifecycle',
+    `  - status: ${scopeTree.lifecycle.status}`,
+    `  - why approved: ${scopeTree.lifecycle.whyApproved}`,
+    `  - pre-edit checks: ${scopeTree.lifecycle.preEditChecks}`,
+    `  - applied changes: ${scopeTree.lifecycle.appliedChanges}`,
+    `  - completed at: ${scopeTree.lifecycle.completedAt ?? 'not completed'}`,
     '',
     'Planned reads',
     formatList(scopeTree.plannedReads),
