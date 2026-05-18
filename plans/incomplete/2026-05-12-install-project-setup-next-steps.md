@@ -336,7 +336,7 @@ Outside project root requests
 - [x] Persist project root in project-local CleanClaw settings.
 - [ ] Ensure config/state/logs load from the active project root, not accidental shell cwd.
 - [x] Add `cleanclaw attach <path>`.
-- [ ] Update `cleanclaw status` to show active root, config path, ProjectMap status, runtime status, and guardrail status.
+- [x] Update `cleanclaw status` to show active root, config path, ProjectMap status, runtime status, and guardrail status.
 - [ ] Refuse work outside active project root unless the user explicitly expands scope.
 - [ ] Create `scope-tree.json` for every task.
 - [ ] Render the scope tree in the plan file and terminal before execution.
@@ -355,6 +355,7 @@ Outside project root requests
 - [x] Refactored config loading to read `cleanclaw.config.json` from the resolved project root instead of import-time shell cwd.
 - [x] Added `cleanclaw attach <path>` with project marker detection, selected-root output, project-local settings persistence, and global active-project pointer persistence.
 - [x] Added reusable project path resolution and writable-directory validation for `cleanclaw attach <path>`.
+- [x] Expanded `cleanclaw status` with active root, config path, ProjectMap status, runtime status, and guardrail status.
 
 ### Scope Rules
 
