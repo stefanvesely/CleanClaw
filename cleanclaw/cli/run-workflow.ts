@@ -12,6 +12,7 @@ import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 import { resolveActiveProject } from '../core/project-resolver.js';
 import { buildCleanClawRuntimeContext, summarizeRuntimeContext, type CleanClawSessionLike } from '../core/runtime-context.js';
 import { executeCleanClawInSandbox, isRunningInsideSandbox, resolveCleanClawSandboxName } from '../core/sandbox-runtime.js';
+import { ensureBroadFolderScanApproved } from '../core/folder-scan-approval.js';
 
 export interface RunWorkflowRuntimeContextInput {
   source?: string;
@@ -112,7 +113,16 @@ export async function runWorkflow(
     ? await askWithSuggestion(rl, '1. Why does this task matter?', suggestions.why, logger)
     : await ask(rl, '1. Why does this task matter / what problem does it solve? ');
 
-  const scannedFiles = await scanRelevantFiles(taskDescription, activeRoot, config, logger);
+  const scanApproved = await ensureBroadFolderScanApproved({
+    projectRoot: activeRoot,
+    reason: `Find files relevant to task: ${taskDescription}`,
+    headless,
+    logger,
+    ask: question => ask(rl, question),
+  });
+  const scannedFiles = scanApproved
+    ? await scanRelevantFiles(taskDescription, activeRoot, config, logger)
+    : [];
 
   let files: string;
   if (scannedFiles.length > 0) {

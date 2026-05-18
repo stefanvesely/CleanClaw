@@ -359,6 +359,7 @@ Outside project root requests
 - [x] Resolved pipeline plans/logs, pipeline resumable state, and rollback logs from the active project root instead of shell cwd.
 - [x] Resolved proposed relative file paths against the active root and added per-file execution root-guard enforcement.
 - [x] Added scope tree lifecycle metadata and pipeline updates for why approval, pre-edit checks, validation planning, applied changes, scope expansion, and completion.
+- [x] Added broad folder scan approval records and wired workflow scanning to ask before scanning; headless mode fails closed.
 
 ### Scope Rules
 
@@ -367,7 +368,7 @@ Outside project root requests
 - [ ] New files require explicit scope approval.
 - [ ] Any out-of-root access requires explicit approval, a reason, and why alignment.
 - [x] Scope changes pause execution and update the visible tree.
-- [ ] Broad folder scanning must be approved, announced, and logged.
+- [x] Broad folder scanning must be approved, announced, and logged.
 
 ### Tests
 

@@ -38,6 +38,7 @@ Implemented so far:
 - Pipeline plan/log directories, resumable state loading, and rollback log lookup now resolve from the active project root.
 - Pipeline file proposals now resolve relative paths against the active project root before filesystem checks or writes, and per-file execution applies the root guard before changes land.
 - Scope trees now include lifecycle metadata for why approval, pre-edit checks, validation planning, applied changes, and completion.
+- Broad project file scans now require interactive approval, are announced with a reason, and are recorded under `.cleanclaw/scan-approval-records.json`; headless mode fails closed.
 - Focused tests cover the control contract, task record persistence, scope tree persistence, project-local settings, active project resolution, and root-aware config loading.
 
 Still planned:
