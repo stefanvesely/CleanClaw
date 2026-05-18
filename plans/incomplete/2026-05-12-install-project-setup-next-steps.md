@@ -347,6 +347,7 @@ Outside project root requests
 - [x] Added `cleanclaw/core/scope-tree.ts` with scope tree types, save/load helpers, out-of-root request capture, and human-readable formatting.
 - [x] Added `cleanclaw/core/scope-tree.test.ts` for scope tree persistence, path normalization, and out-of-root detection.
 - [x] Wired `runPipeline` task startup to save `.cleanclaw/tasks/task<id>/scope-tree.json` with scanned files as planned reads and confirmed files as planned edits.
+- [x] Rendered the workspace scope tree during pipeline plan review before the user is asked to proceed with execution.
 
 ### Scope Rules
 

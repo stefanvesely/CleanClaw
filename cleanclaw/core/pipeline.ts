@@ -17,7 +17,7 @@ import { applyRootPolicy } from './sandbox-policy.js';
 import { createConsoleLogger, type CleanClawLogger } from './logger.js';
 import { approveFiles, approveWhy, createTaskState, transitionTaskState } from './control-contract.js';
 import { appendApprovalRecord, saveTaskState } from './task-records.js';
-import { createScopeTree, saveScopeTree } from './scope-tree.js';
+import { createScopeTree, formatScopeTree, saveScopeTree } from './scope-tree.js';
 import { summarizeRuntimeContext, type CleanClawRuntimeContext, type CleanClawRuntimeContextSummary } from './runtime-context.js';
 import { applyGatewayRoutingPolicy, describeGatewayRouting, type GatewayRoutingMode } from './gateway-routing.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
@@ -434,12 +434,13 @@ export async function runPipeline(
     taskState = approveFiles(taskState, confirmedFiles);
   }
   saveTaskState(activeRootEarly, taskState);
-  saveScopeTree(activeRootEarly, createScopeTree({
+  const scopeTree = createScopeTree({
     taskId: taskState.taskId,
     projectRoot: activeRootEarly,
     plannedReads: scannedFiles ?? [],
     plannedEdits: confirmedFiles ?? [],
-  }));
+  });
+  saveScopeTree(activeRootEarly, scopeTree);
 
   // Phase 1 — Augment task description with ProjectMap context (opt-in)
   let enrichedDescription = taskDescription;
@@ -483,6 +484,11 @@ export async function runPipeline(
 
   // Plan review — show plan content and ask to confirm before executing
   logger.info('\n─────────────────────────────────────────');
+  logger.info('WORKSPACE SCOPE');
+  logger.info('-----------------------------------------');
+  logger.info(formatScopeTree(scopeTree));
+  logger.info('-----------------------------------------');
+  logger.info('');
   logger.info('GENERATED PLAN');
   logger.info('─────────────────────────────────────────');
   logger.info(planContent);
