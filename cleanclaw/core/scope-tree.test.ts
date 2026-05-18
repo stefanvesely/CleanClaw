@@ -3,8 +3,10 @@ import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  addFileToScopeTree,
   createScopeTree,
   formatScopeTree,
+  isFileInScopeTree,
   loadScopeTree,
   saveScopeTree,
 } from './scope-tree.js';
@@ -97,5 +99,54 @@ describe('CleanClaw scope tree', () => {
     expect(formatScopeTree(tree)).toContain('- src/index.ts');
     expect(formatScopeTree(tree)).toContain('- src/menu.ts');
     expect(formatScopeTree(tree)).toContain('- npm test');
+  });
+
+  it('detects whether a file is in editable scope', () => {
+    const tree = createScopeTree({
+      taskId: 'task-1',
+      projectRoot: tmpDir,
+      plannedEdits: ['src/index.ts'],
+      plannedNewFiles: ['src/menu.ts'],
+    });
+
+    expect(isFileInScopeTree(tree, 'src/index.ts')).toBe(true);
+    expect(isFileInScopeTree(tree, path.join(tmpDir, 'src', 'menu.ts'))).toBe(true);
+    expect(isFileInScopeTree(tree, 'src/other.ts')).toBe(false);
+    expect(isFileInScopeTree(tree, path.join(os.tmpdir(), 'outside.ts'))).toBe(false);
+  });
+
+  it('adds an in-root file to edit or new-file scope', () => {
+    const tree = createScopeTree({
+      taskId: 'task-1',
+      projectRoot: tmpDir,
+      updatedAt: '2026-05-18T00:00:00.000Z',
+    });
+
+    const withEdit = addFileToScopeTree(tree, 'src/index.ts', 'planned-edit', '2026-05-18T00:01:00.000Z');
+    const withNewFile = addFileToScopeTree(withEdit, 'src/menu.ts', 'planned-new-file', '2026-05-18T00:02:00.000Z');
+
+    expect(withNewFile.plannedEdits).toEqual(['src/index.ts']);
+    expect(withNewFile.plannedNewFiles).toEqual(['src/menu.ts']);
+    expect(withNewFile.updatedAt).toBe('2026-05-18T00:02:00.000Z');
+  });
+
+  it('records out-of-root additions as unapproved requests', () => {
+    const outside = path.join(os.tmpdir(), 'outside-add.ts');
+    const tree = createScopeTree({
+      taskId: 'task-1',
+      projectRoot: tmpDir,
+    });
+
+    const updated = addFileToScopeTree(tree, outside, 'planned-edit', '2026-05-18T00:01:00.000Z');
+
+    expect(updated.plannedEdits).toEqual([]);
+    expect(updated.outOfRootRequests).toEqual([
+      {
+        path: path.resolve(outside),
+        reason: 'planned-edit',
+        whyAlignment: 'unclear',
+        approved: false,
+      },
+    ]);
   });
 });

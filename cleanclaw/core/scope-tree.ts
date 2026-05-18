@@ -67,6 +67,54 @@ export function loadScopeTree(projectRoot: string, taskId: string): ScopeTree | 
   return JSON.parse(fs.readFileSync(filepath, 'utf-8')) as ScopeTree;
 }
 
+export function isFileInScopeTree(scopeTree: ScopeTree, filePath: string): boolean {
+  const normalized = normalizeProjectPath(scopeTree.projectRoot, filePath);
+  if (!normalized.inRoot) return false;
+
+  return [
+    ...scopeTree.plannedEdits,
+    ...scopeTree.plannedNewFiles,
+  ].includes(normalized.path);
+}
+
+export function addFileToScopeTree(
+  scopeTree: ScopeTree,
+  filePath: string,
+  kind: 'planned-edit' | 'planned-new-file',
+  updatedAt = new Date().toISOString(),
+): ScopeTree {
+  const normalized = normalizeProjectPath(scopeTree.projectRoot, filePath);
+  if (!normalized.inRoot) {
+    return {
+      ...scopeTree,
+      outOfRootRequests: [
+        ...scopeTree.outOfRootRequests,
+        {
+          path: normalized.path,
+          reason: kind,
+          whyAlignment: 'unclear',
+          approved: false,
+        },
+      ],
+      updatedAt,
+    };
+  }
+
+  if (kind === 'planned-new-file') {
+    return {
+      ...scopeTree,
+      plannedNewFiles: unique([...scopeTree.plannedNewFiles, normalized.path]),
+      updatedAt,
+    };
+  }
+
+  return {
+    ...scopeTree,
+    plannedEdits: unique([...scopeTree.plannedEdits, normalized.path]),
+    updatedAt,
+  };
+}
+
 export function formatScopeTree(scopeTree: ScopeTree): string {
   return [
     'Root directory',

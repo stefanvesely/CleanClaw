@@ -348,6 +348,7 @@ Outside project root requests
 - [x] Added `cleanclaw/core/scope-tree.test.ts` for scope tree persistence, path normalization, and out-of-root detection.
 - [x] Wired `runPipeline` task startup to save `.cleanclaw/tasks/task<id>/scope-tree.json` with scanned files as planned reads and confirmed files as planned edits.
 - [x] Rendered the workspace scope tree during pipeline plan review before the user is asked to proceed with execution.
+- [x] Added scope tree membership/update helpers and wired per-change execution to pause before adding an out-of-scope file to planned edits or planned new files.
 
 ### Scope Rules
 
@@ -355,7 +356,7 @@ Outside project root requests
 - [ ] Edits require approved planned scope.
 - [ ] New files require explicit scope approval.
 - [ ] Any out-of-root access requires explicit approval, a reason, and why alignment.
-- [ ] Scope changes pause execution and update the visible tree.
+- [x] Scope changes pause execution and update the visible tree.
 - [ ] Broad folder scanning must be approved, announced, and logged.
 
 ### Tests

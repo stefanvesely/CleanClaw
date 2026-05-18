@@ -17,7 +17,7 @@ import { applyRootPolicy } from './sandbox-policy.js';
 import { createConsoleLogger, type CleanClawLogger } from './logger.js';
 import { approveFiles, approveWhy, createTaskState, transitionTaskState } from './control-contract.js';
 import { appendApprovalRecord, saveTaskState } from './task-records.js';
-import { createScopeTree, formatScopeTree, saveScopeTree } from './scope-tree.js';
+import { addFileToScopeTree, createScopeTree, formatScopeTree, isFileInScopeTree, saveScopeTree, type ScopeTree } from './scope-tree.js';
 import { summarizeRuntimeContext, type CleanClawRuntimeContext, type CleanClawRuntimeContextSummary } from './runtime-context.js';
 import { applyGatewayRoutingPolicy, describeGatewayRouting, type GatewayRoutingMode } from './gateway-routing.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
@@ -132,6 +132,54 @@ async function validateFilename(
   return confirm.toLowerCase() === 'y';
 }
 
+async function ensureFileInVisibleScope(
+  scopeTree: ScopeTree,
+  proposed: ProposedChange,
+  activeRoot: string,
+  headless: boolean,
+  logger: CleanClawLogger,
+): Promise<ScopeTree | null> {
+  if (isFileInScopeTree(scopeTree, proposed.filename)) return scopeTree;
+
+  const isNewFile = !fs.existsSync(proposed.filename);
+  const kind = isNewFile ? 'planned-new-file' : 'planned-edit';
+  const updatedScopeTree = addFileToScopeTree(scopeTree, proposed.filename, kind);
+
+  if (updatedScopeTree.outOfRootRequests.length > scopeTree.outOfRootRequests.length) {
+    logger.error(`[CleanClaw] Scope expansion requested outside project root: ${proposed.filename}`);
+    return null;
+  }
+
+  if (headless) {
+    logger.error(`[headless] Scope expansion required for "${proposed.filename}". Stopping.`);
+    return null;
+  }
+
+  const readline = await import('readline');
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const answer = await new Promise<string>(resolve => {
+    rl.question([
+      '',
+      'CleanClaw wants to add a file to the visible workspace scope.',
+      `File: ${proposed.filename}`,
+      `Scope section: ${kind === 'planned-new-file' ? 'Planned new files' : 'Planned edits'}`,
+      `Reason: ${proposed.explanation}`,
+      '',
+      'Approve this scope expansion? [y/N]: ',
+    ].join('\n'), ans => { rl.close(); resolve(ans.trim().toLowerCase()); });
+  });
+
+  if (answer !== 'y') {
+    logger.info('[CleanClaw] Scope expansion rejected. Skipping step.');
+    return null;
+  }
+
+  saveScopeTree(activeRoot, updatedScopeTree);
+  logger.info('[CleanClaw] Scope tree updated.');
+  logger.info(formatScopeTree(updatedScopeTree));
+  return updatedScopeTree;
+}
+
 // ─── Per-change pipeline ──────────────────────────────────────────────────────
 
 async function runPipelinePerChange(
@@ -150,11 +198,13 @@ async function runPipelinePerChange(
   headless = false,
   logger: CleanClawLogger = createConsoleLogger(),
   runtimeContextSummary: CleanClawRuntimeContextSummary | null = null,
-): Promise<void> {
+  initialScopeTree: ScopeTree | null = null,
+): Promise<ScopeTree> {
   const model = resolveModel(config);
   let changeNumber = 1;
   let cumulativeChangeCount = 0;
   let stepIndex = startStepIndex;
+  let scopeTree = initialScopeTree ?? createScopeTree({ taskId: `task${taskId}`, projectRoot: activeRoot });
 
   for (const step of steps) {
     logger.info(`\n[CleanClaw] Step ${step.number}: ${step.body.slice(0, 80)}...`);
@@ -171,13 +221,23 @@ async function runPipelinePerChange(
       continue;
     }
 
-    // Re-propose with actual file content so the agent isn't guessing at line contents
-    const rawContent = fs.readFileSync(proposed.filename, 'utf-8');
-    const numberedContent = rawContent.split('\n').map((l, i) => `${i + 1}: ${l}`).join('\n');
-    const enrichedStep = `${step.body}\n\nCurrent file content (${proposed.filename}):\n${numberedContent}`;
-    const refined = await languageAgent.propose(enrichedStep, bridge);
-    refined.filename = proposed.filename;
-    Object.assign(proposed, refined);
+    const approvedScopeTree = await ensureFileInVisibleScope(scopeTree, proposed, activeRoot, headless, logger);
+    if (!approvedScopeTree) {
+      changeNumber++;
+      continue;
+    }
+    scopeTree = approvedScopeTree;
+
+    // Re-propose with actual file content so the agent isn't guessing at line contents.
+    // New files have no current content, so the initial proposal remains the source.
+    if (fs.existsSync(proposed.filename)) {
+      const rawContent = fs.readFileSync(proposed.filename, 'utf-8');
+      const numberedContent = rawContent.split('\n').map((l, i) => `${i + 1}: ${l}`).join('\n');
+      const enrichedStep = `${step.body}\n\nCurrent file content (${proposed.filename}):\n${numberedContent}`;
+      const refined = await languageAgent.propose(enrichedStep, bridge);
+      refined.filename = proposed.filename;
+      Object.assign(proposed, refined);
+    }
 
     // Scope check before presenting to developer
     const diff = proposed.afterLines.map(l => `+${l.content}`).join('\n');
@@ -262,6 +322,7 @@ async function runPipelinePerChange(
   }
 
   printSummary(taskId, variant, changeNumber, plansDir, logger);
+  return scopeTree;
 }
 
 // ─── Per-file pipeline ────────────────────────────────────────────────────────
@@ -434,7 +495,7 @@ export async function runPipeline(
     taskState = approveFiles(taskState, confirmedFiles);
   }
   saveTaskState(activeRootEarly, taskState);
-  const scopeTree = createScopeTree({
+  let scopeTree = createScopeTree({
     taskId: taskState.taskId,
     projectRoot: activeRootEarly,
     plannedReads: scannedFiles ?? [],
@@ -531,7 +592,7 @@ export async function runPipeline(
   if (granularity === 'per-file') {
     await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, logger);
   } else {
-    await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, scopeCtx, activeRoot, resumeFromStep, headless, logger, runtimeContextSummary);
+    scopeTree = await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, scopeCtx, activeRoot, resumeFromStep, headless, logger, runtimeContextSummary, scopeTree);
 
     // Iteration loop — boss prompts for next iteration after each pipeline run
     let iterationNumber = 1;
@@ -547,7 +608,7 @@ export async function runPipeline(
 
       const iterSteps = parseTaskPlanSteps(iterResult.planContent);
       const iterCompletedPath = iterResult.planPath.replace('_plan.md', '_plan_completed.md');
-      await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, routedConfig, languageAgent, bridge, scopeCtx, activeRoot, 0, false, logger, runtimeContextSummary);
+      scopeTree = await runPipelinePerChange(iterSteps, taskId, variant, iterResult.planPath, iterCompletedPath, plansDir, routedConfig, languageAgent, bridge, scopeCtx, activeRoot, 0, false, logger, runtimeContextSummary, scopeTree);
 
       completedSteps = [...completedSteps, ...iterSteps.map(s => s.body)];
       currentPlanContent = iterResult.planContent;
