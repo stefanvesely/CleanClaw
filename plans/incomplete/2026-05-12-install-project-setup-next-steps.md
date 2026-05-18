@@ -342,6 +342,12 @@ Outside project root requests
 - [ ] Render the scope tree in the plan file and terminal before execution.
 - [ ] Update the scope tree after root selection, scan, why approval, pre-edit, scope change, validation, and task completion.
 
+### Implementation Progress
+
+- [x] Added `cleanclaw/core/scope-tree.ts` with scope tree types, save/load helpers, out-of-root request capture, and human-readable formatting.
+- [x] Added `cleanclaw/core/scope-tree.test.ts` for scope tree persistence, path normalization, and out-of-root detection.
+- [x] Wired `runPipeline` task startup to save `.cleanclaw/tasks/task<id>/scope-tree.json` with scanned files as planned reads and confirmed files as planned edits.
+
 ### Scope Rules
 
 - [ ] Reads inside the approved root are allowed during planning.

@@ -17,6 +17,7 @@ import { applyRootPolicy } from './sandbox-policy.js';
 import { createConsoleLogger, type CleanClawLogger } from './logger.js';
 import { approveFiles, approveWhy, createTaskState, transitionTaskState } from './control-contract.js';
 import { appendApprovalRecord, saveTaskState } from './task-records.js';
+import { createScopeTree, saveScopeTree } from './scope-tree.js';
 import { summarizeRuntimeContext, type CleanClawRuntimeContext, type CleanClawRuntimeContextSummary } from './runtime-context.js';
 import { applyGatewayRoutingPolicy, describeGatewayRouting, type GatewayRoutingMode } from './gateway-routing.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
@@ -433,6 +434,12 @@ export async function runPipeline(
     taskState = approveFiles(taskState, confirmedFiles);
   }
   saveTaskState(activeRootEarly, taskState);
+  saveScopeTree(activeRootEarly, createScopeTree({
+    taskId: taskState.taskId,
+    projectRoot: activeRootEarly,
+    plannedReads: scannedFiles ?? [],
+    plannedEdits: confirmedFiles ?? [],
+  }));
 
   // Phase 1 — Augment task description with ProjectMap context (opt-in)
   let enrichedDescription = taskDescription;
