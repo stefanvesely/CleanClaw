@@ -9,20 +9,20 @@ export async function showStatus(logger: CleanClawLogger = createConsoleLogger()
   const resolvedProject = resolveActiveProject();
   const projectDir = resolvedProject.projectRoot ?? loadActiveProject() ?? process.cwd();
   const state = loadState(projectDir);
+  const settings = loadProjectSettings(projectDir);
 
-  if (!state) {
+  if (!state && !settings) {
     logger.info('No active CleanClaw project. Run "cleanclaw init" to initialise one.');
     return;
   }
 
-  logger.info(`\nActive project: ${state.projectName}`);
+  logger.info(`\nActive project: ${settings?.projectName ?? state?.projectName ?? path.basename(projectDir)}`);
   logger.info(`Directory:      ${projectDir}`);
   logger.info(`Resolved by:    ${resolvedProject.source}`);
-  logger.info(`Last task:      task${state.currentTaskId}${state.currentVariant}`);
-  logger.info(`Plans dir:      ${state.plansDir}`);
-  logger.info(`Last updated:   ${state.lastUpdated}`);
+  logger.info(`Last task:      ${state ? `task${state.currentTaskId}${state.currentVariant}` : 'none'}`);
+  logger.info(`Plans dir:      ${settings?.plansDir ?? state?.plansDir ?? './plans'}`);
+  logger.info(`Last updated:   ${state?.lastUpdated ?? settings?.updatedAt ?? 'missing'}`);
 
-  const settings = loadProjectSettings(projectDir);
   logger.info(`Settings:       ${settings ? path.relative(projectDir, projectSettingsPath(projectDir)) : 'missing'}`);
   logger.info(`Root setting:   ${settings?.projectRoot ?? 'missing'}`);
   logger.info(`Approval mode:  ${settings?.approvalGranularity ?? 'legacy'}`);

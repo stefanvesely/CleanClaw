@@ -318,7 +318,7 @@ Outside project root requests
 
 - [ ] Add project path resolver for absolute paths, relative paths, `.`, and `~`.
 - [ ] Validate that selected directory exists, is a directory, and is writable.
-- [ ] Detect project markers:
+- [x] Detect project markers:
   - `.git`
   - `package.json`
   - lockfiles
@@ -331,11 +331,11 @@ Outside project root requests
   - `pom.xml`
   - `build.gradle`
   - framework config files
-- [ ] Show selected directory and detected markers before saving.
-- [ ] Persist active project root globally as a pointer only.
-- [ ] Persist project root in project-local CleanClaw settings.
+- [x] Show selected directory and detected markers before saving.
+- [x] Persist active project root globally as a pointer only.
+- [x] Persist project root in project-local CleanClaw settings.
 - [ ] Ensure config/state/logs load from the active project root, not accidental shell cwd.
-- [ ] Add `cleanclaw attach <path>`.
+- [x] Add `cleanclaw attach <path>`.
 - [ ] Update `cleanclaw status` to show active root, config path, ProjectMap status, runtime status, and guardrail status.
 - [ ] Refuse work outside active project root unless the user explicitly expands scope.
 - [ ] Create `scope-tree.json` for every task.
@@ -353,6 +353,7 @@ Outside project root requests
 - [x] Added `.cleanclaw/settings.json` project settings helpers and wired setup/switch/status to create and show project-local settings.
 - [x] Added active project resolver that prefers current project settings/config markers before falling back to the global active-project pointer, then wired status, workflow scanning, and pipeline root lookups to it.
 - [x] Refactored config loading to read `cleanclaw.config.json` from the resolved project root instead of import-time shell cwd.
+- [x] Added `cleanclaw attach <path>` with project marker detection, selected-root output, project-local settings persistence, and global active-project pointer persistence.
 
 ### Scope Rules
 

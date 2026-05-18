@@ -19,6 +19,7 @@ cleanclaw.config.json
 
 # CleanClaw per-project state (local only — never commit)
 .cleanclaw-state.json
+.cleanclaw/settings.json
 
 # CleanClaw runtime workspace data (local only — never commit)
 .cleanclaw/plans/

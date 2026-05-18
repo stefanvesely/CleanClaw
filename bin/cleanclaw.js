@@ -30,6 +30,14 @@ program
   });
 
 program
+  .command("attach <path>")
+  .description("Attach CleanClaw to a project directory")
+  .action(async (projectPath) => {
+    const { attachProject } = await import("../dist/cleanclaw/cli/attach-project.js");
+    await attachProject(projectPath);
+  });
+
+program
   .command("switch <project>")
   .description("Switch active project")
   .action(async (project) => {
