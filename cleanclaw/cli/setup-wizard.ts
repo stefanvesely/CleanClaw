@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import readline from 'readline';
 import { saveState } from '../core/state-manager.js';
+import { createProjectSettings, saveProjectSettings } from '../core/project-settings.js';
 import { appendToRegistry } from '../projectmap/project-registry.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 import {
@@ -38,8 +39,8 @@ async function runGlobalConfigWizard(
     throw new Error(`Unsupported provider "${provider}". Choose one of: ${CLEANCLAW_WIZARD_PROVIDER_IDS.join(', ')}`);
   }
 
-  const granularityRaw = await ask(rl, 'Default approval granularity (per-change/per-file/per-step) [per-file]: ');
-  const granularity = granularityRaw || 'per-file';
+  const granularityRaw = await ask(rl, 'Default approval granularity (per-change/per-file/per-step) [per-change]: ');
+  const granularity = granularityRaw || 'per-change';
 
   const globalConfig: Record<string, unknown> = { provider, approvalGranularity: granularity };
   const providerMetadata = CLEANCLAW_PROVIDER_METADATA[provider];
@@ -85,7 +86,7 @@ async function runProjectInitFlow(
 
   const globalConfig = JSON.parse(fs.readFileSync(GLOBAL_CONFIG_PATH, 'utf-8')) as Record<string, unknown>;
   const provider = (globalConfig.provider as string) || 'anthropic';
-  const approvalGranularity = (globalConfig.approvalGranularity as string) || 'per-file';
+  const approvalGranularity = (globalConfig.approvalGranularity as 'per-change' | 'per-file' | 'per-step') || 'per-change';
 
   const enableEmbeddingsRaw = await ask(rl, 'Enable ProjectMap embeddings? (y/n) [n]: ');
   const enableEmbeddings = enableEmbeddingsRaw.toLowerCase() === 'y';
@@ -117,6 +118,12 @@ async function runProjectInitFlow(
 
   fs.writeFileSync('cleanclaw.config.json', JSON.stringify(config, null, 2), 'utf-8');
   fs.mkdirSync('./plans', { recursive: true });
+  saveProjectSettings(process.cwd(), createProjectSettings({
+    projectRoot: process.cwd(),
+    projectName,
+    approvalGranularity,
+    plansDir: './plans',
+  }));
 
   saveState({
     projectName,

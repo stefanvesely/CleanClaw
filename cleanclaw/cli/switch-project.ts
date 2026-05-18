@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { loadState, saveActiveProject } from '../core/state-manager.js';
+import { ensureProjectSettings } from '../core/project-settings.js';
 import { appendToRegistry } from '../projectmap/project-registry.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 
@@ -21,6 +22,12 @@ export async function switchProject(
   const state = loadState(resolved);
   const projectName = state?.projectName ?? path.basename(resolved);
   const lastTask = state ? `task${state.currentTaskId}${state.currentVariant}` : 'none';
+  ensureProjectSettings({
+    projectRoot: resolved,
+    projectName,
+    approvalGranularity: 'per-change',
+    plansDir: state?.plansDir ?? './plans',
+  });
 
   appendToRegistry(resolved, projectName, resolved);
 

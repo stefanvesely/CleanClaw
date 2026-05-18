@@ -350,6 +350,7 @@ Outside project root requests
 - [x] Rendered the workspace scope tree during pipeline plan review before the user is asked to proceed with execution.
 - [x] Added scope tree membership/update helpers and wired per-change execution to pause before adding an out-of-scope file to planned edits or planned new files.
 - [x] Updated `cleanclaw status` to show the latest project-local task record state, approved-why status, and scope tree path.
+- [x] Added `.cleanclaw/settings.json` project settings helpers and wired setup/switch/status to create and show project-local settings.
 
 ### Scope Rules
 
