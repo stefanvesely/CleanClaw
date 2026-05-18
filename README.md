@@ -172,7 +172,7 @@ cleanclaw attach <path>   # attach CleanClaw to a project directory and save pro
 cleanclaw projects        # list all registered projects
 ```
 
-`cleanclaw attach <path>` is the first non-interactive root attachment command. It resolves the directory, writes `.cleanclaw/settings.json`, sets the active-project pointer, and prints detected project markers such as `.git`, `package.json`, `cleanclaw.config.json`, `pyproject.toml`, solution/project files, lockfiles, and common framework config files.
+`cleanclaw attach <path>` is the first non-interactive root attachment command. It resolves absolute paths, relative paths, `.`, and `~`, validates that the selected path exists, is a directory, and is writable, writes `.cleanclaw/settings.json`, sets the active-project pointer, and prints detected project markers such as `.git`, `package.json`, `cleanclaw.config.json`, `pyproject.toml`, solution/project files, lockfiles, and common framework config files.
 
 The index updates automatically after each applied change when `embeddings` is configured. Manual single-file updates are handled internally by the pipeline — there is no separate CLI command for incremental updates.
 

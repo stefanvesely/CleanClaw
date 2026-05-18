@@ -1,7 +1,7 @@
-import fs from 'fs';
 import path from 'path';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 import { detectProjectMarkers, formatProjectMarkers, type DetectedProjectMarker } from '../core/project-markers.js';
+import { resolveProjectPath, validateProjectDirectory } from '../core/project-paths.js';
 import { ensureProjectSettings, projectSettingsPath } from '../core/project-settings.js';
 import { loadState, saveActiveProject } from '../core/state-manager.js';
 import { appendToRegistry } from '../projectmap/project-registry.js';
@@ -14,6 +14,9 @@ export interface AttachProjectResult {
 }
 
 export interface AttachProjectOptions {
+  cwd?: string;
+  homeDir?: string;
+  probeWritable?: (projectRoot: string) => boolean;
   saveActive?: (projectRoot: string) => void;
   appendRegistry?: (projectRoot: string, name: string, projectPath: string) => void;
 }
@@ -23,15 +26,12 @@ export async function attachProject(
   logger: CleanClawLogger = createConsoleLogger(),
   options: AttachProjectOptions = {},
 ): Promise<AttachProjectResult> {
-  const projectRoot = path.resolve(projectPath);
-
-  if (!fs.existsSync(projectRoot)) {
-    throw new Error(`Project directory does not exist: ${projectRoot}`);
-  }
-
-  if (!fs.statSync(projectRoot).isDirectory()) {
-    throw new Error(`Project path is not a directory: ${projectRoot}`);
-  }
+  const projectRoot = validateProjectDirectory(resolveProjectPath(projectPath, {
+    cwd: options.cwd,
+    homeDir: options.homeDir,
+  }), {
+    probeWritable: options.probeWritable,
+  });
 
   const state = loadState(projectRoot);
   const projectName = state?.projectName ?? path.basename(projectRoot);

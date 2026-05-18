@@ -316,8 +316,8 @@ Outside project root requests
 
 ### Deliverables
 
-- [ ] Add project path resolver for absolute paths, relative paths, `.`, and `~`.
-- [ ] Validate that selected directory exists, is a directory, and is writable.
+- [x] Add project path resolver for absolute paths, relative paths, `.`, and `~`.
+- [x] Validate that selected directory exists, is a directory, and is writable.
 - [x] Detect project markers:
   - `.git`
   - `package.json`
@@ -354,6 +354,7 @@ Outside project root requests
 - [x] Added active project resolver that prefers current project settings/config markers before falling back to the global active-project pointer, then wired status, workflow scanning, and pipeline root lookups to it.
 - [x] Refactored config loading to read `cleanclaw.config.json` from the resolved project root instead of import-time shell cwd.
 - [x] Added `cleanclaw attach <path>` with project marker detection, selected-root output, project-local settings persistence, and global active-project pointer persistence.
+- [x] Added reusable project path resolution and writable-directory validation for `cleanclaw attach <path>`.
 
 ### Scope Rules
 
@@ -366,10 +367,10 @@ Outside project root requests
 
 ### Tests
 
-- [ ] Attaches a valid directory.
-- [ ] Rejects missing directory.
-- [ ] Rejects file path.
-- [ ] Rejects non-writable directory.
+- [x] Attaches a valid directory.
+- [x] Rejects missing directory.
+- [x] Rejects file path.
+- [x] Rejects non-writable directory.
 - [ ] Loads config from active root.
 - [ ] Records detected markers.
 - [ ] Shows workspace scope tree before execution.

@@ -42,10 +42,42 @@ describe('attachProject', () => {
     expect(logger.records.some(record => String(record.message).includes('Detected markers'))).toBe(true);
   });
 
+  it('resolves relative paths from the caller cwd', async () => {
+    const projectDir = path.join(tmpDir, 'project');
+    fs.mkdirSync(projectDir);
+    fs.writeFileSync(path.join(projectDir, 'package.json'), '{}', 'utf-8');
+
+    const result = await attachProject('project', createMemoryLogger(), {
+      cwd: tmpDir,
+      saveActive: () => {},
+      appendRegistry: () => {},
+    });
+
+    expect(result.projectRoot).toBe(projectDir);
+  });
+
   it('rejects missing project directories', async () => {
     await expect(attachProject(path.join(tmpDir, 'missing'), createMemoryLogger(), {
       saveActive: () => {},
       appendRegistry: () => {},
     })).rejects.toThrow(/does not exist/i);
+  });
+
+  it('rejects file paths', async () => {
+    const filePath = path.join(tmpDir, 'file.txt');
+    fs.writeFileSync(filePath, 'not a directory', 'utf-8');
+
+    await expect(attachProject(filePath, createMemoryLogger(), {
+      saveActive: () => {},
+      appendRegistry: () => {},
+    })).rejects.toThrow(/not a directory/i);
+  });
+
+  it('rejects directories that are not writable', async () => {
+    await expect(attachProject(tmpDir, createMemoryLogger(), {
+      probeWritable: () => false,
+      saveActive: () => {},
+      appendRegistry: () => {},
+    })).rejects.toThrow(/not writable/i);
   });
 });
