@@ -1,5 +1,5 @@
 ﻿import readline from 'readline';
-import { getConfig } from '../core/config-loader.js';
+import { getConfigForProject } from '../core/config-loader.js';
 import { runPipeline, type WorkflowAnswers } from '../core/pipeline.js';
 import { loadState, saveState } from '../core/state-manager.js';
 import { scanRelevantFiles } from '../core/file-scanner.js';
@@ -43,13 +43,6 @@ export async function runWorkflow(
   logger: CleanClawLogger = createConsoleLogger(),
   runtimeContextInput: RunWorkflowRuntimeContextInput = {},
 ): Promise<void> {
-  const baseConfig = getConfig();
-  const { config, credentialEnv, credentialValue } = resolveConfigCredential(baseConfig);
-  if (!credentialValue) {
-    throw new Error(`Missing credential for provider "${baseConfig.provider}". Set ${credentialEnv} before running CleanClaw.`);
-  }
-  const state = loadState(process.cwd());
-
   // Ensure active project root is declared before any pipeline work
   let activeRoot = resolveActiveProject().projectRoot;
   if (!activeRoot) {
@@ -57,6 +50,13 @@ export async function runWorkflow(
     saveActiveProject(activeRoot);
     logger.info(`[CleanClaw] Active project root set: ${activeRoot}`);
   }
+
+  const baseConfig = getConfigForProject(activeRoot);
+  const { config, credentialEnv, credentialValue } = resolveConfigCredential(baseConfig);
+  if (!credentialValue) {
+    throw new Error(`Missing credential for provider "${baseConfig.provider}". Set ${credentialEnv} before running CleanClaw.`);
+  }
+  const state = loadState(activeRoot);
 
   const runtimeContext = buildCleanClawRuntimeContext({
     source: runtimeContextInput.source ?? 'cleanclaw-cli',
