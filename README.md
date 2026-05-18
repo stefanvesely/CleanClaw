@@ -20,6 +20,26 @@ CleanClaw is being rebuilt into its own controlled coding agent with NemoClaw/Op
 11. **Controlled execution workflow** — default to per-change approval, ask before each validation command, update ProjectMap and changelog after completion, and return to planning mode by default. Broader approval modes are saved only when the user explicitly asks for them per project.
 12. **Release gate and smoke tests** — require build/tests, setup smoke, planning smoke, controlled execution smoke, ProjectMap update smoke, NemoClaw runtime check smoke, README review, changelog review, and plan-record review before release.
 
+## Current Implementation Status
+
+The active rebuild has started with the control and record foundation.
+
+Implemented so far:
+
+- `cleanclaw/core/control-contract.ts` defines the Phase 0 lifecycle states, approved why checks, file/read/command/frontier/commit/push guards, approval records, and why-alignment records.
+- `cleanclaw/core/task-records.ts` persists project-local task records under `.cleanclaw/tasks/<task-id>/`.
+- `cleanclaw/core/scope-tree.ts` persists visible scope trees with root directory, planned reads, planned edits, planned new files, validation commands, and out-of-root requests.
+- `runPipeline` now writes `.cleanclaw/tasks/task<id>/state.json`, records approved task why when available, and writes `.cleanclaw/tasks/task<id>/scope-tree.json` at task startup.
+- Focused tests cover the control contract, task record persistence, and scope tree persistence.
+
+Still planned:
+
+- Render the scope tree to the user before execution.
+- Make scope expansion pause instead of silently continuing.
+- Move root/project settings fully into project-local `.cleanclaw/` records.
+- Add the planning-first `cleanclaw` session loop.
+- Add numbered menus, stack inference, ProjectMap freshness, local model routing, NemoClaw startup checks, and guarded headless execution.
+
 CleanClaw is a coding-agent workflow layer for AI-assisted development. It is designed to sit between a developer and an implementation agent: it asks for project context, builds a scoped plan, routes work through provider and sandbox policy, requires human approval before changes land, and leaves a permanent audit trail of plans, decisions, diffs, and rollback metadata.
 
 CleanClaw is being aligned with NemoClaw so it can run as a first-class project workflow inside the OpenShell/NemoClaw environment while still working as a standalone local tool. Current integration work includes NemoClaw provider parity, gateway routing, credential handoff, structured logging, secret redaction, runtime context handoff, and sandbox-aware execution.
@@ -91,7 +111,7 @@ CleanClaw will not write outside the declared project root under any circumstanc
 |---|---|---|
 | `projectName` | required | Your project name |
 | `provider` | `anthropic` | `anthropic` or `openai` |
-| `approvalGranularity` | `per-file` | `per-change`, `per-file`, or `per-step` |
+| `approvalGranularity` | `per-change` | `per-change`, `per-file`, or `per-step` |
 | `stack` | `dotnet` | `dotnet`, `svelte`, `angular`, or `blazor` |
 | `plansDir` | `./plans` | Where plans and logs are written |
 | `logFormat` | `markdown` | `markdown` or `json` |
@@ -159,17 +179,33 @@ The index updates automatically after each applied change when `embeddings` is c
 
 ## Plan and log format
 
-After a run, `plans/task01/` contains:
+After a run, the legacy plan directory still contains:
 
 - **`task01A_plan.md`** — the AI-generated plan broken into numbered steps.
 - **`task01A_log.md`** — append-only audit log. Each entry records the file changed, before/after content, your approval reason, and which model proposed the change.
 - **`task01A_iter1_plan.md`** — if you triggered a follow-up iteration, each iteration gets its own plan file.
 
+The new project-local control records are written under:
+
+```text
+.cleanclaw/
+  tasks/
+    task01/
+      state.json
+      approval-records.json
+      why-alignment-records.json
+      scope-tree.json
+```
+
+`state.json` records the active lifecycle state, task why, approved files, approved commands, approval mode, and model policy. `scope-tree.json` records the visible workspace scope that CleanClaw is using for the task.
+
 ## Approval granularity
 
 - **per-change** — prompted for every individual line change. Most cautious.
-- **per-file** — all changes to the same file shown together, one prompt per file. Recommended.
+- **per-file** — all changes to the same file shown together, one prompt per file.
 - **per-step** — one prompt per task step regardless of files touched.
+
+CleanClaw's planned default is always the most granular mode, `per-change`. Broader approval modes should be saved only when the user explicitly asks for that project preference.
 
 ## Headless / CI mode
 
