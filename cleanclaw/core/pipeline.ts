@@ -9,7 +9,7 @@ import { captureBeforeState } from '../plans/diff-capture.js';
 import { appendLogEntry } from '../plans/log-writer.js';
 import { parseTaskPlanSteps, markStepComplete } from '../plans/plan-writer.js';
 import { checkScope, formatHaltMessage } from '../scope/scope-guard.js';
-import { assertWithinProjectRoot, RootViolationError } from './root-guard.js';
+import { assertWithinProjectRoot, resolveProjectFilePath, RootViolationError } from './root-guard.js';
 import { saveState, loadState } from './state-manager.js';
 import { triggerProjectMapUpdate } from '../projectmap/updater.js';
 import { queryProjectMap } from '../projectmap/query-bridge.js';
@@ -98,15 +98,20 @@ function fuzzyMatchFilename(proposed: string, searchRoot: string): string | null
 
 async function validateFilename(
   proposed: ProposedChange,
+  activeRoot: string,
   headless = false,
   logger: CleanClawLogger = createConsoleLogger(),
 ): Promise<boolean> {
-  if (headless || fs.existsSync(proposed.filename)) return true;
+  const resolvedFilename = resolveProjectFilePath(proposed.filename, activeRoot);
+  if (headless || fs.existsSync(resolvedFilename)) {
+    proposed.filename = resolvedFilename;
+    return true;
+  }
 
   const readline = await import('readline');
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
-  const fuzzyMatch = fuzzyMatchFilename(proposed.filename, process.cwd());
+  const fuzzyMatch = fuzzyMatchFilename(proposed.filename, activeRoot);
   if (fuzzyMatch) {
     logger.info(`\n⚠ "${proposed.filename}" does not exist.`);
     logger.info(`  Did you mean: "${fuzzyMatch}"?`);
@@ -122,7 +127,11 @@ async function validateFilename(
         const rl2 = readline.createInterface({ input: process.stdin, output: process.stdout });
         rl2.question(`  Create new file "${proposed.filename}"? [y/N]: `, ans => { rl2.close(); resolve(ans.trim().toLowerCase()); });
       });
-      return confirm === 'y';
+      if (confirm === 'y') {
+        proposed.filename = resolvedFilename;
+        return true;
+      }
+      return false;
     }
     return false;
   }
@@ -131,7 +140,11 @@ async function validateFilename(
   const confirm = await new Promise<string>(resolve => {
     rl.question('This would create a NEW FILE. Confirm? [y/N]: ', ans => { rl.close(); resolve(ans.trim()); });
   });
-  return confirm.toLowerCase() === 'y';
+  if (confirm.toLowerCase() === 'y') {
+    proposed.filename = resolvedFilename;
+    return true;
+  }
+  return false;
 }
 
 async function ensureFileInVisibleScope(
@@ -143,9 +156,10 @@ async function ensureFileInVisibleScope(
 ): Promise<ScopeTree | null> {
   if (isFileInScopeTree(scopeTree, proposed.filename)) return scopeTree;
 
-  const isNewFile = !fs.existsSync(proposed.filename);
+  const resolvedFilename = resolveProjectFilePath(proposed.filename, activeRoot);
+  const isNewFile = !fs.existsSync(resolvedFilename);
   const kind = isNewFile ? 'planned-new-file' : 'planned-edit';
-  const updatedScopeTree = addFileToScopeTree(scopeTree, proposed.filename, kind);
+  const updatedScopeTree = addFileToScopeTree(scopeTree, resolvedFilename, kind);
 
   if (updatedScopeTree.outOfRootRequests.length > scopeTree.outOfRootRequests.length) {
     logger.error(`[CleanClaw] Scope expansion requested outside project root: ${proposed.filename}`);
@@ -212,7 +226,7 @@ async function runPipelinePerChange(
     logger.info(`\n[CleanClaw] Step ${step.number}: ${step.body.slice(0, 80)}...`);
 
     const proposed = await languageAgent.propose(step.body, bridge);
-    const accepted = await validateFilename(proposed, headless, logger);
+    const accepted = await validateFilename(proposed, activeRoot, headless, logger);
 
     if (!accepted) {
       logger.info('[CleanClaw] New file creation rejected. Skipping step.');
@@ -339,6 +353,7 @@ async function runPipelinePerFile(
   config: CleanClawConfig,
   languageAgent: LanguageAgent,
   bridge: Bridge,
+  activeRoot: string,
   logger: CleanClawLogger = createConsoleLogger(),
 ): Promise<void> {
   const model = resolveModel(config);
@@ -350,7 +365,7 @@ async function runPipelinePerFile(
   for (const step of steps) {
     logger.info(`\n[CleanClaw] Proposing step ${step.number}: ${step.body.slice(0, 80)}...`);
     const proposed = await languageAgent.propose(step.body, bridge);
-    const accepted = await validateFilename(proposed, false, logger);
+    const accepted = await validateFilename(proposed, activeRoot, false, logger);
 
     if (!accepted) {
       logger.info('[CleanClaw] New file creation rejected. Skipping step.');
@@ -358,12 +373,14 @@ async function runPipelinePerFile(
     }
 
     // Re-propose with actual file content so the agent isn't guessing at line contents
-    const rawContent = fs.readFileSync(proposed.filename, 'utf-8');
-    const numberedContent = rawContent.split('\n').map((l, i) => `${i + 1}: ${l}`).join('\n');
-    const enrichedStep = `${step.body}\n\nCurrent file content (${proposed.filename}):\n${numberedContent}`;
-    const refined = await languageAgent.propose(enrichedStep, bridge);
-    refined.filename = proposed.filename;
-    Object.assign(proposed, refined);
+    if (fs.existsSync(proposed.filename)) {
+      const rawContent = fs.readFileSync(proposed.filename, 'utf-8');
+      const numberedContent = rawContent.split('\n').map((l, i) => `${i + 1}: ${l}`).join('\n');
+      const enrichedStep = `${step.body}\n\nCurrent file content (${proposed.filename}):\n${numberedContent}`;
+      const refined = await languageAgent.propose(enrichedStep, bridge);
+      refined.filename = proposed.filename;
+      Object.assign(proposed, refined);
+    }
 
     const lineNumbers = proposed.beforeLines.map(l => l.lineNumber);
     const before = captureBeforeState(proposed.filename, lineNumbers);
@@ -395,8 +412,17 @@ async function runPipelinePerFile(
     }
 
     for (const { proposed, before, step } of group) {
+      try {
+        assertWithinProjectRoot(proposed.filename, activeRoot);
+      } catch (err) {
+        if (err instanceof RootViolationError) {
+          logger.error(err.message);
+          continue;
+        }
+        throw err;
+      }
       applyChange(proposed);
-      triggerProjectMapUpdate(proposed.filename, resolveActiveProject().projectRoot ?? process.cwd(), config, logger);
+      triggerProjectMapUpdate(proposed.filename, activeRoot, config, logger);
       appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
       markStepComplete(planPath, step.body, completedPlanPath, logger);
       logger.info(`[CleanClaw] Change ${changeNumber} applied and logged.`);
@@ -589,7 +615,7 @@ export async function runPipeline(
   };
 
   if (granularity === 'per-file') {
-    await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, logger);
+    await runPipelinePerFile(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, activeRoot, logger);
   } else {
     scopeTree = await runPipelinePerChange(steps, taskId, variant, planPath, completedPlanPath, plansDir, routedConfig, languageAgent, bridge, scopeCtx, activeRoot, resumeFromStep, headless, logger, runtimeContextSummary, scopeTree);
 

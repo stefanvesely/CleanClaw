@@ -36,6 +36,7 @@ Implemented so far:
 - Project-local `.cleanclaw/settings.json` helpers are in place and setup/switch/status are wired to create or display those settings.
 - Config loading now reads `cleanclaw.config.json` from the resolved project root instead of whichever shell directory imported the module.
 - Pipeline plan/log directories, resumable state loading, and rollback log lookup now resolve from the active project root.
+- Pipeline file proposals now resolve relative paths against the active project root before filesystem checks or writes, and per-file execution applies the root guard before changes land.
 - Focused tests cover the control contract, task record persistence, scope tree persistence, project-local settings, active project resolution, and root-aware config loading.
 
 Still planned:

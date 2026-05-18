@@ -10,7 +10,7 @@ export class RootViolationError extends Error {
 }
 
 export function assertWithinProjectRoot(filePath: string, activeRoot: string): void {
-  const resolvedFile = path.resolve(filePath);
+  const resolvedFile = resolveProjectFilePath(filePath, activeRoot);
   const resolvedRoot = path.resolve(activeRoot);
 
   // Ensure root ends with separator so "projects/foo" doesn't match "projects/foobar"
@@ -19,6 +19,12 @@ export function assertWithinProjectRoot(filePath: string, activeRoot: string): v
   if (!resolvedFile.startsWith(rootWithSep) && resolvedFile !== resolvedRoot) {
     throw new RootViolationError(resolvedFile, resolvedRoot);
   }
+}
+
+export function resolveProjectFilePath(filePath: string, activeRoot: string): string {
+  return path.isAbsolute(filePath)
+    ? path.resolve(filePath)
+    : path.resolve(activeRoot, filePath);
 }
 
 export async function promptDeclareProjectRoot(): Promise<string> {
