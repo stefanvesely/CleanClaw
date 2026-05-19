@@ -437,7 +437,7 @@ cleanclaw starts
 - [x] Create task record immediately after intake.
 - [x] Create plan file before implementation.
 - [x] Prevent edits while in planning states.
-- [ ] Always require explicit approval before the first file edit of a plan.
+- [x] Always require explicit approval before the first file edit of a plan.
 - [ ] After first-edit approval, use the project approval-granularity setting.
 - [ ] Allow broader approval only when the user explicitly requests it.
 - [ ] Expire broader approval at the end of the current task.
@@ -465,6 +465,7 @@ cleanclaw starts
 - [x] Added project-local draft plan creation for new interactive plans, including requester, beneficiary, approved why, known facts, and missing confirmations.
 - [x] Added reusable why-alignment checks for proposed scope items and surfaced those checks in draft plans.
 - [x] Added control-contract edit-state enforcement so file edits are blocked until execution or review-diff state.
+- [x] Added first-edit approval state and edit guard enforcement before approved files can be edited.
 
 ### Root Behavior
 

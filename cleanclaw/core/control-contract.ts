@@ -52,6 +52,7 @@ export interface CleanClawTaskState {
   why?: TaskWhy;
   approvedFiles: string[];
   approvedCommands: string[];
+  firstEditApproval?: ApprovalRecord;
   approvalMode: ApprovalMode;
   scopeTreePath?: string;
   modelPolicy: ModelPolicyState;
@@ -189,6 +190,7 @@ export function assertCanReadFile(state: CleanClawTaskState, filePath: string): 
 export function assertCanEditFile(state: CleanClawTaskState, filePath: string): void {
   assertWhyApproved(state);
   assertTaskStateAllowsEdit(state);
+  assertFirstEditApproved(state);
   if (!isWithinRoot(state.projectRoot, filePath)) {
     throw new ControlContractError(`Cannot edit outside project root: ${filePath}`, 'outside-root-edit');
   }
@@ -197,6 +199,15 @@ export function assertCanEditFile(state: CleanClawTaskState, filePath: string): 
   if (!state.approvedFiles.includes(relativePath)) {
     throw new ControlContractError(`Cannot edit unapproved file: ${relativePath}`, 'unapproved-file');
   }
+}
+
+export function assertFirstEditApproved(state: CleanClawTaskState): void {
+  if (state.firstEditApproval?.userText.trim()) return;
+
+  throw new ControlContractError(
+    'First file edit requires explicit user approval for this task.',
+    'missing-first-edit-approval',
+  );
 }
 
 export function assertTaskStateAllowsEdit(state: CleanClawTaskState): void {
@@ -292,6 +303,22 @@ export function approveFiles(state: CleanClawTaskState, files: string[]): CleanC
   return {
     ...state,
     approvedFiles: Array.from(new Set([...state.approvedFiles, ...files.map(normalizeRelativePath)])),
+  };
+}
+
+export function approveFirstEdit(
+  state: CleanClawTaskState,
+  userText: string,
+  timestamp?: string,
+): CleanClawTaskState {
+  return {
+    ...state,
+    firstEditApproval: recordUserApproval({
+      state: state.state,
+      userText,
+      subject: 'first file edit',
+      timestamp,
+    }),
   };
 }
 

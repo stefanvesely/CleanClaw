@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   approveCommand,
   approveFiles,
+  approveFirstEdit,
   approveWhy,
   assertCanCommit,
   assertCanEditFile,
+  assertFirstEditApproved,
   assertCanRunCommand,
   assertCanTransition,
   assertCanUseFrontierModel,
@@ -63,6 +65,7 @@ describe('CleanClaw control contract', () => {
     state = approveWhy(state, 'Keep the project controlled.', 'approved');
     state = approveFiles(state, ['src/index.ts']);
     state = { ...state, state: 'execution' };
+    state = approveFirstEdit(state, 'approve first edit');
 
     expect(() => assertCanEditFile(state, '/repo/src/index.ts')).not.toThrow();
     expect(() => assertCanEditFile(state, '/repo/src/other.ts')).toThrow(/unapproved file/i);
@@ -79,6 +82,25 @@ describe('CleanClaw control contract', () => {
     expect(() => assertCanEditFile(state, '/repo/src/index.ts')).toThrow(/execution/i);
     expect(() => assertTaskStateAllowsEdit({ ...state, state: 'execution' })).not.toThrow();
     expect(() => assertTaskStateAllowsEdit({ ...state, state: 'review_diff' })).not.toThrow();
+  });
+
+  it('requires explicit first-edit approval before editing approved files', () => {
+    let state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
+    state = approveWhy(state, 'Keep the project controlled.', 'approved');
+    state = approveFiles(state, ['src/index.ts']);
+    state = { ...state, state: 'execution' };
+
+    expect(() => assertFirstEditApproved(state)).toThrow(/first file edit/i);
+    expect(() => assertCanEditFile(state, '/repo/src/index.ts')).toThrow(/first file edit/i);
+
+    const approved = approveFirstEdit(state, 'approve first edit', '2026-05-19T00:00:00.000Z');
+    expect(approved.firstEditApproval).toEqual({
+      timestamp: '2026-05-19T00:00:00.000Z',
+      state: 'execution',
+      userText: 'approve first edit',
+      subject: 'first file edit',
+    });
+    expect(() => assertFirstEditApproved(approved)).not.toThrow();
   });
 
   it('allows reads inside root and blocks outside-root reads', () => {
