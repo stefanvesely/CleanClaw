@@ -36,6 +36,35 @@ describe('session draft plan', () => {
     expect(content).toContain('Requester: Mali');
     expect(content).toContain('Beneficiary: Support users');
     expect(content).toContain('Task record: .cleanclaw/tasks/task1/state.json');
+    expect(content).toContain('## Proposed Scope Why Alignment');
+    expect(content).toContain('- none proposed yet');
     expect(content).toContain('## What Needs Confirmation');
+  });
+
+  it('includes why alignment for proposed scope items', () => {
+    const filepath = createDraftSessionPlan({
+      projectRoot: tmpDir,
+      taskDescription: 'Fix login cache',
+      taskWhy: {
+        text: 'Keep login cache reliable',
+        approved: true,
+        approvedByUserText: 'yes',
+      },
+      requester: 'Mali',
+      beneficiary: 'Support users',
+      taskId: 'task1',
+      plannedScopeItems: [
+        {
+          path: 'src/auth/login-cache.ts',
+          kind: 'edit',
+          rationale: 'Updates login cache reliability.',
+        },
+      ],
+      createdAt: '2026-05-19T00:00:00.000Z',
+    });
+
+    expect(fs.readFileSync(filepath, 'utf-8')).toContain(
+      '- src/auth/login-cache.ts (edit): aligned - Updates login cache reliability.',
+    );
   });
 });

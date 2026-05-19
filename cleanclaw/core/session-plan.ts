@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import type { TaskWhyIntake } from './task-why.js';
+import { assessScopeWhyAlignments, formatScopeWhyAlignments, type ProposedScopeItem } from './why-alignment.js';
 
 export interface DraftSessionPlanInput {
   projectRoot: string;
@@ -9,6 +10,7 @@ export interface DraftSessionPlanInput {
   requester: string;
   beneficiary: string;
   taskId: string;
+  plannedScopeItems?: ProposedScopeItem[];
   createdAt?: string;
 }
 
@@ -24,6 +26,11 @@ export function createDraftSessionPlan(input: DraftSessionPlanInput): string {
 }
 
 export function formatDraftSessionPlan(input: DraftSessionPlanInput & { createdAt: string }): string {
+  const scopeAlignments = assessScopeWhyAlignments({
+    approvedWhy: input.taskWhy,
+    items: input.plannedScopeItems ?? [],
+  });
+
   return [
     `# ${input.taskDescription.trim()}`,
     '',
@@ -42,6 +49,10 @@ export function formatDraftSessionPlan(input: DraftSessionPlanInput & { createdA
     `- Task: ${input.taskDescription.trim()}`,
     `- Why approved: ${input.taskWhy.approved ? 'yes' : 'no'}`,
     `- Task record: .cleanclaw/tasks/${input.taskId}/state.json`,
+    '',
+    '## Proposed Scope Why Alignment',
+    '',
+    formatScopeWhyAlignments(scopeAlignments),
     '',
     '## What Needs Confirmation',
     '',

@@ -417,7 +417,7 @@ cleanclaw starts
 - [x] After project selection, search in-progress plans and ask whether to continue or start new.
 - [x] For continued work, show a summary and ask whether the existing plan is still okay.
 - [x] Ask for or propose the task why before scope decisions.
-- [ ] Use the approved why as the filter for project fit, file scope, validation, and change alignment.
+- [x] Use the approved why as the filter for project fit, file scope, validation, and change alignment.
 - [ ] Allow read-only project questions before a plan exists.
 - [ ] Prevent all file changes unless they belong to an approved plan.
 - [ ] When broad project scanning is needed, ask first and ask what should be excluded from the scan.
@@ -463,6 +463,7 @@ cleanclaw starts
 - [x] Added task why intake that drafts a why from the task and confirmed project, then lets the user accept it or type a replacement before plan discovery.
 - [x] Added project-local interactive task records under `.cleanclaw/tasks/taskN/state.json` after task, project, and why are confirmed.
 - [x] Added project-local draft plan creation for new interactive plans, including requester, beneficiary, approved why, known facts, and missing confirmations.
+- [x] Added reusable why-alignment checks for proposed scope items and surfaced those checks in draft plans.
 
 ### Root Behavior
 
