@@ -29,6 +29,7 @@ describe('interactive session', () => {
 
     const result = await startInteractiveSession({
       cwd: tmpDir,
+      globalProject: null,
       logger,
       ask: async question => {
         questions.push(question);
@@ -96,6 +97,57 @@ describe('interactive session', () => {
     expect(result.projectConfirmed).toBe(false);
     expect(result.planChoice).toBeNull();
     expect(logger.records.map(record => String(record.message)).join('\n')).not.toContain('in-progress plan');
+  });
+
+  it('asks for a project directory when no project is detected', async () => {
+    const projectDir = path.join(tmpDir, 'demo-project');
+    fs.mkdirSync(projectDir);
+    fs.writeFileSync(path.join(projectDir, 'package.json'), '{}', 'utf-8');
+    const questions: string[] = [];
+    const answers = ['Fix login cache', 'demo-project', 'y'];
+    const logger = createMemoryLogger();
+
+    const result = await startInteractiveSession({
+      cwd: tmpDir,
+      globalProject: null,
+      logger,
+      ask: async question => {
+        questions.push(question);
+        return answers.shift() ?? '';
+      },
+    });
+
+    expect(result).toEqual({
+      taskDescription: 'Fix login cache',
+      projectRoot: projectDir,
+      projectConfirmed: true,
+      planChoice: 'new',
+      selectedPlan: null,
+    });
+    expect(questions).toContain('What project directory should CleanClaw use for this task? ');
+    expect(logger.records.map(record => String(record.message)).join('\n')).toContain('package.json (Node package)');
+  });
+
+  it('asks for a replacement directory when the detected project is rejected', async () => {
+    saveProjectSettings(tmpDir, createProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Wrong Project',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    }));
+    const correctProject = path.join(tmpDir, 'correct-project');
+    fs.mkdirSync(correctProject);
+    fs.writeFileSync(path.join(correctProject, 'package.json'), '{}', 'utf-8');
+    const answers = ['Fix login cache', 'n', 'correct-project', 'y'];
+
+    const result = await startInteractiveSession({
+      cwd: tmpDir,
+      logger: createMemoryLogger(),
+      ask: async () => answers.shift() ?? '',
+    });
+
+    expect(result.projectRoot).toBe(correctProject);
+    expect(result.projectConfirmed).toBe(true);
+    expect(result.planChoice).toBe('new');
   });
 
   it('does not change anything when no task is captured', async () => {

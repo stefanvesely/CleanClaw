@@ -412,7 +412,7 @@ cleanclaw starts
 - [x] Add interactive session entrypoint for `cleanclaw` with no subcommand.
 - [ ] Default to planning mode.
 - [x] Ask for the task before assuming the current folder is the correct project.
-- [ ] Infer or question the project from the task, current folder, project markers, and in-progress plans.
+- [x] Infer or question the project from the task, current folder, project markers, and in-progress plans.
 - [x] If launched inside a detected project, ask: "Hi, I see we are in a project folder for <project>. Do you want to scope today's work in this folder?"
 - [x] After project selection, search in-progress plans and ask whether to continue or start new.
 - [x] For continued work, show a summary and ask whether the existing plan is still okay.
@@ -454,9 +454,16 @@ cleanclaw starts
 - [ ] Clear or separate task context when the next task is unrelated.
 - [ ] Confirm context continuity when CleanClaw is uncertain whether the next task is related.
 
+### Completed Phase 2 Implementation Notes
+
+- [x] Wired no-arg `cleanclaw` to ask for the task before confirming the detected project.
+- [x] Added confirmed-project-only in-progress plan discovery to the interactive session.
+- [x] Added project intake evidence that shows why CleanClaw thinks a project is relevant, including root, resolver source, and detected project markers.
+- [x] When no project is detected or the suggested project is rejected, CleanClaw asks for an explicit project directory and only proceeds after confirmation.
+
 ### Root Behavior
 
-- [ ] CleanClaw can launch from anywhere.
+- [x] CleanClaw can launch from anywhere.
 - [ ] If launched inside a project, it suggests the current folder and asks the user to confirm.
 - [ ] If launched outside a project, it asks for the project directory.
 - [ ] Folder scanning can help find projects, but only after user approval.

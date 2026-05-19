@@ -1,7 +1,11 @@
-import path from 'path';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 import { formatInProgressPlanChoices, listInProgressPlans, type InProgressPlanSummary } from '../core/plan-discovery.js';
-import { loadProjectSettings } from '../core/project-settings.js';
+import {
+  buildProjectIntakeCandidate,
+  formatProjectIntakeCandidate,
+  resolveUserProjectDirectory,
+  type ProjectIntakeCandidate,
+} from '../core/project-intake.js';
 import { resolveActiveProject } from '../core/project-resolver.js';
 
 export interface InteractiveSessionResult {
@@ -14,6 +18,7 @@ export interface InteractiveSessionResult {
 
 export interface InteractiveSessionOptions {
   cwd?: string;
+  globalProject?: string | null;
   ask?: (question: string) => Promise<string>;
   logger?: CleanClawLogger;
 }
@@ -23,7 +28,7 @@ export async function startInteractiveSession(
 ): Promise<InteractiveSessionResult> {
   const logger = options.logger ?? createConsoleLogger();
   const ask = options.ask ?? defaultAsk;
-  const resolvedProject = resolveActiveProject({ cwd: options.cwd });
+  const resolvedProject = resolveActiveProject({ cwd: options.cwd, globalProject: options.globalProject });
 
   logger.info('CleanClaw is ready.');
   logger.info('I will ask what we are working on before assuming which project is correct.');
@@ -40,35 +45,24 @@ export async function startInteractiveSession(
     };
   }
 
-  if (!resolvedProject.projectRoot) {
-    logger.info('I do not know the project yet. Next I need to infer or ask which project this task belongs to.');
-    return {
-      taskDescription,
-      projectRoot: null,
-      projectConfirmed: false,
-      planChoice: null,
-      selectedPlan: null,
-    };
-  }
+  const initialCandidate = buildProjectIntakeCandidate(resolvedProject);
+  const confirmedProject = await confirmProjectCandidate({
+    ask,
+    cwd: options.cwd,
+    logger,
+    taskDescription,
+    candidate: initialCandidate,
+  });
 
-  const settings = loadProjectSettings(resolvedProject.projectRoot);
-  const projectName = settings?.projectName ?? path.basename(resolvedProject.projectRoot);
-  logger.info(`Hi, I see we are in a project folder for ${projectName}.`);
-  logger.info(`Project root: ${resolvedProject.projectRoot}`);
-  logger.info(`Resolved by: ${resolvedProject.source}`);
-
-  const confirm = await ask(`Do you want to scope today's work in this folder? [Y/n]: `);
-  const projectConfirmed = confirm.trim() === '' || confirm.trim().toLowerCase() === 'y';
-
-  if (projectConfirmed) {
-    logger.info(`Project confirmed: ${projectName}.`);
-    const plans = listInProgressPlans(resolvedProject.projectRoot);
+  if (confirmedProject) {
+    logger.info(`Project confirmed: ${confirmedProject.projectName}.`);
+    const plans = listInProgressPlans(confirmedProject.projectRoot);
     if (plans.length === 0) {
       logger.info('No in-progress plans found for this project. Next step: start a new plan.');
       return {
         taskDescription,
-        projectRoot: resolvedProject.projectRoot,
-        projectConfirmed,
+        projectRoot: confirmedProject.projectRoot,
+        projectConfirmed: true,
         planChoice: 'new',
         selectedPlan: null,
       };
@@ -89,8 +83,8 @@ export async function startInteractiveSession(
         logger.info('Plan not confirmed. Next step: start a new plan or revise the existing plan.');
         return {
           taskDescription,
-          projectRoot: resolvedProject.projectRoot,
-          projectConfirmed,
+          projectRoot: confirmedProject.projectRoot,
+          projectConfirmed: true,
           planChoice: 'new',
           selectedPlan: null,
         };
@@ -99,8 +93,8 @@ export async function startInteractiveSession(
       logger.info('Existing plan confirmed. Next step: load planning context.');
       return {
         taskDescription,
-        projectRoot: resolvedProject.projectRoot,
-        projectConfirmed,
+        projectRoot: confirmedProject.projectRoot,
+        projectConfirmed: true,
         planChoice,
         selectedPlan,
       };
@@ -109,22 +103,60 @@ export async function startInteractiveSession(
     logger.info('Starting a new plan for this project.');
     return {
       taskDescription,
-      projectRoot: resolvedProject.projectRoot,
-      projectConfirmed,
+      projectRoot: confirmedProject.projectRoot,
+      projectConfirmed: true,
       planChoice,
       selectedPlan: null,
     };
-  } else {
-    logger.info('Project not confirmed. Next step: infer or ask for the correct project directory.');
   }
 
   return {
     taskDescription,
-    projectRoot: resolvedProject.projectRoot,
-    projectConfirmed,
+    projectRoot: initialCandidate?.projectRoot ?? null,
+    projectConfirmed: false,
     planChoice: null,
     selectedPlan: null,
   };
+}
+
+async function confirmProjectCandidate(options: {
+  ask: (question: string) => Promise<string>;
+  cwd?: string;
+  logger: CleanClawLogger;
+  taskDescription: string;
+  candidate: ProjectIntakeCandidate | null;
+}): Promise<ProjectIntakeCandidate | null> {
+  const { ask, cwd, logger, taskDescription } = options;
+  let { candidate } = options;
+
+  if (candidate) {
+    logger.info(`Hi, I see we are in a project folder for ${candidate.projectName}.`);
+    logger.info(formatProjectIntakeCandidate(candidate, taskDescription));
+    const confirm = await ask(`Do you want to scope today's work in this folder? [Y/n]: `);
+    if (isYes(confirm)) return candidate;
+    logger.info('Project not confirmed. I need the correct project directory before I can inspect plans.');
+  } else {
+    logger.info('I do not know the project yet. I need the project directory before I can inspect plans.');
+  }
+
+  const directory = await ask('What project directory should CleanClaw use for this task? ');
+  candidate = resolveUserProjectDirectory(directory, cwd);
+  if (!candidate) {
+    logger.info('Project directory was not found or was not a folder. Nothing will change.');
+    return null;
+  }
+
+  logger.info(formatProjectIntakeCandidate(candidate, taskDescription));
+  const confirm = await ask('Use this project directory? [Y/n]: ');
+  if (isYes(confirm)) return candidate;
+
+  logger.info('Project directory not confirmed. Nothing will change.');
+  return null;
+}
+
+function isYes(value: string): boolean {
+  const trimmed = value.trim().toLowerCase();
+  return trimmed === '' || trimmed === 'y' || trimmed === 'yes';
 }
 
 async function defaultAsk(question: string): Promise<string> {
