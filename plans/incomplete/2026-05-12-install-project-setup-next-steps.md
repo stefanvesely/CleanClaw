@@ -434,7 +434,7 @@ cleanclaw starts
 - [ ] Move completed plans into a completed folder.
 - [ ] Compare plans by token cost, safety, speed, maintainability, risk, and scope size.
 - [ ] Recommend a plan only when there is a clear winner; otherwise present tradeoffs and leave the choice to the user.
-- [ ] Create task record immediately after intake.
+- [x] Create task record immediately after intake.
 - [ ] Create plan file before implementation.
 - [ ] Prevent edits while in planning states.
 - [ ] Always require explicit approval before the first file edit of a plan.
@@ -461,6 +461,7 @@ cleanclaw starts
 - [x] Added project intake evidence that shows why CleanClaw thinks a project is relevant, including root, resolver source, and detected project markers.
 - [x] When no project is detected or the suggested project is rejected, CleanClaw asks for an explicit project directory and only proceeds after confirmation.
 - [x] Added task why intake that drafts a why from the task and confirmed project, then lets the user accept it or type a replacement before plan discovery.
+- [x] Added project-local interactive task records under `.cleanclaw/tasks/taskN/state.json` after task, project, and why are confirmed.
 
 ### Root Behavior
 

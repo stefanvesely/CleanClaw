@@ -17,6 +17,7 @@ import {
   loadApprovalRecords,
   loadTaskState,
   loadWhyAlignmentRecords,
+  nextTaskId,
   saveTaskState,
   taskRecordDir,
 } from './task-records.js';
@@ -115,5 +116,20 @@ describe('CleanClaw task records', () => {
         taskSummary: 'Second task',
       },
     });
+  });
+
+  it('creates the next project-local task id', () => {
+    saveTaskState(tmpDir, createTaskState({
+      taskId: 'task1',
+      projectRoot: tmpDir,
+      taskSummary: 'First task',
+    }));
+    saveTaskState(tmpDir, createTaskState({
+      taskId: 'task3',
+      projectRoot: tmpDir,
+      taskSummary: 'Third task',
+    }));
+
+    expect(nextTaskId(tmpDir)).toBe('task4');
   });
 });

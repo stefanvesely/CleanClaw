@@ -4,6 +4,7 @@ import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createMemoryLogger } from '../core/logger.js';
 import { createProjectSettings, saveProjectSettings } from '../core/project-settings.js';
+import { loadTaskState } from '../core/task-records.js';
 import { startInteractiveSession } from './interactive-session.js';
 
 describe('interactive session', () => {
@@ -46,12 +47,21 @@ describe('interactive session', () => {
         approved: true,
         approvedByUserText: 'accepted proposed why',
       },
+      taskId: 'task1',
+      taskStatePath: path.join(tmpDir, '.cleanclaw', 'tasks', 'task1', 'state.json'),
       planChoice: 'new',
       selectedPlan: null,
     });
     expect(questions[0]).toBe('What are we working on today? ');
     expect(questions[1]).toContain("scope today's work");
     expect(logger.records.map(record => String(record.message)).join('\n')).toContain('I will ask what we are working on');
+    expect(loadTaskState(tmpDir, 'task1')).toMatchObject({
+      state: 'why_definition',
+      taskSummary: 'Fix login cache',
+      why: {
+        approved: true,
+      },
+    });
   });
 
   it('discovers in-progress plans only after project confirmation', async () => {
@@ -79,6 +89,8 @@ describe('interactive session', () => {
 
     expect(result.planChoice).toBe('continue');
     expect(result.taskWhy?.approved).toBe(true);
+    expect(result.taskId).toBe('task1');
+    expect(result.taskStatePath).toBe(path.join(tmpDir, '.cleanclaw', 'tasks', 'task1', 'state.json'));
     expect(result.selectedPlan?.title).toBe('Demo Plan');
     expect(logger.records.map(record => String(record.message)).join('\n')).toContain('I found 1 in-progress plan');
   });
@@ -132,6 +144,8 @@ describe('interactive session', () => {
         approved: true,
         approvedByUserText: 'Keep login reliable',
       },
+      taskId: 'task1',
+      taskStatePath: path.join(projectDir, '.cleanclaw', 'tasks', 'task1', 'state.json'),
       planChoice: 'new',
       selectedPlan: null,
     });
@@ -159,6 +173,7 @@ describe('interactive session', () => {
     expect(result.projectRoot).toBe(correctProject);
     expect(result.projectConfirmed).toBe(true);
     expect(result.taskWhy?.approved).toBe(true);
+    expect(result.taskId).toBe('task1');
     expect(result.planChoice).toBe('new');
   });
 

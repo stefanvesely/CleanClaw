@@ -1,5 +1,6 @@
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 import { formatInProgressPlanChoices, listInProgressPlans, type InProgressPlanSummary } from '../core/plan-discovery.js';
+import { approveWhy, createTaskState, transitionTaskState } from '../core/control-contract.js';
 import {
   buildProjectIntakeCandidate,
   formatProjectIntakeCandidate,
@@ -8,12 +9,15 @@ import {
 } from '../core/project-intake.js';
 import { resolveActiveProject } from '../core/project-resolver.js';
 import { createApprovedTaskWhy, draftTaskWhy, type TaskWhyIntake } from '../core/task-why.js';
+import { nextTaskId, saveTaskState } from '../core/task-records.js';
 
 export interface InteractiveSessionResult {
   taskDescription: string | null;
   projectRoot: string | null;
   projectConfirmed: boolean;
   taskWhy: TaskWhyIntake | null;
+  taskId: string | null;
+  taskStatePath: string | null;
   planChoice: 'continue' | 'new' | null;
   selectedPlan: InProgressPlanSummary | null;
 }
@@ -43,6 +47,8 @@ export async function startInteractiveSession(
       projectRoot: resolvedProject.projectRoot,
       projectConfirmed: false,
       taskWhy: null,
+      taskId: null,
+      taskStatePath: null,
       planChoice: null,
       selectedPlan: null,
     };
@@ -71,10 +77,19 @@ export async function startInteractiveSession(
         projectRoot: confirmedProject.projectRoot,
         projectConfirmed: true,
         taskWhy: null,
+        taskId: null,
+        taskStatePath: null,
         planChoice: null,
         selectedPlan: null,
       };
     }
+
+    const taskRecord = saveInteractiveTaskState({
+      projectRoot: confirmedProject.projectRoot,
+      taskDescription,
+      taskWhy,
+    });
+    logger.info(`Task record created: ${taskRecord.taskStatePath}`);
 
     const plans = listInProgressPlans(confirmedProject.projectRoot);
     if (plans.length === 0) {
@@ -84,6 +99,8 @@ export async function startInteractiveSession(
         projectRoot: confirmedProject.projectRoot,
         projectConfirmed: true,
         taskWhy,
+        taskId: taskRecord.taskId,
+        taskStatePath: taskRecord.taskStatePath,
         planChoice: 'new',
         selectedPlan: null,
       };
@@ -107,6 +124,8 @@ export async function startInteractiveSession(
           projectRoot: confirmedProject.projectRoot,
           projectConfirmed: true,
           taskWhy,
+          taskId: taskRecord.taskId,
+          taskStatePath: taskRecord.taskStatePath,
           planChoice: 'new',
           selectedPlan: null,
         };
@@ -118,6 +137,8 @@ export async function startInteractiveSession(
         projectRoot: confirmedProject.projectRoot,
         projectConfirmed: true,
         taskWhy,
+        taskId: taskRecord.taskId,
+        taskStatePath: taskRecord.taskStatePath,
         planChoice,
         selectedPlan,
       };
@@ -129,6 +150,8 @@ export async function startInteractiveSession(
       projectRoot: confirmedProject.projectRoot,
       projectConfirmed: true,
       taskWhy,
+      taskId: taskRecord.taskId,
+      taskStatePath: taskRecord.taskStatePath,
       planChoice,
       selectedPlan: null,
     };
@@ -139,8 +162,33 @@ export async function startInteractiveSession(
     projectRoot: initialCandidate?.projectRoot ?? null,
     projectConfirmed: false,
     taskWhy: null,
+    taskId: null,
+    taskStatePath: null,
     planChoice: null,
     selectedPlan: null,
+  };
+}
+
+function saveInteractiveTaskState(input: {
+  projectRoot: string;
+  taskDescription: string;
+  taskWhy: TaskWhyIntake;
+}): { taskId: string; taskStatePath: string } {
+  const taskId = nextTaskId(input.projectRoot);
+  const intakeState = createTaskState({
+    taskId,
+    projectRoot: input.projectRoot,
+    taskSummary: input.taskDescription,
+  });
+  const whyState = approveWhy(
+    transitionTaskState(intakeState, 'why_definition'),
+    input.taskWhy.text,
+    input.taskWhy.approvedByUserText,
+  );
+
+  return {
+    taskId,
+    taskStatePath: saveTaskState(input.projectRoot, whyState),
   };
 }
 

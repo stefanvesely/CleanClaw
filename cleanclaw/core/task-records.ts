@@ -58,6 +58,17 @@ export function latestTaskRecordSummary(projectRoot: string): TaskRecordSummary 
   return summaries[summaries.length - 1] ?? null;
 }
 
+export function nextTaskId(projectRoot: string): string {
+  const nextNumber = listTaskRecordSummaries(projectRoot)
+    .map((summary) => /^task(\d+)$/.exec(summary.taskId)?.[1])
+    .filter((value): value is string => Boolean(value))
+    .map((value) => Number.parseInt(value, 10))
+    .filter((value) => Number.isFinite(value))
+    .reduce((highest, value) => Math.max(highest, value), 0) + 1;
+
+  return `task${nextNumber}`;
+}
+
 export function appendApprovalRecord(
   projectRoot: string,
   taskId: string,
