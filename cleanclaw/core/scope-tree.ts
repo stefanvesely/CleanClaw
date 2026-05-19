@@ -94,6 +94,24 @@ export function isFileInScopeTree(scopeTree: ScopeTree, filePath: string): boole
   ].includes(normalized.path);
 }
 
+export function isReadAllowedDuringPlanning(scopeTree: ScopeTree, filePath: string): boolean {
+  return normalizeProjectPath(scopeTree.projectRoot, filePath).inRoot;
+}
+
+export function isEditAllowedByScope(scopeTree: ScopeTree, filePath: string): boolean {
+  const normalized = normalizeProjectPath(scopeTree.projectRoot, filePath);
+  return normalized.inRoot && scopeTree.plannedEdits.includes(normalized.path);
+}
+
+export function isNewFileAllowedByScope(scopeTree: ScopeTree, filePath: string): boolean {
+  const normalized = normalizeProjectPath(scopeTree.projectRoot, filePath);
+  return normalized.inRoot && scopeTree.plannedNewFiles.includes(normalized.path);
+}
+
+export function requiresOutOfRootApproval(scopeTree: ScopeTree, filePath: string): boolean {
+  return !normalizeProjectPath(scopeTree.projectRoot, filePath).inRoot;
+}
+
 export function addFileToScopeTree(
   scopeTree: ScopeTree,
   filePath: string,
@@ -233,6 +251,30 @@ export function formatScopeTree(scopeTree: ScopeTree): string {
     '',
     'Outside project root requests',
     formatOutOfRootRequests(scopeTree.outOfRootRequests),
+  ].join('\n');
+}
+
+export function formatWorkspaceScopeReview(input: {
+  scopeTree: ScopeTree;
+  planContent: string;
+  planPath: string;
+  stepCount: number;
+}): string {
+  return [
+    '-----------------------------------------',
+    'WORKSPACE SCOPE',
+    '-----------------------------------------',
+    formatScopeTree(input.scopeTree),
+    '-----------------------------------------',
+    '',
+    'GENERATED PLAN',
+    '-----------------------------------------',
+    input.planContent,
+    '-----------------------------------------',
+    `Plan written: ${input.planPath}`,
+    `Steps to execute: ${input.stepCount}`,
+    '-----------------------------------------',
+    '',
   ].join('\n');
 }
 

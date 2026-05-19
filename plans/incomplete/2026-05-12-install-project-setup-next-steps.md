@@ -363,10 +363,10 @@ Outside project root requests
 
 ### Scope Rules
 
-- [ ] Reads inside the approved root are allowed during planning.
-- [ ] Edits require approved planned scope.
-- [ ] New files require explicit scope approval.
-- [ ] Any out-of-root access requires explicit approval, a reason, and why alignment.
+- [x] Reads inside the approved root are allowed during planning.
+- [x] Edits require approved planned scope.
+- [x] New files require explicit scope approval.
+- [x] Any out-of-root access requires explicit approval, a reason, and why alignment.
 - [x] Scope changes pause execution and update the visible tree.
 - [x] Broad folder scanning must be approved, announced, and logged.
 
@@ -377,8 +377,8 @@ Outside project root requests
 - [x] Rejects file path.
 - [x] Rejects non-writable directory.
 - [x] Loads config from active root.
-- [ ] Records detected markers.
-- [ ] Shows workspace scope tree before execution.
+- [x] Records detected markers.
+- [x] Shows workspace scope tree before execution.
 - [x] Blocks outside-root file scope.
 - [x] Scope expansion updates the tree and requires approval.
 

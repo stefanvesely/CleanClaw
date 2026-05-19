@@ -9,7 +9,14 @@ export interface CleanClawProjectSettings {
   projectName: string;
   approvalGranularity: 'per-change' | 'per-file' | 'per-step';
   plansDir: string;
+  detectedMarkers?: ProjectMarkerSetting[];
   updatedAt: string;
+}
+
+export interface ProjectMarkerSetting {
+  label: string;
+  relativePath: string;
+  kind: string;
 }
 
 export function projectSettingsPath(projectRoot: string): string {
@@ -21,6 +28,7 @@ export function createProjectSettings(input: {
   projectName: string;
   approvalGranularity?: 'per-change' | 'per-file' | 'per-step';
   plansDir?: string;
+  detectedMarkers?: ProjectMarkerSetting[];
   updatedAt?: string;
 }): CleanClawProjectSettings {
   return {
@@ -28,6 +36,7 @@ export function createProjectSettings(input: {
     projectName: input.projectName,
     approvalGranularity: input.approvalGranularity ?? 'per-change',
     plansDir: input.plansDir ?? './plans',
+    detectedMarkers: input.detectedMarkers ?? [],
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
 }
@@ -50,9 +59,21 @@ export function ensureProjectSettings(input: {
   projectName: string;
   approvalGranularity?: 'per-change' | 'per-file' | 'per-step';
   plansDir?: string;
+  detectedMarkers?: ProjectMarkerSetting[];
 }): CleanClawProjectSettings {
   const existing = loadProjectSettings(input.projectRoot);
-  if (existing) return existing;
+  if (existing) {
+    if (input.detectedMarkers) {
+      const updated = {
+        ...existing,
+        detectedMarkers: input.detectedMarkers,
+        updatedAt: new Date().toISOString(),
+      };
+      saveProjectSettings(input.projectRoot, updated);
+      return updated;
+    }
+    return existing;
+  }
 
   const settings = createProjectSettings(input);
   saveProjectSettings(input.projectRoot, settings);

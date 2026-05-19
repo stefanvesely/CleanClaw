@@ -36,6 +36,9 @@ describe('attachProject', () => {
       projectName: path.basename(tmpDir),
       approvalGranularity: 'per-change',
       plansDir: './plans',
+      detectedMarkers: [
+        { label: 'Node package', relativePath: 'package.json', kind: 'node' },
+      ],
     });
     expect(savedActive).toEqual([path.resolve(tmpDir)]);
     expect(registryEntries).toEqual([path.resolve(tmpDir)]);

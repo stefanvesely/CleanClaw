@@ -7,11 +7,16 @@ import {
   completeScopeTree,
   createScopeTree,
   formatScopeTree,
+  formatWorkspaceScopeReview,
   isFileInScopeTree,
+  isEditAllowedByScope,
+  isNewFileAllowedByScope,
+  isReadAllowedDuringPlanning,
   loadScopeTree,
   markScopeTreeWhyApproved,
   recordScopeTreeAppliedChange,
   recordScopeTreePreEditCheck,
+  requiresOutOfRootApproval,
   saveScopeTree,
   setScopeTreeValidationCommands,
 } from './scope-tree.js';
@@ -115,6 +120,25 @@ describe('CleanClaw scope tree', () => {
     expect(formatScopeTree(tree)).toContain('- npm test');
   });
 
+  it('formats workspace scope before generated plan for review', () => {
+    const tree = createScopeTree({
+      taskId: 'task-1',
+      projectRoot: tmpDir,
+      plannedReads: ['README.md'],
+    });
+
+    const review = formatWorkspaceScopeReview({
+      scopeTree: tree,
+      planContent: '# Plan\n\n1. Update README',
+      planPath: path.join(tmpDir, 'plans', 'task01A_plan.md'),
+      stepCount: 1,
+    });
+
+    expect(review.indexOf('WORKSPACE SCOPE')).toBeLessThan(review.indexOf('GENERATED PLAN'));
+    expect(review).toContain('- README.md');
+    expect(review).toContain('Steps to execute: 1');
+  });
+
   it('detects whether a file is in editable scope', () => {
     const tree = createScopeTree({
       taskId: 'task-1',
@@ -127,6 +151,24 @@ describe('CleanClaw scope tree', () => {
     expect(isFileInScopeTree(tree, path.join(tmpDir, 'src', 'menu.ts'))).toBe(true);
     expect(isFileInScopeTree(tree, 'src/other.ts')).toBe(false);
     expect(isFileInScopeTree(tree, path.join(os.tmpdir(), 'outside.ts'))).toBe(false);
+  });
+
+  it('expresses planning read and execution edit/new-file rules', () => {
+    const outside = path.join(os.tmpdir(), 'outside.ts');
+    const tree = createScopeTree({
+      taskId: 'task-1',
+      projectRoot: tmpDir,
+      plannedEdits: ['src/index.ts'],
+      plannedNewFiles: ['src/new.ts'],
+    });
+
+    expect(isReadAllowedDuringPlanning(tree, 'src/index.ts')).toBe(true);
+    expect(isReadAllowedDuringPlanning(tree, outside)).toBe(false);
+    expect(isEditAllowedByScope(tree, 'src/index.ts')).toBe(true);
+    expect(isEditAllowedByScope(tree, 'src/other.ts')).toBe(false);
+    expect(isNewFileAllowedByScope(tree, 'src/new.ts')).toBe(true);
+    expect(isNewFileAllowedByScope(tree, 'src/other-new.ts')).toBe(false);
+    expect(requiresOutOfRootApproval(tree, outside)).toBe(true);
   });
 
   it('adds an in-root file to edit or new-file scope', () => {

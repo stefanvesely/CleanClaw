@@ -35,13 +35,18 @@ export async function attachProject(
 
   const state = loadState(projectRoot);
   const projectName = state?.projectName ?? path.basename(projectRoot);
+  const markers = detectProjectMarkers(projectRoot);
   const settings = ensureProjectSettings({
     projectRoot,
     projectName,
     approvalGranularity: 'per-change',
     plansDir: state?.plansDir ?? './plans',
+    detectedMarkers: markers.map(marker => ({
+      label: marker.label,
+      relativePath: marker.relativePath,
+      kind: marker.kind,
+    })),
   });
-  const markers = detectProjectMarkers(projectRoot);
 
   const persistActiveProject = options.saveActive ?? saveActiveProject;
   const persistRegistry = options.appendRegistry ?? appendToRegistry;

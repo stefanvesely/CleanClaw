@@ -31,6 +31,7 @@ describe('CleanClaw project settings', () => {
       projectName: 'Demo',
       approvalGranularity: 'per-change',
       plansDir: './plans',
+      detectedMarkers: [],
       updatedAt: '2026-05-18T00:00:00.000Z',
     });
   });
@@ -70,5 +71,27 @@ describe('CleanClaw project settings', () => {
     });
 
     expect(ensured).toEqual(existing);
+  });
+
+  it('updates detected markers without changing existing approval preferences', () => {
+    const existing = createProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Demo',
+      approvalGranularity: 'per-file',
+      updatedAt: '2026-05-18T00:00:00.000Z',
+    });
+    saveProjectSettings(tmpDir, existing);
+
+    const ensured = ensureProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Demo',
+      approvalGranularity: 'per-change',
+      detectedMarkers: [{ label: 'Node package', relativePath: 'package.json', kind: 'node' }],
+    });
+
+    expect(ensured.approvalGranularity).toBe('per-file');
+    expect(ensured.detectedMarkers).toEqual([
+      { label: 'Node package', relativePath: 'package.json', kind: 'node' },
+    ]);
   });
 });

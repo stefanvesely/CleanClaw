@@ -22,6 +22,7 @@ import {
   completeScopeTree,
   createScopeTree,
   formatScopeTree,
+  formatWorkspaceScopeReview,
   isFileInScopeTree,
   markScopeTreeWhyApproved,
   recordScopeTreeAppliedChange,
@@ -595,19 +596,12 @@ export async function runPipeline(
   saveScopeTree(activeRoot, scopeTree);
 
   // Plan review — show plan content and ask to confirm before executing
-  logger.info('\n─────────────────────────────────────────');
-  logger.info('WORKSPACE SCOPE');
-  logger.info('-----------------------------------------');
-  logger.info(formatScopeTree(scopeTree));
-  logger.info('-----------------------------------------');
-  logger.info('');
-  logger.info('GENERATED PLAN');
-  logger.info('─────────────────────────────────────────');
-  logger.info(planContent);
-  logger.info('─────────────────────────────────────────');
-  logger.info(`Plan written: ${planPath}`);
-  logger.info(`Steps to execute: ${steps.length}`);
-  logger.info('─────────────────────────────────────────\n');
+  logger.info(`\n${formatWorkspaceScopeReview({
+    scopeTree,
+    planContent,
+    planPath,
+    stepCount: steps.length,
+  })}`);
 
   if (steps.length === 0) {
     logger.info('[CleanClaw] No executable steps found. Review the plan manually.');
