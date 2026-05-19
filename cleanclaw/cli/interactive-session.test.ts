@@ -49,6 +49,7 @@ describe('interactive session', () => {
       },
       taskId: 'task1',
       taskStatePath: path.join(tmpDir, '.cleanclaw', 'tasks', 'task1', 'state.json'),
+      draftPlanPath: path.join(tmpDir, 'plans', 'inprogress', '2026-05-19-fix-login-cache.md'),
       planChoice: 'new',
       selectedPlan: null,
     });
@@ -91,6 +92,7 @@ describe('interactive session', () => {
     expect(result.taskWhy?.approved).toBe(true);
     expect(result.taskId).toBe('task1');
     expect(result.taskStatePath).toBe(path.join(tmpDir, '.cleanclaw', 'tasks', 'task1', 'state.json'));
+    expect(result.draftPlanPath).toBeNull();
     expect(result.selectedPlan?.title).toBe('Demo Plan');
     expect(logger.records.map(record => String(record.message)).join('\n')).toContain('I found 1 in-progress plan');
   });
@@ -146,6 +148,7 @@ describe('interactive session', () => {
       },
       taskId: 'task1',
       taskStatePath: path.join(projectDir, '.cleanclaw', 'tasks', 'task1', 'state.json'),
+      draftPlanPath: path.join(projectDir, 'plans', 'inprogress', '2026-05-19-fix-login-cache.md'),
       planChoice: 'new',
       selectedPlan: null,
     });
@@ -174,6 +177,7 @@ describe('interactive session', () => {
     expect(result.projectConfirmed).toBe(true);
     expect(result.taskWhy?.approved).toBe(true);
     expect(result.taskId).toBe('task1');
+    expect(result.draftPlanPath).toBe(path.join(correctProject, 'plans', 'inprogress', '2026-05-19-fix-login-cache.md'));
     expect(result.planChoice).toBe('new');
   });
 

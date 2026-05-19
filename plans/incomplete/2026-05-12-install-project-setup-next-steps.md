@@ -410,7 +410,7 @@ cleanclaw starts
 ### Deliverables
 
 - [x] Add interactive session entrypoint for `cleanclaw` with no subcommand.
-- [ ] Default to planning mode.
+- [x] Default to planning mode.
 - [x] Ask for the task before assuming the current folder is the correct project.
 - [x] Infer or question the project from the task, current folder, project markers, and in-progress plans.
 - [x] If launched inside a detected project, ask: "Hi, I see we are in a project folder for <project>. Do you want to scope today's work in this folder?"
@@ -422,8 +422,8 @@ cleanclaw starts
 - [ ] Prevent all file changes unless they belong to an approved plan.
 - [ ] When broad project scanning is needed, ask first and ask what should be excluded from the scan.
 - [ ] Prefer ProjectMap for project exploration when available.
-- [ ] Include requester and change beneficiary in new plan records.
-- [ ] Show "what CleanClaw knows" and "what CleanClaw needs confirmed" in planning output.
+- [x] Include requester and change beneficiary in new plan records.
+- [x] Show "what CleanClaw knows" and "what CleanClaw needs confirmed" in planning output.
 - [ ] Map natural user requests onto planning/review actions while still showing numbered choices at decision points.
 - [ ] Let the user ask project questions, workflow questions, planning questions, or anything project-related.
 - [ ] Let the user create multiple approved plans for later execution.
@@ -435,7 +435,7 @@ cleanclaw starts
 - [ ] Compare plans by token cost, safety, speed, maintainability, risk, and scope size.
 - [ ] Recommend a plan only when there is a clear winner; otherwise present tradeoffs and leave the choice to the user.
 - [x] Create task record immediately after intake.
-- [ ] Create plan file before implementation.
+- [x] Create plan file before implementation.
 - [ ] Prevent edits while in planning states.
 - [ ] Always require explicit approval before the first file edit of a plan.
 - [ ] After first-edit approval, use the project approval-granularity setting.
@@ -462,12 +462,13 @@ cleanclaw starts
 - [x] When no project is detected or the suggested project is rejected, CleanClaw asks for an explicit project directory and only proceeds after confirmation.
 - [x] Added task why intake that drafts a why from the task and confirmed project, then lets the user accept it or type a replacement before plan discovery.
 - [x] Added project-local interactive task records under `.cleanclaw/tasks/taskN/state.json` after task, project, and why are confirmed.
+- [x] Added project-local draft plan creation for new interactive plans, including requester, beneficiary, approved why, known facts, and missing confirmations.
 
 ### Root Behavior
 
 - [x] CleanClaw can launch from anywhere.
-- [ ] If launched inside a project, it suggests the current folder and asks the user to confirm.
-- [ ] If launched outside a project, it asks for the project directory.
+- [x] If launched inside a project, it suggests the current folder and asks the user to confirm.
+- [x] If launched outside a project, it asks for the project directory.
 - [ ] Folder scanning can help find projects, but only after user approval.
 - [ ] Once attached, CleanClaw works naturally inside the project folder.
 - [ ] The user should not need to repeatedly type `cleanclaw ...` during an active session.

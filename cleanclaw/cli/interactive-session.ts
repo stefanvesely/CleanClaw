@@ -8,6 +8,7 @@ import {
   type ProjectIntakeCandidate,
 } from '../core/project-intake.js';
 import { resolveActiveProject } from '../core/project-resolver.js';
+import { createDraftSessionPlan } from '../core/session-plan.js';
 import { createApprovedTaskWhy, draftTaskWhy, type TaskWhyIntake } from '../core/task-why.js';
 import { nextTaskId, saveTaskState } from '../core/task-records.js';
 
@@ -18,6 +19,7 @@ export interface InteractiveSessionResult {
   taskWhy: TaskWhyIntake | null;
   taskId: string | null;
   taskStatePath: string | null;
+  draftPlanPath: string | null;
   planChoice: 'continue' | 'new' | null;
   selectedPlan: InProgressPlanSummary | null;
 }
@@ -49,6 +51,7 @@ export async function startInteractiveSession(
       taskWhy: null,
       taskId: null,
       taskStatePath: null,
+      draftPlanPath: null,
       planChoice: null,
       selectedPlan: null,
     };
@@ -79,6 +82,7 @@ export async function startInteractiveSession(
         taskWhy: null,
         taskId: null,
         taskStatePath: null,
+        draftPlanPath: null,
         planChoice: null,
         selectedPlan: null,
       };
@@ -94,6 +98,14 @@ export async function startInteractiveSession(
     const plans = listInProgressPlans(confirmedProject.projectRoot);
     if (plans.length === 0) {
       logger.info('No in-progress plans found for this project. Next step: start a new plan.');
+      const draftPlanPath = await createNewDraftPlan({
+        ask,
+        logger,
+        projectRoot: confirmedProject.projectRoot,
+        taskDescription,
+        taskWhy,
+        taskId: taskRecord.taskId,
+      });
       return {
         taskDescription,
         projectRoot: confirmedProject.projectRoot,
@@ -101,6 +113,7 @@ export async function startInteractiveSession(
         taskWhy,
         taskId: taskRecord.taskId,
         taskStatePath: taskRecord.taskStatePath,
+        draftPlanPath,
         planChoice: 'new',
         selectedPlan: null,
       };
@@ -126,6 +139,7 @@ export async function startInteractiveSession(
           taskWhy,
           taskId: taskRecord.taskId,
           taskStatePath: taskRecord.taskStatePath,
+          draftPlanPath: null,
           planChoice: 'new',
           selectedPlan: null,
         };
@@ -139,12 +153,21 @@ export async function startInteractiveSession(
         taskWhy,
         taskId: taskRecord.taskId,
         taskStatePath: taskRecord.taskStatePath,
+        draftPlanPath: null,
         planChoice,
         selectedPlan,
       };
     }
 
     logger.info('Starting a new plan for this project.');
+    const draftPlanPath = await createNewDraftPlan({
+      ask,
+      logger,
+      projectRoot: confirmedProject.projectRoot,
+      taskDescription,
+      taskWhy,
+      taskId: taskRecord.taskId,
+    });
     return {
       taskDescription,
       projectRoot: confirmedProject.projectRoot,
@@ -152,6 +175,7 @@ export async function startInteractiveSession(
       taskWhy,
       taskId: taskRecord.taskId,
       taskStatePath: taskRecord.taskStatePath,
+      draftPlanPath,
       planChoice,
       selectedPlan: null,
     };
@@ -164,9 +188,33 @@ export async function startInteractiveSession(
     taskWhy: null,
     taskId: null,
     taskStatePath: null,
+    draftPlanPath: null,
     planChoice: null,
     selectedPlan: null,
   };
+}
+
+async function createNewDraftPlan(input: {
+  ask: (question: string) => Promise<string>;
+  logger: CleanClawLogger;
+  projectRoot: string;
+  taskDescription: string;
+  taskWhy: TaskWhyIntake;
+  taskId: string;
+}): Promise<string> {
+  const requester = await input.ask('Who requested this work? [Enter=not specified]: ');
+  const beneficiary = await input.ask('Who is this change for? [Enter=not specified]: ');
+  const draftPlanPath = createDraftSessionPlan({
+    projectRoot: input.projectRoot,
+    taskDescription: input.taskDescription,
+    taskWhy: input.taskWhy,
+    requester,
+    beneficiary,
+    taskId: input.taskId,
+  });
+
+  input.logger.info(`Draft plan created: ${draftPlanPath}`);
+  return draftPlanPath;
 }
 
 function saveInteractiveTaskState(input: {
