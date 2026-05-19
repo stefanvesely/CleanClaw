@@ -441,8 +441,8 @@ cleanclaw starts
 - [x] After first-edit approval, use the project approval-granularity setting.
 - [x] Allow broader approval only when the user explicitly requests it.
 - [x] Expire broader approval at the end of the current task.
-- [ ] After an approved change, run planned validation and inform the user of the result without asking again.
-- [ ] Record and summarize validation results after changes.
+- [x] After an approved change, run planned validation and inform the user of the result without asking again.
+- [x] Record and summarize validation results after changes.
 - [ ] On validation failure, propose a fix/update plan and ask whether to update the plan.
 - [ ] Return validation failures to planning/update mode with the failure visible.
 - [ ] Support task cancellation and revision.
@@ -468,6 +468,7 @@ cleanclaw starts
 - [x] Added first-edit approval state and edit guard enforcement before approved files can be edited.
 - [x] Added approval-granularity helper and first-edit approval support for applying a saved project approval mode after the first explicit edit approval.
 - [x] Added task-scoped broader approval records that require explicit user text and expire back to `per-change` when the task reaches `done`.
+- [x] Added project-local validation records and a planned-validation runner that only runs already-approved validation commands and summarizes pass/fail/skipped results.
 
 ### Root Behavior
 
