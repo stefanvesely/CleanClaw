@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   approveCommand,
+  approveBroaderApproval,
   approveFiles,
   approveFirstEdit,
   approveWhy,
@@ -15,6 +16,7 @@ import {
   assertTaskStateAllowsEdit,
   assertWhyAligned,
   createTaskState,
+  expireBroaderApproval,
   recordUserApproval,
   transitionTaskState,
 } from './control-contract.js';
@@ -111,6 +113,42 @@ describe('CleanClaw control contract', () => {
 
     expect(approved.approvalMode).toBe('per-file');
     expect(approved.firstEditApproval?.userText).toBe('approve first edit and use file approvals');
+  });
+
+  it('records broader approval only with explicit user text', () => {
+    const state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
+
+    expect(() => approveBroaderApproval(state, 'per-file', '')).toThrow(/approval text/i);
+
+    const approved = approveBroaderApproval(
+      state,
+      'per-file',
+      'I want to approve file changes for this task',
+      '2026-05-19T00:00:00.000Z',
+    );
+
+    expect(approved.approvalMode).toBe('per-file');
+    expect(approved.broaderApproval).toEqual({
+      timestamp: '2026-05-19T00:00:00.000Z',
+      state: 'intake',
+      userText: 'I want to approve file changes for this task',
+      subject: 'broader approval: per-file',
+      mode: 'per-file',
+      expiresAtTaskEnd: true,
+    });
+  });
+
+  it('expires broader approval at task completion', () => {
+    let state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
+    state = approveBroaderApproval(state, 'per-step', 'approve steps for this task');
+
+    const expired = expireBroaderApproval(state);
+    expect(expired.approvalMode).toBe('per-change');
+    expect(expired.broaderApproval).toBeUndefined();
+
+    const doneState = transitionTaskState({ ...state, state: 'changelog' }, 'done');
+    expect(doneState.approvalMode).toBe('per-change');
+    expect(doneState.broaderApproval).toBeUndefined();
   });
 
   it('allows reads inside root and blocks outside-root reads', () => {

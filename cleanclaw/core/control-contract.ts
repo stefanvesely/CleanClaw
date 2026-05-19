@@ -21,6 +21,7 @@ export type TaskLifecycleState =
 export type WhyAlignment = 'aligned' | 'unclear' | 'misaligned';
 
 export type ApprovalMode = 'per-change' | 'per-file' | 'per-step';
+export type BroaderApprovalMode = Exclude<ApprovalMode, 'per-change'>;
 
 export type CommandRisk =
   | 'read-only'
@@ -53,9 +54,15 @@ export interface CleanClawTaskState {
   approvedFiles: string[];
   approvedCommands: string[];
   firstEditApproval?: ApprovalRecord;
+  broaderApproval?: BroaderApprovalRecord;
   approvalMode: ApprovalMode;
   scopeTreePath?: string;
   modelPolicy: ModelPolicyState;
+}
+
+export interface BroaderApprovalRecord extends ApprovalRecord {
+  mode: BroaderApprovalMode;
+  expiresAtTaskEnd: true;
 }
 
 export interface ApprovalRecord {
@@ -154,7 +161,8 @@ export function transitionTaskState(
   nextState: TaskLifecycleState,
 ): CleanClawTaskState {
   assertCanTransition(state, nextState);
-  return { ...state, state: nextState };
+  const next = { ...state, state: nextState };
+  return nextState === 'done' ? expireBroaderApproval(next) : next;
 }
 
 export function assertWhyExists(state: CleanClawTaskState): void {
@@ -321,6 +329,40 @@ export function approveFirstEdit(
       subject: 'first file edit',
       timestamp,
     }),
+  };
+}
+
+export function approveBroaderApproval(
+  state: CleanClawTaskState,
+  mode: BroaderApprovalMode,
+  userText: string,
+  timestamp?: string,
+): CleanClawTaskState {
+  const approval = recordUserApproval({
+    state: state.state,
+    userText,
+    subject: `broader approval: ${mode}`,
+    timestamp,
+  });
+
+  return {
+    ...state,
+    approvalMode: mode,
+    broaderApproval: {
+      ...approval,
+      mode,
+      expiresAtTaskEnd: true,
+    },
+  };
+}
+
+export function expireBroaderApproval(state: CleanClawTaskState): CleanClawTaskState {
+  if (!state.broaderApproval && state.approvalMode === 'per-change') return state;
+
+  const { broaderApproval: _broaderApproval, ...rest } = state;
+  return {
+    ...rest,
+    approvalMode: 'per-change',
   };
 }
 
