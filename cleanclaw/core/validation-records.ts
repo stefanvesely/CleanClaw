@@ -25,6 +25,13 @@ export interface ValidationRunRecord {
   summary: string;
 }
 
+export interface ValidationFailureReport {
+  blocked: boolean;
+  nextState: 'planning-update' | 'continue';
+  failedCommands: string[];
+  message: string;
+}
+
 export type ValidationCommandRunner = (command: string, cwd: string) => ValidationCommandResult;
 
 export function runPlannedValidation(input: {
@@ -97,6 +104,45 @@ export function formatValidationSummary(results: ValidationCommandResult[]): str
   const passed = results.filter((result) => result.exitCode === 0).length;
   const failed = results.length - passed;
   return `Validation ${failed === 0 ? 'passed' : 'failed'}: ${passed} passed, ${failed} failed.`;
+}
+
+export function createValidationFailureReport(record: ValidationRunRecord): ValidationFailureReport {
+  const failedCommands = record.results
+    .filter((result) => result.exitCode !== 0)
+    .map((result) => result.command);
+
+  if (record.status !== 'failed') {
+    return {
+      blocked: false,
+      nextState: 'continue',
+      failedCommands: [],
+      message: `Validation status is ${record.status}. No validation failure is blocking the task.`,
+    };
+  }
+
+  return {
+    blocked: true,
+    nextState: 'planning-update',
+    failedCommands,
+    message: [
+      'Validation failed.',
+      `Failed commands: ${failedCommands.join(', ') || 'unknown'}.`,
+      'Return to planning/update mode, propose a fix, and ask whether to update the plan.',
+    ].join(' '),
+  };
+}
+
+export function formatValidationFailureReport(report: ValidationFailureReport): string {
+  if (!report.blocked) return report.message;
+
+  return [
+    'Validation failed.',
+    'Blocked: yes',
+    `Next state: ${report.nextState}`,
+    'Failed commands:',
+    ...report.failedCommands.map((command) => `- ${command}`),
+    'Required action: propose a fix/update plan and ask whether to update the plan.',
+  ].join('\n');
 }
 
 function formatValidationRecordsMarkdown(records: ValidationRunRecord[]): string {

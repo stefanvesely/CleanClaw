@@ -4,6 +4,8 @@ import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { approveCommand, createTaskState } from './control-contract.js';
 import {
+  createValidationFailureReport,
+  formatValidationFailureReport,
   formatValidationSummary,
   loadValidationRecords,
   runPlannedValidation,
@@ -60,6 +62,40 @@ describe('validation records', () => {
 
     expect(record.status).toBe('failed');
     expect(record.summary).toBe('Validation failed: 0 passed, 1 failed.');
+  });
+
+  it('creates a planning-update report for failed validation', () => {
+    let state = createTaskState({ taskId: 'task1', projectRoot: tmpDir, taskSummary: 'Validate' });
+    state = approveCommand(state, 'npm test');
+    const record = runPlannedValidation({
+      state,
+      commands: ['npm test'],
+      runner: fakeRunner(1),
+    });
+
+    const report = createValidationFailureReport(record);
+
+    expect(report).toMatchObject({
+      blocked: true,
+      nextState: 'planning-update',
+      failedCommands: ['npm test'],
+    });
+    expect(formatValidationFailureReport(report)).toContain('Required action: propose a fix/update plan');
+  });
+
+  it('does not block planning when validation passed or skipped', () => {
+    let state = createTaskState({ taskId: 'task1', projectRoot: tmpDir, taskSummary: 'Validate' });
+    state = approveCommand(state, 'npm test');
+    const record = runPlannedValidation({
+      state,
+      commands: ['npm test'],
+      runner: fakeRunner(0),
+    });
+
+    const report = createValidationFailureReport(record);
+
+    expect(report.blocked).toBe(false);
+    expect(report.nextState).toBe('continue');
   });
 
   it('records skipped validation when there are no commands', () => {
