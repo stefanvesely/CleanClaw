@@ -414,8 +414,8 @@ cleanclaw starts
 - [x] Ask for the task before assuming the current folder is the correct project.
 - [ ] Infer or question the project from the task, current folder, project markers, and in-progress plans.
 - [x] If launched inside a detected project, ask: "Hi, I see we are in a project folder for <project>. Do you want to scope today's work in this folder?"
-- [ ] After project selection, search in-progress plans and ask whether to continue or start new.
-- [ ] For continued work, show a summary and ask whether the existing plan is still okay.
+- [x] After project selection, search in-progress plans and ask whether to continue or start new.
+- [x] For continued work, show a summary and ask whether the existing plan is still okay.
 - [ ] Ask for or propose the task why before scope decisions.
 - [ ] Use the approved why as the filter for project fit, file scope, validation, and change alignment.
 - [ ] Allow read-only project questions before a plan exists.

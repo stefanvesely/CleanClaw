@@ -1,5 +1,6 @@
 import path from 'path';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
+import { formatInProgressPlanChoices, listInProgressPlans, type InProgressPlanSummary } from '../core/plan-discovery.js';
 import { loadProjectSettings } from '../core/project-settings.js';
 import { resolveActiveProject } from '../core/project-resolver.js';
 
@@ -7,6 +8,8 @@ export interface InteractiveSessionResult {
   taskDescription: string | null;
   projectRoot: string | null;
   projectConfirmed: boolean;
+  planChoice: 'continue' | 'new' | null;
+  selectedPlan: InProgressPlanSummary | null;
 }
 
 export interface InteractiveSessionOptions {
@@ -32,6 +35,8 @@ export async function startInteractiveSession(
       taskDescription: null,
       projectRoot: resolvedProject.projectRoot,
       projectConfirmed: false,
+      planChoice: null,
+      selectedPlan: null,
     };
   }
 
@@ -41,6 +46,8 @@ export async function startInteractiveSession(
       taskDescription,
       projectRoot: null,
       projectConfirmed: false,
+      planChoice: null,
+      selectedPlan: null,
     };
   }
 
@@ -55,7 +62,58 @@ export async function startInteractiveSession(
 
   if (projectConfirmed) {
     logger.info(`Project confirmed: ${projectName}.`);
-    logger.info('Next step: search in-progress plans, then continue or start a new plan.');
+    const plans = listInProgressPlans(resolvedProject.projectRoot);
+    if (plans.length === 0) {
+      logger.info('No in-progress plans found for this project. Next step: start a new plan.');
+      return {
+        taskDescription,
+        projectRoot: resolvedProject.projectRoot,
+        projectConfirmed,
+        planChoice: 'new',
+        selectedPlan: null,
+      };
+    }
+
+    logger.info(`I found ${plans.length} in-progress plan${plans.length === 1 ? '' : 's'} in this project.`);
+    logger.info(formatInProgressPlanChoices(plans));
+    const choice = await ask('Continue one of these plans, or start new? [continue/new]: ');
+    const normalizedChoice = choice.trim().toLowerCase();
+    const planChoice = normalizedChoice.startsWith('c') ? 'continue' : 'new';
+
+    if (planChoice === 'continue') {
+      const selectedPlan = plans[0];
+      logger.info(`Selected plan: ${selectedPlan.title}`);
+      logger.info(`Summary: ${selectedPlan.preview}`);
+      const stillOkay = await ask('Is this still okay? [Y/n]: ');
+      if (stillOkay.trim() !== '' && stillOkay.trim().toLowerCase() !== 'y') {
+        logger.info('Plan not confirmed. Next step: start a new plan or revise the existing plan.');
+        return {
+          taskDescription,
+          projectRoot: resolvedProject.projectRoot,
+          projectConfirmed,
+          planChoice: 'new',
+          selectedPlan: null,
+        };
+      }
+
+      logger.info('Existing plan confirmed. Next step: load planning context.');
+      return {
+        taskDescription,
+        projectRoot: resolvedProject.projectRoot,
+        projectConfirmed,
+        planChoice,
+        selectedPlan,
+      };
+    }
+
+    logger.info('Starting a new plan for this project.');
+    return {
+      taskDescription,
+      projectRoot: resolvedProject.projectRoot,
+      projectConfirmed,
+      planChoice,
+      selectedPlan: null,
+    };
   } else {
     logger.info('Project not confirmed. Next step: infer or ask for the correct project directory.');
   }
@@ -64,6 +122,8 @@ export async function startInteractiveSession(
     taskDescription,
     projectRoot: resolvedProject.projectRoot,
     projectConfirmed,
+    planChoice: null,
+    selectedPlan: null,
   };
 }
 
