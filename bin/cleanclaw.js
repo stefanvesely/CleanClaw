@@ -7,6 +7,12 @@ program
   .version("0.1.0");
 
 program
+  .action(async () => {
+    const { startInteractiveSession } = await import("../dist/cleanclaw/cli/interactive-session.js");
+    await startInteractiveSession();
+  });
+
+program
   .command("init")
   .description("Initialise a project")
   .action(async () => {
