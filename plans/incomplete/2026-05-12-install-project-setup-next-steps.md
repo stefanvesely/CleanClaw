@@ -394,6 +394,8 @@ Goal: `cleanclaw` with no args starts a persistent project-agent loop. It defaul
 
 ```text
 cleanclaw starts
+  -> ask what task/work the user wants to do
+  -> infer or question which project is relevant from the task and current folder
   -> attach or confirm project root
   -> enter planning mode
   -> define task and why
@@ -409,15 +411,48 @@ cleanclaw starts
 
 - [ ] Add interactive session entrypoint for `cleanclaw` with no subcommand.
 - [ ] Default to planning mode.
+- [ ] Ask for the task before assuming the current folder is the correct project.
+- [ ] Infer or question the project from the task, current folder, project markers, and in-progress plans.
+- [ ] If launched inside a detected project, ask: "Hi, I see we are in a project folder for <project>. Do you want to scope today's work in this folder?"
+- [ ] After project selection, search in-progress plans and ask whether to continue or start new.
+- [ ] For continued work, show a summary and ask whether the existing plan is still okay.
+- [ ] Ask for or propose the task why before scope decisions.
+- [ ] Use the approved why as the filter for project fit, file scope, validation, and change alignment.
+- [ ] Allow read-only project questions before a plan exists.
+- [ ] Prevent all file changes unless they belong to an approved plan.
+- [ ] When broad project scanning is needed, ask first and ask what should be excluded from the scan.
+- [ ] Prefer ProjectMap for project exploration when available.
+- [ ] Include requester and change beneficiary in new plan records.
+- [ ] Show "what CleanClaw knows" and "what CleanClaw needs confirmed" in planning output.
+- [ ] Map natural user requests onto planning/review actions while still showing numbered choices at decision points.
 - [ ] Let the user ask project questions, workflow questions, planning questions, or anything project-related.
 - [ ] Let the user create multiple approved plans for later execution.
 - [ ] Let the user prepare multiple approved plans for headless execution.
+- [ ] Support multiple plans for the same task and different tasks in a project session.
+- [ ] Support low-token fix and full-fix plan variants.
+- [ ] Track plan statuses: draft, needs-user-review, approved, ready-for-execution, blocked, cancelled, complete.
+- [ ] Move completed plans into a completed folder.
+- [ ] Compare plans by token cost, safety, speed, maintainability, risk, and scope size.
+- [ ] Recommend a plan only when there is a clear winner; otherwise present tradeoffs and leave the choice to the user.
 - [ ] Create task record immediately after intake.
 - [ ] Create plan file before implementation.
 - [ ] Prevent edits while in planning states.
+- [ ] Always require explicit approval before the first file edit of a plan.
+- [ ] After first-edit approval, use the project approval-granularity setting.
+- [ ] Allow broader approval only when the user explicitly requests it.
+- [ ] Expire broader approval at the end of the current task.
+- [ ] After an approved change, run planned validation and inform the user of the result without asking again.
+- [ ] Record and summarize validation results after changes.
+- [ ] On validation failure, propose a fix/update plan and ask whether to update the plan.
+- [ ] Return validation failures to planning/update mode with the failure visible.
 - [ ] Support task cancellation and revision.
 - [ ] Support resume from task state.
 - [ ] After a task completes, return to planning mode by default.
+- [ ] Treat blocked work as an explicit blocked state and return to planning with the blocker highlighted.
+- [ ] Explain blockers in plain language and ask the user what to do next.
+- [ ] Keep task context when the next task is naturally related.
+- [ ] Clear or separate task context when the next task is unrelated.
+- [ ] Confirm context continuity when CleanClaw is uncertain whether the next task is related.
 
 ### Root Behavior
 
@@ -434,6 +469,16 @@ cleanclaw starts
 - [ ] The user can create multiple approved plans for future headless execution.
 - [ ] Each headless plan needs its own approved why, scope tree, risk limits, validation policy, storage policy, model policy, and stop conditions.
 - [ ] Headless execution remains opt-in and requires coder/reviewer model roles.
+- [ ] Headless execution can only run plans marked `ready-for-execution`.
+- [ ] Headless-ready plans must be as granular as possible.
+- [ ] Headless must require two model roles: coder and reviewer/planner.
+- [ ] Headless coder receives only one single task at a time, not the full scope.
+- [ ] Smaller code tasks can use a local model as coder.
+- [ ] Local-first applies to small headless code tasks.
+- [ ] Reviewer/planner can make bounded decisions from the approved why.
+- [ ] Blocked headless execution highlights the blocker, allows interaction, and creates a report.
+- [ ] Headless stops and reports when it cannot continue within approved plan, scope, why, model policy, validation policy, or runtime policy.
+- [ ] Headless must never commit; commits remain explicit user actions outside headless execution.
 
 ### Tests
 
@@ -449,6 +494,12 @@ cleanclaw starts
 
 - CleanClaw can hold a controlled interactive planning session and continue working naturally after a task completes.
 
+### Interaction Principles
+
+- CleanClaw must always be status-aware.
+- CleanClaw must prefer the path that gives the user the most information while preserving the most choices.
+- CleanClaw should not claim certainty it does not have; confidence comes from clearly showing what it knows, what it inferred, and what needs user confirmation.
+
 ## Phase 3 - Numbered Menus For Non-Engineers
 
 Goal: users do not need to type provider ids, model names, stack ids, or approval modes in normal setup. Numbered menus support the agent conversation; they do not replace natural language.
@@ -456,6 +507,8 @@ Goal: users do not need to type provider ids, model names, stack ids, or approva
 ### Deliverables
 
 - [ ] Add reusable numbered prompt helper.
+- [ ] Use numbered options at clear decision points, not as the default starting point for every interaction.
+- [ ] Keep normal interaction natural-language and status-aware by default.
 - [ ] Use numbered menus for major choices:
   - project directory choice
   - provider
@@ -467,11 +520,13 @@ Goal: users do not need to type provider ids, model names, stack ids, or approva
   - headless setup
   - validation command approval
 - [ ] Enter selects the recommended default where appropriate.
+- [ ] Explain why an option is recommended.
 - [ ] Advanced users can type exact ids.
 - [ ] Unknown text and out-of-range numbers retry clearly.
 - [ ] Menus render cleanly in PowerShell, cmd, and POSIX shells.
-- [ ] Every menu has a back/cancel path.
 - [ ] Users can still type natural language at any time.
+- [ ] Users can type back, cancel, or exit instead of requiring visible menu entries everywhere.
+- [ ] Save user preferences per project for approval granularity, preferred plan style, runtime mode, and advanced option visibility.
 
 ### Example Top-Level Menu
 
