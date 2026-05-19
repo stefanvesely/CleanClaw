@@ -10,6 +10,7 @@ import {
   assertCanUseFrontierModel,
   assertCanReadFile,
   assertCanPush,
+  assertTaskStateAllowsEdit,
   assertWhyAligned,
   createTaskState,
   recordUserApproval,
@@ -61,10 +62,23 @@ describe('CleanClaw control contract', () => {
     let state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
     state = approveWhy(state, 'Keep the project controlled.', 'approved');
     state = approveFiles(state, ['src/index.ts']);
+    state = { ...state, state: 'execution' };
 
     expect(() => assertCanEditFile(state, '/repo/src/index.ts')).not.toThrow();
     expect(() => assertCanEditFile(state, '/repo/src/other.ts')).toThrow(/unapproved file/i);
     expect(() => assertCanEditFile(state, '/tmp/other.ts')).toThrow(/outside project root/i);
+  });
+
+  it('blocks edits while the task is still in planning states', () => {
+    let state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
+    state = approveWhy(state, 'Keep the project controlled.', 'approved');
+    state = approveFiles(state, ['src/index.ts']);
+    state = { ...state, state: 'plan' };
+
+    expect(() => assertTaskStateAllowsEdit(state)).toThrow(/execution/i);
+    expect(() => assertCanEditFile(state, '/repo/src/index.ts')).toThrow(/execution/i);
+    expect(() => assertTaskStateAllowsEdit({ ...state, state: 'execution' })).not.toThrow();
+    expect(() => assertTaskStateAllowsEdit({ ...state, state: 'review_diff' })).not.toThrow();
   });
 
   it('allows reads inside root and blocks outside-root reads', () => {

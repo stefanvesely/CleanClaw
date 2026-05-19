@@ -188,6 +188,7 @@ export function assertCanReadFile(state: CleanClawTaskState, filePath: string): 
 
 export function assertCanEditFile(state: CleanClawTaskState, filePath: string): void {
   assertWhyApproved(state);
+  assertTaskStateAllowsEdit(state);
   if (!isWithinRoot(state.projectRoot, filePath)) {
     throw new ControlContractError(`Cannot edit outside project root: ${filePath}`, 'outside-root-edit');
   }
@@ -196,6 +197,15 @@ export function assertCanEditFile(state: CleanClawTaskState, filePath: string): 
   if (!state.approvedFiles.includes(relativePath)) {
     throw new ControlContractError(`Cannot edit unapproved file: ${relativePath}`, 'unapproved-file');
   }
+}
+
+export function assertTaskStateAllowsEdit(state: CleanClawTaskState): void {
+  if (state.state === 'execution' || state.state === 'review_diff') return;
+
+  throw new ControlContractError(
+    `Cannot edit files while task is in ${state.state}. Execution must be explicitly approved first.`,
+    'edit-before-execution',
+  );
 }
 
 export function assertCanRunCommand(
