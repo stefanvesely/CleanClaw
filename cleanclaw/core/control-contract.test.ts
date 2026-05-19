@@ -93,7 +93,7 @@ describe('CleanClaw control contract', () => {
     expect(() => assertFirstEditApproved(state)).toThrow(/first file edit/i);
     expect(() => assertCanEditFile(state, '/repo/src/index.ts')).toThrow(/first file edit/i);
 
-    const approved = approveFirstEdit(state, 'approve first edit', '2026-05-19T00:00:00.000Z');
+    const approved = approveFirstEdit(state, 'approve first edit', undefined, '2026-05-19T00:00:00.000Z');
     expect(approved.firstEditApproval).toEqual({
       timestamp: '2026-05-19T00:00:00.000Z',
       state: 'execution',
@@ -101,6 +101,16 @@ describe('CleanClaw control contract', () => {
       subject: 'first file edit',
     });
     expect(() => assertFirstEditApproved(approved)).not.toThrow();
+  });
+
+  it('can apply saved approval granularity only after first edit approval', () => {
+    let state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
+    state = { ...state, approvalMode: 'per-change', state: 'execution' };
+
+    const approved = approveFirstEdit(state, 'approve first edit and use file approvals', 'per-file');
+
+    expect(approved.approvalMode).toBe('per-file');
+    expect(approved.firstEditApproval?.userText).toBe('approve first edit and use file approvals');
   });
 
   it('allows reads inside root and blocks outside-root reads', () => {

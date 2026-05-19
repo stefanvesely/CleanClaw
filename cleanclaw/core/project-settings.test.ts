@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  approvalModeFromProjectSettings,
   createProjectSettings,
   ensureProjectSettings,
   loadProjectSettings,
@@ -93,5 +94,14 @@ describe('CleanClaw project settings', () => {
     expect(ensured.detectedMarkers).toEqual([
       { label: 'Node package', relativePath: 'package.json', kind: 'node' },
     ]);
+  });
+
+  it('returns granular approval mode unless project settings say otherwise', () => {
+    expect(approvalModeFromProjectSettings(null)).toBe('per-change');
+    expect(approvalModeFromProjectSettings(createProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Demo',
+      approvalGranularity: 'per-file',
+    }))).toBe('per-file');
   });
 });

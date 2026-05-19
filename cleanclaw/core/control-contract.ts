@@ -309,10 +309,12 @@ export function approveFiles(state: CleanClawTaskState, files: string[]): CleanC
 export function approveFirstEdit(
   state: CleanClawTaskState,
   userText: string,
+  approvalModeAfterFirstEdit?: ApprovalMode,
   timestamp?: string,
 ): CleanClawTaskState {
   return {
     ...state,
+    approvalMode: approvalModeAfterFirstEdit ?? state.approvalMode,
     firstEditApproval: recordUserApproval({
       state: state.state,
       userText,

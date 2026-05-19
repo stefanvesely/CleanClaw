@@ -79,3 +79,9 @@ export function ensureProjectSettings(input: {
   saveProjectSettings(input.projectRoot, settings);
   return settings;
 }
+
+export function approvalModeFromProjectSettings(
+  settings: CleanClawProjectSettings | null,
+): CleanClawProjectSettings['approvalGranularity'] {
+  return settings?.approvalGranularity ?? 'per-change';
+}

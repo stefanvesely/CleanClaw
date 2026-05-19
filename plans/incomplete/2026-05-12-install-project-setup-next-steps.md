@@ -438,7 +438,7 @@ cleanclaw starts
 - [x] Create plan file before implementation.
 - [x] Prevent edits while in planning states.
 - [x] Always require explicit approval before the first file edit of a plan.
-- [ ] After first-edit approval, use the project approval-granularity setting.
+- [x] After first-edit approval, use the project approval-granularity setting.
 - [ ] Allow broader approval only when the user explicitly requests it.
 - [ ] Expire broader approval at the end of the current task.
 - [ ] After an approved change, run planned validation and inform the user of the result without asking again.
@@ -466,6 +466,7 @@ cleanclaw starts
 - [x] Added reusable why-alignment checks for proposed scope items and surfaced those checks in draft plans.
 - [x] Added control-contract edit-state enforcement so file edits are blocked until execution or review-diff state.
 - [x] Added first-edit approval state and edit guard enforcement before approved files can be edited.
+- [x] Added approval-granularity helper and first-edit approval support for applying a saved project approval mode after the first explicit edit approval.
 
 ### Root Behavior
 
