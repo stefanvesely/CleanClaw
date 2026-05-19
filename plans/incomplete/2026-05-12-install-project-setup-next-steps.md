@@ -416,7 +416,7 @@ cleanclaw starts
 - [x] If launched inside a detected project, ask: "Hi, I see we are in a project folder for <project>. Do you want to scope today's work in this folder?"
 - [x] After project selection, search in-progress plans and ask whether to continue or start new.
 - [x] For continued work, show a summary and ask whether the existing plan is still okay.
-- [ ] Ask for or propose the task why before scope decisions.
+- [x] Ask for or propose the task why before scope decisions.
 - [ ] Use the approved why as the filter for project fit, file scope, validation, and change alignment.
 - [ ] Allow read-only project questions before a plan exists.
 - [ ] Prevent all file changes unless they belong to an approved plan.
@@ -460,6 +460,7 @@ cleanclaw starts
 - [x] Added confirmed-project-only in-progress plan discovery to the interactive session.
 - [x] Added project intake evidence that shows why CleanClaw thinks a project is relevant, including root, resolver source, and detected project markers.
 - [x] When no project is detected or the suggested project is rejected, CleanClaw asks for an explicit project directory and only proceeds after confirmation.
+- [x] Added task why intake that drafts a why from the task and confirmed project, then lets the user accept it or type a replacement before plan discovery.
 
 ### Root Behavior
 

@@ -41,6 +41,11 @@ describe('interactive session', () => {
       taskDescription: 'Fix login cache',
       projectRoot: path.resolve(tmpDir),
       projectConfirmed: true,
+      taskWhy: {
+        text: 'So Demo can safely complete this requested work with a clear purpose: Fix login cache.',
+        approved: true,
+        approvedByUserText: 'accepted proposed why',
+      },
       planChoice: 'new',
       selectedPlan: null,
     });
@@ -63,7 +68,7 @@ describe('interactive session', () => {
       '',
       'Fix login cache behavior.',
     ].join('\n'), 'utf-8');
-    const answers = ['Fix login cache', 'y', 'continue', 'y'];
+    const answers = ['Fix login cache', 'y', '', 'continue', 'y'];
     const logger = createMemoryLogger();
 
     const result = await startInteractiveSession({
@@ -73,6 +78,7 @@ describe('interactive session', () => {
     });
 
     expect(result.planChoice).toBe('continue');
+    expect(result.taskWhy?.approved).toBe(true);
     expect(result.selectedPlan?.title).toBe('Demo Plan');
     expect(logger.records.map(record => String(record.message)).join('\n')).toContain('I found 1 in-progress plan');
   });
@@ -104,7 +110,7 @@ describe('interactive session', () => {
     fs.mkdirSync(projectDir);
     fs.writeFileSync(path.join(projectDir, 'package.json'), '{}', 'utf-8');
     const questions: string[] = [];
-    const answers = ['Fix login cache', 'demo-project', 'y'];
+    const answers = ['Fix login cache', 'demo-project', 'y', 'Keep login reliable'];
     const logger = createMemoryLogger();
 
     const result = await startInteractiveSession({
@@ -121,6 +127,11 @@ describe('interactive session', () => {
       taskDescription: 'Fix login cache',
       projectRoot: projectDir,
       projectConfirmed: true,
+      taskWhy: {
+        text: 'Keep login reliable',
+        approved: true,
+        approvedByUserText: 'Keep login reliable',
+      },
       planChoice: 'new',
       selectedPlan: null,
     });
@@ -137,7 +148,7 @@ describe('interactive session', () => {
     const correctProject = path.join(tmpDir, 'correct-project');
     fs.mkdirSync(correctProject);
     fs.writeFileSync(path.join(correctProject, 'package.json'), '{}', 'utf-8');
-    const answers = ['Fix login cache', 'n', 'correct-project', 'y'];
+    const answers = ['Fix login cache', 'n', 'correct-project', 'y', ''];
 
     const result = await startInteractiveSession({
       cwd: tmpDir,
@@ -147,6 +158,7 @@ describe('interactive session', () => {
 
     expect(result.projectRoot).toBe(correctProject);
     expect(result.projectConfirmed).toBe(true);
+    expect(result.taskWhy?.approved).toBe(true);
     expect(result.planChoice).toBe('new');
   });
 

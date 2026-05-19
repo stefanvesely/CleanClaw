@@ -7,11 +7,13 @@ import {
   type ProjectIntakeCandidate,
 } from '../core/project-intake.js';
 import { resolveActiveProject } from '../core/project-resolver.js';
+import { createApprovedTaskWhy, draftTaskWhy, type TaskWhyIntake } from '../core/task-why.js';
 
 export interface InteractiveSessionResult {
   taskDescription: string | null;
   projectRoot: string | null;
   projectConfirmed: boolean;
+  taskWhy: TaskWhyIntake | null;
   planChoice: 'continue' | 'new' | null;
   selectedPlan: InProgressPlanSummary | null;
 }
@@ -40,6 +42,7 @@ export async function startInteractiveSession(
       taskDescription: null,
       projectRoot: resolvedProject.projectRoot,
       projectConfirmed: false,
+      taskWhy: null,
       planChoice: null,
       selectedPlan: null,
     };
@@ -56,6 +59,23 @@ export async function startInteractiveSession(
 
   if (confirmedProject) {
     logger.info(`Project confirmed: ${confirmedProject.projectName}.`);
+    const taskWhy = await confirmTaskWhy({
+      ask,
+      logger,
+      projectName: confirmedProject.projectName,
+      taskDescription,
+    });
+    if (!taskWhy) {
+      return {
+        taskDescription,
+        projectRoot: confirmedProject.projectRoot,
+        projectConfirmed: true,
+        taskWhy: null,
+        planChoice: null,
+        selectedPlan: null,
+      };
+    }
+
     const plans = listInProgressPlans(confirmedProject.projectRoot);
     if (plans.length === 0) {
       logger.info('No in-progress plans found for this project. Next step: start a new plan.');
@@ -63,6 +83,7 @@ export async function startInteractiveSession(
         taskDescription,
         projectRoot: confirmedProject.projectRoot,
         projectConfirmed: true,
+        taskWhy,
         planChoice: 'new',
         selectedPlan: null,
       };
@@ -85,6 +106,7 @@ export async function startInteractiveSession(
           taskDescription,
           projectRoot: confirmedProject.projectRoot,
           projectConfirmed: true,
+          taskWhy,
           planChoice: 'new',
           selectedPlan: null,
         };
@@ -95,6 +117,7 @@ export async function startInteractiveSession(
         taskDescription,
         projectRoot: confirmedProject.projectRoot,
         projectConfirmed: true,
+        taskWhy,
         planChoice,
         selectedPlan,
       };
@@ -105,6 +128,7 @@ export async function startInteractiveSession(
       taskDescription,
       projectRoot: confirmedProject.projectRoot,
       projectConfirmed: true,
+      taskWhy,
       planChoice,
       selectedPlan: null,
     };
@@ -114,9 +138,32 @@ export async function startInteractiveSession(
     taskDescription,
     projectRoot: initialCandidate?.projectRoot ?? null,
     projectConfirmed: false,
+    taskWhy: null,
     planChoice: null,
     selectedPlan: null,
   };
+}
+
+async function confirmTaskWhy(options: {
+  ask: (question: string) => Promise<string>;
+  logger: CleanClawLogger;
+  projectName: string;
+  taskDescription: string;
+}): Promise<TaskWhyIntake | null> {
+  const proposedWhy = draftTaskWhy(options.taskDescription, options.projectName);
+  options.logger.info('Before planning scope, I need the task why confirmed.');
+  options.logger.info(`Proposed why: ${proposedWhy}`);
+
+  const userText = await options.ask('Use this why, or type a replacement? [Enter=use/replacement]: ');
+  const whyText = userText.trim() ? userText : proposedWhy;
+  const approvedWhy = createApprovedTaskWhy(whyText, userText.trim() ? userText : 'accepted proposed why');
+  if (!approvedWhy) {
+    options.logger.info('No task why approved. Nothing will change.');
+    return null;
+  }
+
+  options.logger.info(`Task why approved: ${approvedWhy.text}`);
+  return approvedWhy;
 }
 
 async function confirmProjectCandidate(options: {
