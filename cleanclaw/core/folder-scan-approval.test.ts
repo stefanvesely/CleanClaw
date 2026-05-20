@@ -7,6 +7,7 @@ import {
   ensureBroadFolderScanApproved,
   folderScanApprovalPath,
   loadFolderScanApprovalRecords,
+  parseExclusions,
 } from './folder-scan-approval.js';
 
 describe('folder scan approval', () => {
@@ -21,10 +22,11 @@ describe('folder scan approval', () => {
   });
 
   it('records approved broad folder scans', async () => {
+    const answers = ['y', 'node_modules, .env'];
     const approved = await ensureBroadFolderScanApproved({
       projectRoot: tmpDir,
       reason: 'find relevant files',
-      ask: async () => 'y',
+      ask: async () => answers.shift() ?? '',
       timestamp: '2026-05-18T00:00:00.000Z',
       logger: createMemoryLogger(),
     });
@@ -36,6 +38,7 @@ describe('folder scan approval', () => {
         timestamp: '2026-05-18T00:00:00.000Z',
         projectRoot: path.resolve(tmpDir),
         reason: 'find relevant files',
+        exclusions: ['node_modules', '.env'],
         approved: true,
         userText: 'y',
       },
@@ -54,6 +57,7 @@ describe('folder scan approval', () => {
     expect(approved).toBe(false);
     expect(loadFolderScanApprovalRecords(tmpDir)[0]).toMatchObject({
       approved: false,
+      exclusions: [],
       userText: 'n',
     });
   });
@@ -69,7 +73,16 @@ describe('folder scan approval', () => {
 
     expect(loadFolderScanApprovalRecords(tmpDir)[0]).toMatchObject({
       approved: false,
+      exclusions: [],
       userText: 'headless mode cannot approve broad folder scan',
     });
+  });
+
+  it('parses comma-separated exclusions', () => {
+    expect(parseExclusions('node_modules, dist, node_modules, .env')).toEqual([
+      'node_modules',
+      'dist',
+      '.env',
+    ]);
   });
 });

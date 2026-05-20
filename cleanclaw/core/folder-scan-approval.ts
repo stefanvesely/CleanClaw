@@ -9,6 +9,7 @@ export interface FolderScanApprovalRecord {
   timestamp: string;
   projectRoot: string;
   reason: string;
+  exclusions: string[];
   approved: boolean;
   userText: string;
 }
@@ -36,6 +37,7 @@ export async function ensureBroadFolderScanApproved(options: FolderScanApprovalO
       timestamp: options.timestamp ?? new Date().toISOString(),
       projectRoot,
       reason,
+      exclusions: [],
       approved: false,
       userText: 'headless mode cannot approve broad folder scan',
     });
@@ -46,10 +48,17 @@ export async function ensureBroadFolderScanApproved(options: FolderScanApprovalO
     ? await options.ask('Approve broad project file scan? [y/N]: ')
     : 'n';
   const approved = answer.trim().toLowerCase() === 'y';
+  const exclusions = approved && options.ask
+    ? parseExclusions(await options.ask("I need to scan the project. Is there anything I don't need to scan? [Enter=none]: "))
+    : [];
+  if (exclusions.length > 0) {
+    logger.info(`[CleanClaw] Scan exclusions: ${exclusions.join(', ')}`);
+  }
   saveFolderScanApprovalRecord(projectRoot, {
     timestamp: options.timestamp ?? new Date().toISOString(),
     projectRoot,
     reason,
+    exclusions,
     approved,
     userText: answer,
   });
@@ -81,4 +90,11 @@ export function loadFolderScanApprovalRecords(projectRoot: string): FolderScanAp
   const filepath = folderScanApprovalPath(projectRoot);
   if (!fs.existsSync(filepath)) return [];
   return JSON.parse(fs.readFileSync(filepath, 'utf-8')) as FolderScanApprovalRecord[];
+}
+
+export function parseExclusions(input: string): string[] {
+  return Array.from(new Set(input
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)));
 }

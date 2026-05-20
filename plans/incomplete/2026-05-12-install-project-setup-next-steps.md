@@ -420,7 +420,7 @@ cleanclaw starts
 - [x] Use the approved why as the filter for project fit, file scope, validation, and change alignment.
 - [x] Allow read-only project questions before a plan exists.
 - [x] Prevent all file changes unless they belong to an approved plan.
-- [ ] When broad project scanning is needed, ask first and ask what should be excluded from the scan.
+- [x] When broad project scanning is needed, ask first and ask what should be excluded from the scan.
 - [ ] Prefer ProjectMap for project exploration when available.
 - [x] Include requester and change beneficiary in new plan records.
 - [x] Show "what CleanClaw knows" and "what CleanClaw needs confirmed" in planning output.
@@ -477,6 +477,7 @@ cleanclaw starts
 - [x] Added context-continuity helper for keep/separate/confirm decisions between consecutive tasks.
 - [x] Added read-only project question mode so project questions do not create task records, plans, or execution state.
 - [x] Added approved-plan records and edit guard enforcement so file changes require a concrete approved plan.
+- [x] Added broad scan exclusion prompts and persisted exclusions in project-local scan approval records.
 
 ### Root Behavior
 
