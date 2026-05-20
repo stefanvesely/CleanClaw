@@ -18,6 +18,7 @@ export type TaskLifecycleState =
   | 'push'
   | 'done'
   | 'revision'
+  | 'blocked'
   | 'cancelled';
 
 export type WhyAlignment = 'aligned' | 'unclear' | 'misaligned';
@@ -59,6 +60,7 @@ export interface CleanClawTaskState {
   broaderApproval?: BroaderApprovalRecord;
   cancellation?: TaskStopRecord;
   revision?: TaskRevisionRecord;
+  blocker?: TaskBlockerRecord;
   approvalMode: ApprovalMode;
   scopeTreePath?: string;
   modelPolicy: ModelPolicyState;
@@ -75,6 +77,12 @@ export interface TaskStopRecord extends ApprovalRecord {
 
 export interface TaskRevisionRecord extends ApprovalRecord {
   previousState: TaskLifecycleState;
+}
+
+export interface TaskBlockerRecord extends ApprovalRecord {
+  previousState: TaskLifecycleState;
+  blocker: string;
+  requestedFrom?: string;
 }
 
 export interface ApprovalRecord {
@@ -116,6 +124,7 @@ const TRANSITIONS: Record<TaskLifecycleState, TaskLifecycleState[]> = {
   push_approval: ['push', 'done'],
   push: ['done'],
   revision: ['scope', 'plan', 'cancelled'],
+  blocked: ['revision', 'scope', 'plan', 'cancelled'],
   done: [],
   cancelled: [],
 };
@@ -137,6 +146,7 @@ const CANCELLABLE_STATES: TaskLifecycleState[] = [
   'push_approval',
   'push',
   'revision',
+  'blocked',
 ];
 
 const REVISION_STATES: TaskLifecycleState[] = [
@@ -149,6 +159,20 @@ const REVISION_STATES: TaskLifecycleState[] = [
   'validation_approval',
   'validation',
   'changelog',
+  'blocked',
+];
+
+const BLOCKABLE_STATES: TaskLifecycleState[] = [
+  'scope',
+  'plan',
+  'plan_approval',
+  'file_scope_approval',
+  'execution',
+  'review_diff',
+  'validation_approval',
+  'validation',
+  'changelog',
+  'revision',
 ];
 
 export function createTaskState(input: {
@@ -254,6 +278,57 @@ export function requestTaskRevision(
       previousState: state.state,
     },
   });
+}
+
+export function markTaskBlocked(
+  state: CleanClawTaskState,
+  input: {
+    blocker: string;
+    userText: string;
+    requestedFrom?: string;
+    timestamp?: string;
+  },
+): CleanClawTaskState {
+  if (!BLOCKABLE_STATES.includes(state.state)) {
+    throw new ControlContractError(`Cannot block task from ${state.state}.`, 'invalid-blocked-state');
+  }
+
+  const approval = recordUserApproval({
+    state: state.state,
+    userText: input.userText,
+    subject: 'task blocked',
+    timestamp: input.timestamp,
+  });
+
+  return expireBroaderApproval({
+    ...state,
+    state: 'blocked',
+    firstEditApproval: undefined,
+    approvedFiles: [],
+    approvedCommands: [],
+    blocker: {
+      ...approval,
+      previousState: state.state,
+      blocker: input.blocker,
+      requestedFrom: input.requestedFrom,
+    },
+  });
+}
+
+export function formatBlockedWorkSummary(state: CleanClawTaskState): string {
+  if (!state.blocker) {
+    return 'Blocked: no blocker recorded.';
+  }
+
+  return [
+    'Blocked work.',
+    `Task: ${state.taskId}`,
+    `Current state: ${state.state}`,
+    `Blocked by: ${state.blocker.blocker}`,
+    `Requested from: ${state.blocker.requestedFrom ?? 'not specified'}`,
+    `Previous state: ${state.blocker.previousState}`,
+    'What should we do next?',
+  ].join('\n');
 }
 
 export function transitionTaskState(

@@ -18,6 +18,8 @@ import {
   cancelTask,
   createTaskState,
   expireBroaderApproval,
+  formatBlockedWorkSummary,
+  markTaskBlocked,
   recordUserApproval,
   requestTaskRevision,
   transitionTaskState,
@@ -196,6 +198,53 @@ describe('CleanClaw control contract', () => {
       subject: 'task revision',
       previousState: 'execution',
     });
+  });
+
+  it('marks active work blocked and highlights the blocker', () => {
+    let state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
+    state = approveWhy(state, 'Keep the project controlled.', 'approved');
+    state = approveFiles(state, ['src/index.ts']);
+    state = approveCommand(state, 'npm test');
+    state = approveFirstEdit({ ...state, state: 'execution' }, 'approve first edit');
+    state = approveBroaderApproval(state, 'per-file', 'approve file changes for this task');
+
+    const blocked = markTaskBlocked(state, {
+      blocker: 'Jacob has not supplied designs.',
+      userText: 'blocked by missing designs',
+      requestedFrom: 'Jacob',
+      timestamp: '2026-05-20T00:00:00.000Z',
+    });
+
+    expect(blocked.state).toBe('blocked');
+    expect(blocked.approvalMode).toBe('per-change');
+    expect(blocked.broaderApproval).toBeUndefined();
+    expect(blocked.firstEditApproval).toBeUndefined();
+    expect(blocked.approvedFiles).toEqual([]);
+    expect(blocked.approvedCommands).toEqual([]);
+    expect(blocked.blocker).toEqual({
+      timestamp: '2026-05-20T00:00:00.000Z',
+      state: 'execution',
+      userText: 'blocked by missing designs',
+      subject: 'task blocked',
+      previousState: 'execution',
+      blocker: 'Jacob has not supplied designs.',
+      requestedFrom: 'Jacob',
+    });
+    expect(formatBlockedWorkSummary(blocked)).toContain('Blocked by: Jacob has not supplied designs.');
+    expect(() => markTaskBlocked({ ...state, state: 'done' }, {
+      blocker: 'done',
+      userText: 'blocked',
+    })).toThrow(/cannot block/i);
+  });
+
+  it('can revise or cancel blocked work', () => {
+    const blocked = markTaskBlocked(
+      { ...createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' }), state: 'plan' },
+      { blocker: 'Need client input.', userText: 'blocked' },
+    );
+
+    expect(requestTaskRevision(blocked, 'revise around blocker').state).toBe('revision');
+    expect(cancelTask(blocked, 'cancel blocked task').state).toBe('cancelled');
   });
 
   it('allows reads inside root and blocks outside-root reads', () => {
