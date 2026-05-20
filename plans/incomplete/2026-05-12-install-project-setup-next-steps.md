@@ -446,7 +446,7 @@ cleanclaw starts
 - [x] On validation failure, propose a fix/update plan and ask whether to update the plan.
 - [x] Return validation failures to planning/update mode with the failure visible.
 - [x] Support task cancellation and revision.
-- [ ] Support resume from task state.
+- [x] Support resume from task state.
 - [ ] After a task completes, return to planning mode by default.
 - [ ] Treat blocked work as an explicit blocked state and return to planning with the blocker highlighted.
 - [ ] Explain blockers in plain language and ask the user what to do next.
@@ -471,6 +471,7 @@ cleanclaw starts
 - [x] Added project-local validation records and a planned-validation runner that only runs already-approved validation commands and summarizes pass/fail/skipped results.
 - [x] Added validation failure reports that block continuation, list failed commands, and require planning/update mode.
 - [x] Added task cancellation and revision lifecycle helpers. Cancellation is terminal; revision clears execution-only approvals and returns the task to planning.
+- [x] Added task-resume helpers that load the latest non-terminal task state and format visible resume context.
 
 ### Root Behavior
 
