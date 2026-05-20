@@ -56,6 +56,7 @@ export interface CleanClawTaskState {
   why?: TaskWhy;
   approvedFiles: string[];
   approvedCommands: string[];
+  approvedPlan?: ApprovedPlanRecord;
   firstEditApproval?: ApprovalRecord;
   broaderApproval?: BroaderApprovalRecord;
   cancellation?: TaskStopRecord;
@@ -69,6 +70,10 @@ export interface CleanClawTaskState {
 export interface BroaderApprovalRecord extends ApprovalRecord {
   mode: BroaderApprovalMode;
   expiresAtTaskEnd: true;
+}
+
+export interface ApprovedPlanRecord extends ApprovalRecord {
+  planPath: string;
 }
 
 export interface TaskStopRecord extends ApprovalRecord {
@@ -372,6 +377,7 @@ export function assertCanReadFile(state: CleanClawTaskState, filePath: string): 
 
 export function assertCanEditFile(state: CleanClawTaskState, filePath: string): void {
   assertWhyApproved(state);
+  assertPlanApproved(state);
   assertTaskStateAllowsEdit(state);
   assertFirstEditApproved(state);
   if (!isWithinRoot(state.projectRoot, filePath)) {
@@ -382,6 +388,15 @@ export function assertCanEditFile(state: CleanClawTaskState, filePath: string): 
   if (!state.approvedFiles.includes(relativePath)) {
     throw new ControlContractError(`Cannot edit unapproved file: ${relativePath}`, 'unapproved-file');
   }
+}
+
+export function assertPlanApproved(state: CleanClawTaskState): void {
+  if (state.approvedPlan?.userText.trim() && state.approvedPlan.planPath.trim()) return;
+
+  throw new ControlContractError(
+    'File changes require an approved plan.',
+    'missing-approved-plan',
+  );
 }
 
 export function assertFirstEditApproved(state: CleanClawTaskState): void {
@@ -486,6 +501,30 @@ export function approveFiles(state: CleanClawTaskState, files: string[]): CleanC
   return {
     ...state,
     approvedFiles: Array.from(new Set([...state.approvedFiles, ...files.map(normalizeRelativePath)])),
+  };
+}
+
+export function approvePlan(
+  state: CleanClawTaskState,
+  planPath: string,
+  userText: string,
+  timestamp?: string,
+): CleanClawTaskState {
+  if (!planPath.trim()) {
+    throw new ControlContractError('Approved plan path is required.', 'missing-plan-path');
+  }
+
+  return {
+    ...state,
+    approvedPlan: {
+      ...recordUserApproval({
+        state: state.state,
+        userText,
+        subject: 'plan approval',
+        timestamp,
+      }),
+      planPath,
+    },
   };
 }
 

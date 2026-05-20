@@ -4,10 +4,12 @@ import {
   approveBroaderApproval,
   approveFiles,
   approveFirstEdit,
+  approvePlan,
   approveWhy,
   assertCanCommit,
   assertCanEditFile,
   assertFirstEditApproved,
+  assertPlanApproved,
   assertCanRunCommand,
   assertCanTransition,
   assertCanUseFrontierModel,
@@ -69,6 +71,7 @@ describe('CleanClaw control contract', () => {
   it('allows editing only approved files inside the project root', () => {
     let state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
     state = approveWhy(state, 'Keep the project controlled.', 'approved');
+    state = approvePlan(state, 'plans/task1.md', 'approve plan');
     state = approveFiles(state, ['src/index.ts']);
     state = { ...state, state: 'execution' };
     state = approveFirstEdit(state, 'approve first edit');
@@ -81,6 +84,7 @@ describe('CleanClaw control contract', () => {
   it('blocks edits while the task is still in planning states', () => {
     let state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
     state = approveWhy(state, 'Keep the project controlled.', 'approved');
+    state = approvePlan(state, 'plans/task1.md', 'approve plan');
     state = approveFiles(state, ['src/index.ts']);
     state = { ...state, state: 'plan' };
 
@@ -96,6 +100,16 @@ describe('CleanClaw control contract', () => {
     state = approveFiles(state, ['src/index.ts']);
     state = { ...state, state: 'execution' };
 
+    expect(() => assertPlanApproved(state)).toThrow(/approved plan/i);
+    state = approvePlan(state, 'plans/task1.md', 'approve plan', '2026-05-20T00:00:00.000Z');
+    expect(state.approvedPlan).toEqual({
+      timestamp: '2026-05-20T00:00:00.000Z',
+      state: 'execution',
+      userText: 'approve plan',
+      subject: 'plan approval',
+      planPath: 'plans/task1.md',
+    });
+    expect(() => assertPlanApproved(state)).not.toThrow();
     expect(() => assertFirstEditApproved(state)).toThrow(/first file edit/i);
     expect(() => assertCanEditFile(state, '/repo/src/index.ts')).toThrow(/first file edit/i);
 
