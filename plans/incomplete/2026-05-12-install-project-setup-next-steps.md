@@ -425,7 +425,7 @@ cleanclaw starts
 - [x] Include requester and change beneficiary in new plan records.
 - [x] Show "what CleanClaw knows" and "what CleanClaw needs confirmed" in planning output.
 - [x] Map natural user requests onto planning/review actions while still showing numbered choices at decision points.
-- [ ] Let the user ask project questions, workflow questions, planning questions, or anything project-related.
+- [x] Let the user ask project questions, workflow questions, planning questions, or anything project-related.
 - [ ] Let the user create multiple approved plans for later execution.
 - [ ] Let the user prepare multiple approved plans for headless execution.
 - [ ] Support multiple plans for the same task and different tasks in a project session.
@@ -480,6 +480,7 @@ cleanclaw starts
 - [x] Added broad scan exclusion prompts and persisted exclusions in project-local scan approval records.
 - [x] Added ProjectMap exploration source decision helper that prefers ready ProjectMap and falls back to approved scan/manual context.
 - [x] Added natural request routing for planning/review actions with confirmation fallback for ambiguous input.
+- [x] Expanded read-only question classification to project, workflow, approval, validation, scope, and planning questions.
 
 ### Root Behavior
 

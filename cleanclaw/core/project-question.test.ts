@@ -9,6 +9,15 @@ describe('project questions', () => {
     });
   });
 
+  it('classifies workflow and planning questions as read-only', () => {
+    expect(classifyProjectQuestion('How does the approval workflow work?')).toMatchObject({
+      isProjectQuestion: true,
+    });
+    expect(classifyProjectQuestion('Where is the validation plan recorded?')).toMatchObject({
+      isProjectQuestion: true,
+    });
+  });
+
   it('does not classify change requests as project questions', () => {
     expect(classifyProjectQuestion('Fix the login cache')).toMatchObject({
       isProjectQuestion: false,
