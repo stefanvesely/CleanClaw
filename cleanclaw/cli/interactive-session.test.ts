@@ -49,7 +49,8 @@ describe('interactive session', () => {
       },
       taskId: 'task1',
       taskStatePath: path.join(tmpDir, '.cleanclaw', 'tasks', 'task1', 'state.json'),
-      draftPlanPath: path.join(tmpDir, 'plans', 'inprogress', '2026-05-19-fix-login-cache.md'),
+      draftPlanPath: path.join(tmpDir, 'plans', 'inprogress', '2026-05-20-fix-login-cache.md'),
+      mode: 'planning',
       planChoice: 'new',
       selectedPlan: null,
     });
@@ -93,6 +94,7 @@ describe('interactive session', () => {
     expect(result.taskId).toBe('task1');
     expect(result.taskStatePath).toBe(path.join(tmpDir, '.cleanclaw', 'tasks', 'task1', 'state.json'));
     expect(result.draftPlanPath).toBeNull();
+    expect(result.mode).toBe('planning');
     expect(result.selectedPlan?.title).toBe('Demo Plan');
     expect(logger.records.map(record => String(record.message)).join('\n')).toContain('I found 1 in-progress plan');
   });
@@ -148,7 +150,8 @@ describe('interactive session', () => {
       },
       taskId: 'task1',
       taskStatePath: path.join(projectDir, '.cleanclaw', 'tasks', 'task1', 'state.json'),
-      draftPlanPath: path.join(projectDir, 'plans', 'inprogress', '2026-05-19-fix-login-cache.md'),
+      draftPlanPath: path.join(projectDir, 'plans', 'inprogress', '2026-05-20-fix-login-cache.md'),
+      mode: 'planning',
       planChoice: 'new',
       selectedPlan: null,
     });
@@ -177,8 +180,42 @@ describe('interactive session', () => {
     expect(result.projectConfirmed).toBe(true);
     expect(result.taskWhy?.approved).toBe(true);
     expect(result.taskId).toBe('task1');
-    expect(result.draftPlanPath).toBe(path.join(correctProject, 'plans', 'inprogress', '2026-05-19-fix-login-cache.md'));
+    expect(result.draftPlanPath).toBe(path.join(correctProject, 'plans', 'inprogress', '2026-05-20-fix-login-cache.md'));
+    expect(result.mode).toBe('planning');
     expect(result.planChoice).toBe('new');
+  });
+
+  it('handles project questions in read-only mode without task records or plans', async () => {
+    saveProjectSettings(tmpDir, createProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Demo',
+      updatedAt: '2026-05-20T00:00:00.000Z',
+    }));
+    const logger = createMemoryLogger();
+    const answers = ['What stack does this project use?', 'y'];
+
+    const result = await startInteractiveSession({
+      cwd: tmpDir,
+      globalProject: null,
+      logger,
+      ask: async () => answers.shift() ?? '',
+    });
+
+    expect(result).toMatchObject({
+      taskDescription: 'What stack does this project use?',
+      projectRoot: path.resolve(tmpDir),
+      projectConfirmed: true,
+      taskWhy: null,
+      taskId: null,
+      taskStatePath: null,
+      draftPlanPath: null,
+      mode: 'read-only-question',
+      planChoice: null,
+      selectedPlan: null,
+    });
+    expect(fs.existsSync(path.join(tmpDir, '.cleanclaw', 'tasks'))).toBe(false);
+    expect(fs.existsSync(path.join(tmpDir, 'plans', 'inprogress'))).toBe(false);
+    expect(logger.records.map(record => String(record.message)).join('\n')).toContain('Read-only project question mode.');
   });
 
   it('does not change anything when no task is captured', async () => {
@@ -190,5 +227,6 @@ describe('interactive session', () => {
 
     expect(result.taskDescription).toBeNull();
     expect(result.projectConfirmed).toBe(false);
+    expect(result.mode).toBeNull();
   });
 });

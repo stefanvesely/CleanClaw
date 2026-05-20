@@ -418,7 +418,7 @@ cleanclaw starts
 - [x] For continued work, show a summary and ask whether the existing plan is still okay.
 - [x] Ask for or propose the task why before scope decisions.
 - [x] Use the approved why as the filter for project fit, file scope, validation, and change alignment.
-- [ ] Allow read-only project questions before a plan exists.
+- [x] Allow read-only project questions before a plan exists.
 - [ ] Prevent all file changes unless they belong to an approved plan.
 - [ ] When broad project scanning is needed, ask first and ask what should be excluded from the scan.
 - [ ] Prefer ProjectMap for project exploration when available.
@@ -475,6 +475,7 @@ cleanclaw starts
 - [x] Added completion-to-planning helper that completes eligible tasks and returns a visible planning-mode summary.
 - [x] Added blocked work state, blocker records, and plain-language blocker summaries that ask the user what to do next.
 - [x] Added context-continuity helper for keep/separate/confirm decisions between consecutive tasks.
+- [x] Added read-only project question mode so project questions do not create task records, plans, or execution state.
 
 ### Root Behavior
 

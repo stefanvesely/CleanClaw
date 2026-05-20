@@ -7,6 +7,7 @@ import {
   resolveUserProjectDirectory,
   type ProjectIntakeCandidate,
 } from '../core/project-intake.js';
+import { classifyProjectQuestion, formatProjectQuestionResponse } from '../core/project-question.js';
 import { resolveActiveProject } from '../core/project-resolver.js';
 import { createDraftSessionPlan } from '../core/session-plan.js';
 import { createApprovedTaskWhy, draftTaskWhy, type TaskWhyIntake } from '../core/task-why.js';
@@ -20,6 +21,7 @@ export interface InteractiveSessionResult {
   taskId: string | null;
   taskStatePath: string | null;
   draftPlanPath: string | null;
+  mode: 'planning' | 'read-only-question' | null;
   planChoice: 'continue' | 'new' | null;
   selectedPlan: InProgressPlanSummary | null;
 }
@@ -52,6 +54,7 @@ export async function startInteractiveSession(
       taskId: null,
       taskStatePath: null,
       draftPlanPath: null,
+      mode: null,
       planChoice: null,
       selectedPlan: null,
     };
@@ -68,6 +71,24 @@ export async function startInteractiveSession(
 
   if (confirmedProject) {
     logger.info(`Project confirmed: ${confirmedProject.projectName}.`);
+    const questionClassification = classifyProjectQuestion(taskDescription);
+    if (questionClassification.isProjectQuestion) {
+      logger.info(formatProjectQuestionResponse(taskDescription));
+      logger.info(questionClassification.reason);
+      return {
+        taskDescription,
+        projectRoot: confirmedProject.projectRoot,
+        projectConfirmed: true,
+        taskWhy: null,
+        taskId: null,
+        taskStatePath: null,
+        draftPlanPath: null,
+        mode: 'read-only-question',
+        planChoice: null,
+        selectedPlan: null,
+      };
+    }
+
     const taskWhy = await confirmTaskWhy({
       ask,
       logger,
@@ -83,6 +104,7 @@ export async function startInteractiveSession(
         taskId: null,
         taskStatePath: null,
         draftPlanPath: null,
+        mode: null,
         planChoice: null,
         selectedPlan: null,
       };
@@ -114,6 +136,7 @@ export async function startInteractiveSession(
         taskId: taskRecord.taskId,
         taskStatePath: taskRecord.taskStatePath,
         draftPlanPath,
+        mode: 'planning',
         planChoice: 'new',
         selectedPlan: null,
       };
@@ -140,6 +163,7 @@ export async function startInteractiveSession(
           taskId: taskRecord.taskId,
           taskStatePath: taskRecord.taskStatePath,
           draftPlanPath: null,
+          mode: 'planning',
           planChoice: 'new',
           selectedPlan: null,
         };
@@ -154,6 +178,7 @@ export async function startInteractiveSession(
         taskId: taskRecord.taskId,
         taskStatePath: taskRecord.taskStatePath,
         draftPlanPath: null,
+        mode: 'planning',
         planChoice,
         selectedPlan,
       };
@@ -176,6 +201,7 @@ export async function startInteractiveSession(
       taskId: taskRecord.taskId,
       taskStatePath: taskRecord.taskStatePath,
       draftPlanPath,
+      mode: 'planning',
       planChoice,
       selectedPlan: null,
     };
@@ -189,6 +215,7 @@ export async function startInteractiveSession(
     taskId: null,
     taskStatePath: null,
     draftPlanPath: null,
+    mode: null,
     planChoice: null,
     selectedPlan: null,
   };
