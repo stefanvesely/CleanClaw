@@ -16,7 +16,9 @@ export type TaskLifecycleState =
   | 'commit'
   | 'push_approval'
   | 'push'
-  | 'done';
+  | 'done'
+  | 'revision'
+  | 'cancelled';
 
 export type WhyAlignment = 'aligned' | 'unclear' | 'misaligned';
 
@@ -55,6 +57,8 @@ export interface CleanClawTaskState {
   approvedCommands: string[];
   firstEditApproval?: ApprovalRecord;
   broaderApproval?: BroaderApprovalRecord;
+  cancellation?: TaskStopRecord;
+  revision?: TaskRevisionRecord;
   approvalMode: ApprovalMode;
   scopeTreePath?: string;
   modelPolicy: ModelPolicyState;
@@ -63,6 +67,14 @@ export interface CleanClawTaskState {
 export interface BroaderApprovalRecord extends ApprovalRecord {
   mode: BroaderApprovalMode;
   expiresAtTaskEnd: true;
+}
+
+export interface TaskStopRecord extends ApprovalRecord {
+  finalState: 'cancelled';
+}
+
+export interface TaskRevisionRecord extends ApprovalRecord {
+  previousState: TaskLifecycleState;
 }
 
 export interface ApprovalRecord {
@@ -103,8 +115,41 @@ const TRANSITIONS: Record<TaskLifecycleState, TaskLifecycleState[]> = {
   commit: ['push_approval', 'done'],
   push_approval: ['push', 'done'],
   push: ['done'],
+  revision: ['scope', 'plan', 'cancelled'],
   done: [],
+  cancelled: [],
 };
+
+const CANCELLABLE_STATES: TaskLifecycleState[] = [
+  'intake',
+  'why_definition',
+  'scope',
+  'plan',
+  'plan_approval',
+  'file_scope_approval',
+  'execution',
+  'review_diff',
+  'validation_approval',
+  'validation',
+  'changelog',
+  'commit_approval',
+  'commit',
+  'push_approval',
+  'push',
+  'revision',
+];
+
+const REVISION_STATES: TaskLifecycleState[] = [
+  'scope',
+  'plan',
+  'plan_approval',
+  'file_scope_approval',
+  'execution',
+  'review_diff',
+  'validation_approval',
+  'validation',
+  'changelog',
+];
 
 export function createTaskState(input: {
   taskId: string;
@@ -154,6 +199,61 @@ export function assertCanTransition(
       throw new ControlContractError('Cannot start execution without approved file scope.', 'missing-file-scope');
     }
   }
+}
+
+export function cancelTask(
+  state: CleanClawTaskState,
+  userText: string,
+  timestamp?: string,
+): CleanClawTaskState {
+  if (!CANCELLABLE_STATES.includes(state.state)) {
+    throw new ControlContractError(`Cannot cancel task from ${state.state}.`, 'invalid-cancellation');
+  }
+
+  const approval = recordUserApproval({
+    state: state.state,
+    userText,
+    subject: 'task cancellation',
+    timestamp,
+  });
+
+  return expireBroaderApproval({
+    ...state,
+    state: 'cancelled',
+    cancellation: {
+      ...approval,
+      finalState: 'cancelled',
+    },
+  });
+}
+
+export function requestTaskRevision(
+  state: CleanClawTaskState,
+  userText: string,
+  timestamp?: string,
+): CleanClawTaskState {
+  if (!REVISION_STATES.includes(state.state)) {
+    throw new ControlContractError(`Cannot revise task from ${state.state}.`, 'invalid-revision');
+  }
+
+  const approval = recordUserApproval({
+    state: state.state,
+    userText,
+    subject: 'task revision',
+    timestamp,
+  });
+
+  return expireBroaderApproval({
+    ...state,
+    state: 'revision',
+    firstEditApproval: undefined,
+    approvedFiles: [],
+    approvedCommands: [],
+    revision: {
+      ...approval,
+      previousState: state.state,
+    },
+  });
 }
 
 export function transitionTaskState(

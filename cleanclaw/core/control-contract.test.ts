@@ -15,9 +15,11 @@ import {
   assertCanPush,
   assertTaskStateAllowsEdit,
   assertWhyAligned,
+  cancelTask,
   createTaskState,
   expireBroaderApproval,
   recordUserApproval,
+  requestTaskRevision,
   transitionTaskState,
 } from './control-contract.js';
 
@@ -149,6 +151,51 @@ describe('CleanClaw control contract', () => {
     const doneState = transitionTaskState({ ...state, state: 'changelog' }, 'done');
     expect(doneState.approvalMode).toBe('per-change');
     expect(doneState.broaderApproval).toBeUndefined();
+  });
+
+  it('cancels an active task with explicit user text', () => {
+    let state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
+    state = approveBroaderApproval({ ...state, state: 'plan' }, 'per-file', 'approve file changes for this task');
+
+    const cancelled = cancelTask(state, 'stop this task', '2026-05-20T00:00:00.000Z');
+
+    expect(cancelled.state).toBe('cancelled');
+    expect(cancelled.approvalMode).toBe('per-change');
+    expect(cancelled.broaderApproval).toBeUndefined();
+    expect(cancelled.cancellation).toEqual({
+      timestamp: '2026-05-20T00:00:00.000Z',
+      state: 'plan',
+      userText: 'stop this task',
+      subject: 'task cancellation',
+      finalState: 'cancelled',
+    });
+    expect(() => cancelTask(cancelled, 'cancel again')).toThrow(/cannot cancel/i);
+  });
+
+  it('moves an active task to revision and clears execution-only approvals', () => {
+    let state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
+    state = approveWhy(state, 'Keep the project controlled.', 'approved');
+    state = approveFiles(state, ['src/index.ts']);
+    state = approveCommand(state, 'npm test');
+    state = approveFirstEdit({ ...state, state: 'execution' }, 'approve first edit');
+    state = approveBroaderApproval(state, 'per-file', 'approve file changes for this task');
+
+    const revision = requestTaskRevision(state, 'change the plan', '2026-05-20T00:00:00.000Z');
+
+    expect(revision.state).toBe('revision');
+    expect(revision.why).toEqual(state.why);
+    expect(revision.approvedFiles).toEqual([]);
+    expect(revision.approvedCommands).toEqual([]);
+    expect(revision.firstEditApproval).toBeUndefined();
+    expect(revision.broaderApproval).toBeUndefined();
+    expect(revision.approvalMode).toBe('per-change');
+    expect(revision.revision).toEqual({
+      timestamp: '2026-05-20T00:00:00.000Z',
+      state: 'execution',
+      userText: 'change the plan',
+      subject: 'task revision',
+      previousState: 'execution',
+    });
   });
 
   it('allows reads inside root and blocks outside-root reads', () => {
