@@ -450,9 +450,9 @@ cleanclaw starts
 - [x] After a task completes, return to planning mode by default.
 - [x] Treat blocked work as an explicit blocked state and return to planning with the blocker highlighted.
 - [x] Explain blockers in plain language and ask the user what to do next.
-- [ ] Keep task context when the next task is naturally related.
-- [ ] Clear or separate task context when the next task is unrelated.
-- [ ] Confirm context continuity when CleanClaw is uncertain whether the next task is related.
+- [x] Keep task context when the next task is naturally related.
+- [x] Clear or separate task context when the next task is unrelated.
+- [x] Confirm context continuity when CleanClaw is uncertain whether the next task is related.
 
 ### Completed Phase 2 Implementation Notes
 
@@ -474,6 +474,7 @@ cleanclaw starts
 - [x] Added task-resume helpers that load the latest non-terminal task state and format visible resume context.
 - [x] Added completion-to-planning helper that completes eligible tasks and returns a visible planning-mode summary.
 - [x] Added blocked work state, blocker records, and plain-language blocker summaries that ask the user what to do next.
+- [x] Added context-continuity helper for keep/separate/confirm decisions between consecutive tasks.
 
 ### Root Behavior
 
