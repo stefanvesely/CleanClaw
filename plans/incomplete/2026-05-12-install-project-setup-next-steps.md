@@ -424,7 +424,7 @@ cleanclaw starts
 - [x] Prefer ProjectMap for project exploration when available.
 - [x] Include requester and change beneficiary in new plan records.
 - [x] Show "what CleanClaw knows" and "what CleanClaw needs confirmed" in planning output.
-- [ ] Map natural user requests onto planning/review actions while still showing numbered choices at decision points.
+- [x] Map natural user requests onto planning/review actions while still showing numbered choices at decision points.
 - [ ] Let the user ask project questions, workflow questions, planning questions, or anything project-related.
 - [ ] Let the user create multiple approved plans for later execution.
 - [ ] Let the user prepare multiple approved plans for headless execution.
@@ -479,6 +479,7 @@ cleanclaw starts
 - [x] Added approved-plan records and edit guard enforcement so file changes require a concrete approved plan.
 - [x] Added broad scan exclusion prompts and persisted exclusions in project-local scan approval records.
 - [x] Added ProjectMap exploration source decision helper that prefers ready ProjectMap and falls back to approved scan/manual context.
+- [x] Added natural request routing for planning/review actions with confirmation fallback for ambiguous input.
 
 ### Root Behavior
 
