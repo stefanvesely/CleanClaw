@@ -133,8 +133,8 @@ Planning cannot be headless. The user is the link to the client, so the user mus
   - `assertCanPush`
   - `recordUserApproval`
   - `recordWhyAlignment`
-- [ ] Define what CleanClaw may do without asking.
-- [ ] Define what CleanClaw must never do without asking.
+- [x] Define what CleanClaw may do without asking.
+- [x] Define what CleanClaw must never do without asking.
 - [ ] Define headless mode as a special subsection, not a default mode.
 
 ### Implementation Progress
@@ -144,6 +144,8 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 - [x] Added `cleanclaw/core/task-records.ts` to persist project-local task state, approval records, and why-alignment records under `.cleanclaw/tasks/<task-id>/`.
 - [x] Added `cleanclaw/core/task-records.test.ts` for task record persistence.
 - [x] Wired `runPipeline` task startup to save `.cleanclaw/tasks/task<id>/state.json` and record approved task why when workflow answers are present.
+- [x] Added `cleanclaw/core/permitted-actions.ts` with explicit `PERMITTED_WITHOUT_ASKING` and `NEVER_WITHOUT_ASKING` action policy lists.
+- [x] Added frontier model purpose-specific rejection tests to `control-contract.test.ts`.
 
 ### Task State Shape
 
@@ -430,8 +432,8 @@ cleanclaw starts
 - [ ] Let the user prepare multiple approved plans for headless execution.
 - [ ] Support multiple plans for the same task and different tasks in a project session.
 - [ ] Support low-token fix and full-fix plan variants.
-- [ ] Track plan statuses: draft, needs-user-review, approved, ready-for-execution, blocked, cancelled, complete.
-- [ ] Move completed plans into a completed folder.
+- [x] Track plan statuses: draft, needs-user-review, approved, ready-for-execution, blocked, cancelled, complete.
+- [x] Move completed plans into a completed folder.
 - [ ] Compare plans by token cost, safety, speed, maintainability, risk, and scope size.
 - [ ] Recommend a plan only when there is a clear winner; otherwise present tradeoffs and leave the choice to the user.
 - [x] Create task record immediately after intake.
@@ -481,6 +483,10 @@ cleanclaw starts
 - [x] Added ProjectMap exploration source decision helper that prefers ready ProjectMap and falls back to approved scan/manual context.
 - [x] Added natural request routing for planning/review actions with confirmation fallback for ambiguous input.
 - [x] Expanded read-only question classification to project, workflow, approval, validation, scope, and planning questions.
+- [x] Added `cleanclaw/core/plan-status.ts` with `PlanStatus` type, `readPlanStatus`, `writePlanStatus`, and `getPlanFilepath` helpers.
+- [x] Added `cleanclaw/core/plan-lifecycle.ts` with `completePlan()` to move plans from inprogress to complete with status update.
+- [x] Updated `listInProgressPlans` in `plan-discovery.ts` to filter out plans with terminal statuses (complete, cancelled).
+- [x] Added `plan-status.test.ts`, `plan-lifecycle.test.ts`, and extended `plan-discovery.test.ts` with plan lifecycle tests.
 
 ### Root Behavior
 

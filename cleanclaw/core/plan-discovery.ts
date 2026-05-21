@@ -14,9 +14,12 @@ export function listInProgressPlans(projectRoot: string): InProgressPlanSummary[
   const plansDir = path.join(projectRoot, 'plans', 'inprogress');
   if (!fs.existsSync(plansDir)) return [];
 
+  const terminalStatuses = ['complete', 'cancelled'];
+
   return fs.readdirSync(plansDir, { withFileTypes: true })
     .filter(entry => entry.isFile() && entry.name.endsWith('.md'))
     .map(entry => summarizePlan(path.join(plansDir, entry.name)))
+    .filter(plan => !terminalStatuses.includes(plan.status.toLowerCase()))
     .sort((a, b) => a.filename.localeCompare(b.filename));
 }
 

@@ -52,4 +52,17 @@ describe('in-progress plan discovery', () => {
     expect(choices).toContain('1. Demo Plan');
     expect(choices).toContain('Status: In Progress');
   });
+
+  it('excludes plans with status complete or cancelled', () => {
+    const inProgress = path.join(tmpDir, 'plans', 'inprogress');
+    fs.mkdirSync(inProgress, { recursive: true });
+    fs.writeFileSync(path.join(inProgress, 'active.md'), '# Active Plan\nStatus: inprogress\n', 'utf-8');
+    fs.writeFileSync(path.join(inProgress, 'done.md'), '# Done Plan\nStatus: complete\n', 'utf-8');
+    fs.writeFileSync(path.join(inProgress, 'dropped.md'), '# Dropped Plan\nStatus: cancelled\n', 'utf-8');
+
+    const plans = listInProgressPlans(tmpDir);
+
+    expect(plans).toHaveLength(1);
+    expect(plans[0].filename).toBe('active.md');
+  });
 });

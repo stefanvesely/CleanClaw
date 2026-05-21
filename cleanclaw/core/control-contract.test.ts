@@ -292,6 +292,33 @@ describe('CleanClaw control contract', () => {
     }, 'review-risky-change')).not.toThrow();
   });
 
+  it('blocks frontier model use for a purpose not in the approved list', () => {
+    const state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
+    const withApproval = {
+      ...state,
+      modelPolicy: {
+        ...state.modelPolicy,
+        frontierApprovedFor: ['review-risky-change'],
+      },
+    };
+
+    expect(() => assertCanUseFrontierModel(withApproval, 'headless-execution')).toThrow(/frontier model/i);
+  });
+
+  it('allows frontier model use only for the exact approved purpose', () => {
+    const state = createTaskState({ taskId: 'task-1', projectRoot: '/repo', taskSummary: 'Do a thing' });
+    const withApproval = {
+      ...state,
+      modelPolicy: {
+        ...state.modelPolicy,
+        frontierApprovedFor: ['headless-execution'],
+      },
+    };
+
+    expect(() => assertCanUseFrontierModel(withApproval, 'headless-execution')).not.toThrow();
+    expect(() => assertCanUseFrontierModel(withApproval, 'review-risky-change')).toThrow(/frontier model/i);
+  });
+
   it('blocks unclear and misaligned why checks', () => {
     expect(() => assertWhyAligned('aligned', 'edit file')).not.toThrow();
     expect(() => assertWhyAligned('unclear', 'edit file')).toThrow(/unclear/i);
