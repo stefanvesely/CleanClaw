@@ -16,6 +16,7 @@ import {
   formatProjectMapFreshnessSummary,
 } from '../projectmap/freshness-decision.js';
 import { inspectProjectMapFreshness } from '../projectmap/manifest.js';
+import { update as updateProjectMapFile } from '../projectmap/updater-worker.js';
 import {
   createProjectMapStoragePolicyPrompt,
   formatProjectMapStorageSummary,
@@ -185,6 +186,16 @@ async function askProjectMapBuildDecision(
     }
     const retry = selection.kind === 'invalid' ? `\n${selection.reason}\n` : '\nPlease choose one of the numbered options.\n';
     selection = parseNumberedPromptSelection(await ask(rl, `${retry}${formatNumberedPrompt(prompt)}`), prompt);
+  }
+
+  if (selection.option.id === 'update-changed') {
+    const files = [...freshness.changed, ...freshness.added, ...freshness.deleted];
+    for (const file of files) {
+      await updateProjectMapFile(process.cwd(), file, config, logger);
+    }
+    logger.info(`ProjectMap updated for ${files.length} changed file${files.length === 1 ? '' : 's'}.`);
+    await askProjectMapStoragePolicyIfNeeded(rl, logger);
+    return;
   }
 
   if (selection.option.id === 'build' || selection.option.id === 'rebuild') {

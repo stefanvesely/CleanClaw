@@ -1,12 +1,12 @@
 import type { NumberedPromptConfig } from "../core/numbered-prompt.js";
 import type { ProjectMapFreshness } from "./manifest.js";
 
-export type ProjectMapFreshnessAction = "reuse" | "build" | "rebuild" | "continue-stale" | "skip";
+export type ProjectMapFreshnessAction = "reuse" | "build" | "update-changed" | "rebuild" | "continue-stale" | "skip";
 
 export function decideProjectMapFreshnessAction(freshness: ProjectMapFreshness): ProjectMapFreshnessAction {
   if (freshness.status === "fresh") return "reuse";
   if (freshness.status === "missing") return "build";
-  return "rebuild";
+  return "update-changed";
 }
 
 export function formatProjectMapFreshnessSummary(freshness: ProjectMapFreshness): string {
@@ -57,13 +57,18 @@ export function createProjectMapFreshnessPrompt(freshness: ProjectMapFreshness):
 
   return {
     question: "ProjectMap is stale. What should CleanClaw do?",
-    defaultId: "rebuild",
+    defaultId: "update-changed",
     options: [
+      {
+        id: "update-changed",
+        label: "Update changed files only",
+        description: "Refresh only changed, added, and deleted files listed by the manifest.",
+        recommended: true,
+      },
       {
         id: "rebuild",
         label: "Rebuild full ProjectMap",
         description: "Refresh project memory from the current project files.",
-        recommended: true,
       },
       {
         id: "continue-stale",

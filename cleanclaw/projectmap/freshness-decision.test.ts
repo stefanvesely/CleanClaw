@@ -36,7 +36,7 @@ describe("ProjectMap freshness decisions", () => {
     expect(prompt?.options.map(option => option.id)).toEqual(["build", "skip"]);
   });
 
-  it("prompts to rebuild, continue, or skip when ProjectMap is stale", () => {
+  it("prompts to update, rebuild, continue, or skip when ProjectMap is stale", () => {
     const stale = freshness("stale", {
       changed: ["src/app.ts"],
       added: ["src/new.ts"],
@@ -44,9 +44,9 @@ describe("ProjectMap freshness decisions", () => {
     });
     const prompt = createProjectMapFreshnessPrompt(stale);
 
-    expect(decideProjectMapFreshnessAction(stale)).toBe("rebuild");
-    expect(prompt?.defaultId).toBe("rebuild");
-    expect(prompt?.options.map(option => option.id)).toEqual(["rebuild", "continue-stale", "skip"]);
+    expect(decideProjectMapFreshnessAction(stale)).toBe("update-changed");
+    expect(prompt?.defaultId).toBe("update-changed");
+    expect(prompt?.options.map(option => option.id)).toEqual(["update-changed", "rebuild", "continue-stale", "skip"]);
     expect(formatProjectMapFreshnessSummary(stale)).toContain("Changed: 1");
     expect(formatProjectMapFreshnessSummary(stale)).toContain("src/old.ts");
   });

@@ -711,7 +711,7 @@ Storage policy note: setup now inspects `.cleanclaw/projectmap/` size after reus
 - [x] If files changed, update only changed files.
 - [ ] If embedding model/provider changed, ask before rebuilding.
 - [x] If ProjectMap is missing, ask to build it.
-- [ ] If ProjectMap is stale, show:
+- [x] If ProjectMap is stale, show:
   - `1. Update changed files only`
   - `2. Rebuild full ProjectMap`
   - `3. Continue with stale ProjectMap`
@@ -785,7 +785,7 @@ Stack inference must not become permission creep. Detecting a database, deployme
 - [ ] Routing test per stack agent.
 - [x] Missing ProjectMap asks before build.
 - [x] Fresh ProjectMap is reused.
-- [ ] Stale ProjectMap offers update/rebuild/stale/skip choices.
+- [x] Stale ProjectMap offers update/rebuild/stale/skip choices.
 - [x] Changed files update incrementally after task completion.
 - [x] New files are added to ProjectMap after task completion.
 - [x] Deleted files are removed from ProjectMap.
