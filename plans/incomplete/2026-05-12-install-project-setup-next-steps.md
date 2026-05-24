@@ -503,6 +503,7 @@ cleanclaw starts
 - [x] Added headless coder task packages so coder models receive only one selected granular step, not sibling plan context.
 - [x] Added headless local-first coder routing for small, low-risk, tightly scoped tasks.
 - [x] Added a bounded headless reviewer decision gate based on approved options and why alignment.
+- [x] Added blocked headless execution reports with a highlighted blocker and numbered user interaction choices.
 
 ### Root Behavior
 
@@ -526,7 +527,7 @@ cleanclaw starts
 - [x] Smaller code tasks can use a local model as coder.
 - [x] Local-first applies to small headless code tasks.
 - [x] Reviewer/planner can make bounded decisions from the approved why.
-- [ ] Blocked headless execution highlights the blocker, allows interaction, and creates a report.
+- [x] Blocked headless execution highlights the blocker, allows interaction, and creates a report.
 - [ ] Headless stops and reports when it cannot continue within approved plan, scope, why, model policy, validation policy, or runtime policy.
 - [ ] Headless must never commit; commits remain explicit user actions outside headless execution.
 
