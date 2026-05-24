@@ -655,7 +655,7 @@ Project root selected
 - [x] Show best guess and evidence.
 - [x] Ask user to approve or override with a numbered menu.
 - [x] Store selected stack in project-local settings.
-- [ ] Expand agent routing beyond the current stack list.
+- [x] Expand agent routing beyond the current stack list.
 - [ ] Integrate stack inference with ProjectMap.
 - [ ] Add ProjectMap freshness manifest.
 - [ ] Reuse existing ProjectMap when fresh.

@@ -43,6 +43,13 @@ export function resolveLanguageAgent(config: CleanClawConfig): LanguageAgent {
     svelte: new SvelteAgent(),
     angular: new AngularAgent(),
     blazor: new BlazorAgent(),
+    node: genericAgent('node', 'Node.js and JavaScript/TypeScript backend projects'),
+    nextjs: genericAgent('nextjs', 'Next.js React applications'),
+    vite: genericAgent('vite', 'Vite frontend applications'),
+    python: genericAgent('python', 'Python applications'),
+    go: genericAgent('go', 'Go applications'),
+    rust: genericAgent('rust', 'Rust applications'),
+    java: genericAgent('java', 'Java applications'),
   };
 
   const agent = agents[config.stack];
@@ -50,4 +57,15 @@ export function resolveLanguageAgent(config: CleanClawConfig): LanguageAgent {
     throw new Error(`No language agent for stack: "${config.stack}". Supported: ${Object.keys(agents).join(', ')}`);
   }
   return agent;
+}
+
+function genericAgent(stack: string, description: string): GenericAgent {
+  return new GenericAgent(
+    stack,
+    [
+      `You are CleanClaw's ${description} coding agent.`,
+      'Return one JSON proposed change that stays inside the approved task scope.',
+      'Prefer small, reviewable edits and preserve existing project style.',
+    ].join(' '),
+  );
 }
