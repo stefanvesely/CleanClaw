@@ -497,6 +497,7 @@ cleanclaw starts
 - [x] Added project working context helpers so CleanClaw can tell whether the current folder is the project root, a nested project folder, or outside the active project.
 - [x] Added an interactive session loop so no-arg `cleanclaw` keeps accepting work until the user exits.
 - [x] Added a headless planning guard so intake, why, scope, plan, and plan approval phases cannot run headless.
+- [x] Added a headless execution policy check requiring ready plan status, explicit opt-in, and coder/reviewer roles.
 
 ### Root Behavior
 
@@ -512,7 +513,7 @@ cleanclaw starts
 - [x] Planning cannot be headless.
 - [x] The user can create multiple approved plans for future headless execution.
 - [x] Each headless plan needs its own approved why, scope tree, risk limits, validation policy, storage policy, model policy, and stop conditions.
-- [ ] Headless execution remains opt-in and requires coder/reviewer model roles.
+- [x] Headless execution remains opt-in and requires coder/reviewer model roles.
 - [x] Headless execution can only run plans marked `ready-for-execution`.
 - [ ] Headless-ready plans must be as granular as possible.
 - [ ] Headless must require two model roles: coder and reviewer/planner.
