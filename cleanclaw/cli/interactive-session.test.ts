@@ -55,7 +55,7 @@ describe('interactive session', () => {
       selectedPlan: null,
     });
     expect(questions[0]).toBe('What are we working on today? ');
-    expect(questions[1]).toContain("scope today's work");
+    expect(questions[1]).toContain('1. Use this project');
     expect(logger.records.map(record => String(record.message)).join('\n')).toContain('I will ask what we are working on');
     expect(loadTaskState(tmpDir, 'task1')).toMatchObject({
       state: 'why_definition',
@@ -214,6 +214,29 @@ describe('interactive session', () => {
     expect(result.draftPlanPath).toBe(path.join(correctProject, 'plans', 'inprogress', '2026-05-24-fix-login-cache.md'));
     expect(result.mode).toBe('planning');
     expect(result.planChoice).toBe('new');
+  });
+
+  it('supports numbered project confirmation choices', async () => {
+    saveProjectSettings(tmpDir, createProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Demo',
+      updatedAt: '2026-05-24T00:00:00.000Z',
+    }));
+    const questions: string[] = [];
+    const answers = ['Fix login cache', '1', ''];
+
+    const result = await startInteractiveSession({
+      cwd: tmpDir,
+      logger: createMemoryLogger(),
+      ask: async question => {
+        questions.push(question);
+        return answers.shift() ?? '';
+      },
+    });
+
+    expect(result.projectConfirmed).toBe(true);
+    expect(questions[1]).toContain('1. Use this project');
+    expect(questions[1]).toContain('2. Choose another directory');
   });
 
   it('handles project questions in read-only mode without task records or plans', async () => {

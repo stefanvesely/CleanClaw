@@ -404,8 +404,8 @@ async function confirmProjectCandidate(options: {
   if (candidate) {
     logger.info(`Hi, I see we are in a project folder for ${candidate.projectName}.`);
     logger.info(formatProjectIntakeCandidate(candidate, taskDescription));
-    const confirm = await ask(`Do you want to scope today's work in this folder? [Y/n]: `);
-    if (isYes(confirm)) return candidate;
+    const confirm = parseNumberedPromptSelection(await ask(formatNumberedPrompt(projectConfirmPrompt())), projectConfirmPrompt());
+    if (isConfirmProject(confirm)) return candidate;
     logger.info('Project not confirmed. I need the correct project directory before I can inspect plans.');
   } else {
     logger.info('I do not know the project yet. I need the project directory before I can inspect plans.');
@@ -419,11 +419,39 @@ async function confirmProjectCandidate(options: {
   }
 
   logger.info(formatProjectIntakeCandidate(candidate, taskDescription));
-  const confirm = await ask('Use this project directory? [Y/n]: ');
-  if (isYes(confirm)) return candidate;
+  const confirm = parseNumberedPromptSelection(await ask(formatNumberedPrompt(projectConfirmPrompt())), projectConfirmPrompt());
+  if (isConfirmProject(confirm)) return candidate;
 
   logger.info('Project directory not confirmed. Nothing will change.');
   return null;
+}
+
+function projectConfirmPrompt() {
+  return {
+    question: 'Use this project directory for this task?',
+    options: [
+      {
+        id: 'use-project',
+        label: 'Use this project',
+        description: 'Scope this task in the shown project directory.',
+        recommended: true,
+      },
+      {
+        id: 'choose-another',
+        label: 'Choose another directory',
+        description: 'Enter a different project folder before planning.',
+      },
+    ],
+    defaultId: 'use-project',
+    allowNaturalLanguage: true,
+  };
+}
+
+function isConfirmProject(selection: ReturnType<typeof parseNumberedPromptSelection>): boolean {
+  if (selection.kind === 'option') return selection.option.id === 'use-project';
+  if (selection.kind !== 'natural-language') return false;
+
+  return isYes(selection.text);
 }
 
 function isYes(value: string): boolean {

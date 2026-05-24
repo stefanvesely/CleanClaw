@@ -623,6 +623,7 @@ What do you want to do?
 - [x] Added `cleanclaw/core/numbered-prompt.ts` with formatting and parsing for numbered choices, defaults, typed ids, controls, and natural-language fallback.
 - [x] Wired numbered choices into the top-level interactive session loop.
 - [x] Wired numbered choices into the existing-plan continue/new decision.
+- [x] Wired numbered choices into project directory confirmation prompts.
 
 ### Exit Criteria
 
