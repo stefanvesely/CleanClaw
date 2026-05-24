@@ -6,6 +6,10 @@ import { saveState } from '../core/state-manager.js';
 import { createProjectSettings, saveProjectSettings } from '../core/project-settings.js';
 import { appendToRegistry } from '../projectmap/project-registry.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
+import { detectProjectMarkers } from '../core/project-markers.js';
+import { formatNumberedPrompt, parseNumberedPromptSelection } from '../core/numbered-prompt.js';
+import { formatStackInference, inferProjectStack } from '../core/stack-inference.js';
+import { stackSelectionOptions } from '../core/stack-selection.js';
 import {
   CLEANCLAW_PROVIDER_METADATA,
   CLEANCLAW_WIZARD_PROVIDER_IDS,
@@ -81,8 +85,7 @@ async function runProjectInitFlow(
     projectName = await ask(rl, 'Project name (required): ');
   }
 
-  const stackRaw = await ask(rl, 'Stack (dotnet/svelte/angular/blazor) [dotnet]: ');
-  const stack = stackRaw || 'dotnet';
+  const stack = await askProjectStack(rl, logger);
 
   const globalConfig = JSON.parse(fs.readFileSync(GLOBAL_CONFIG_PATH, 'utf-8')) as Record<string, unknown>;
   const provider = (globalConfig.provider as string) || 'anthropic';
@@ -123,6 +126,7 @@ async function runProjectInitFlow(
     projectName,
     approvalGranularity,
     plansDir: './plans',
+    selectedStack: stack,
   }));
 
   saveState({
@@ -149,6 +153,38 @@ async function runProjectInitFlow(
   }
 
   logger.info('Run: cleanclaw run "Your task description"');
+}
+
+async function askProjectStack(rl: readline.Interface, logger: CleanClawLogger): Promise<string> {
+  const inference = inferProjectStack(detectProjectMarkers(process.cwd()));
+  if (!inference.bestGuess) {
+    const stackRaw = await ask(rl, 'Stack (dotnet/svelte/angular/blazor) [dotnet]: ');
+    return stackRaw || 'dotnet';
+  }
+
+  logger.info(formatStackInference(inference));
+  const prompt = {
+    question: 'Confirm the project stack CleanClaw should use.',
+    options: stackSelectionOptions(inference),
+    defaultId: inference.bestGuess.stack,
+    allowNaturalLanguage: true,
+  };
+  const selection = parseNumberedPromptSelection(await ask(rl, formatNumberedPrompt(prompt)), prompt);
+
+  if (selection.kind === 'option' && selection.option.id !== 'override') {
+    return selection.option.id;
+  }
+
+  if (selection.kind === 'natural-language' && selection.text.trim()) {
+    return selection.text.trim();
+  }
+
+  if (selection.kind === 'option' && selection.option.id === 'override') {
+    const override = await ask(rl, 'Stack id to use: ');
+    return override || inference.bestGuess.stack;
+  }
+
+  return inference.bestGuess.stack;
 }
 
 export async function runSetupWizard(

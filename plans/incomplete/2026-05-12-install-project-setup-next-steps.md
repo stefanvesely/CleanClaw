@@ -653,7 +653,7 @@ Project root selected
 - [x] Return ranked candidates with confidence, evidence, and ambiguity notes.
 - [x] Detect mixed-stack projects.
 - [x] Show best guess and evidence.
-- [ ] Ask user to approve or override with a numbered menu.
+- [x] Ask user to approve or override with a numbered menu.
 - [x] Store selected stack in project-local settings.
 - [ ] Expand agent routing beyond the current stack list.
 - [ ] Integrate stack inference with ProjectMap.
