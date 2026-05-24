@@ -574,8 +574,8 @@ Goal: users do not need to type provider ids, model names, stack ids, or approva
 ### Deliverables
 
 - [x] Add reusable numbered prompt helper.
-- [ ] Use numbered options at clear decision points, not as the default starting point for every interaction.
-- [ ] Keep normal interaction natural-language and status-aware by default.
+- [x] Use numbered options at clear decision points, not as the default starting point for every interaction.
+- [x] Keep normal interaction natural-language and status-aware by default.
 - [ ] Use numbered menus for major choices:
   - project directory choice
   - provider

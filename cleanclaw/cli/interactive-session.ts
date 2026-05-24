@@ -12,6 +12,7 @@ import { resolveActiveProject } from '../core/project-resolver.js';
 import { createDraftSessionPlan } from '../core/session-plan.js';
 import { createApprovedTaskWhy, draftTaskWhy, type TaskWhyIntake } from '../core/task-why.js';
 import { nextTaskId, saveTaskState } from '../core/task-records.js';
+import { formatNumberedPrompt, parseNumberedPromptSelection, type NumberedPromptOption } from '../core/numbered-prompt.js';
 
 export interface InteractiveSessionResult {
   taskDescription: string | null;
@@ -29,6 +30,7 @@ export interface InteractiveSessionResult {
 export interface InteractiveSessionOptions {
   cwd?: string;
   globalProject?: string | null;
+  initialTaskDescription?: string | null;
   ask?: (question: string) => Promise<string>;
   logger?: CleanClawLogger;
 }
@@ -45,9 +47,11 @@ export async function startInteractiveLoop(
   const logger = options.logger ?? createConsoleLogger();
   const sessions: InteractiveSessionResult[] = [];
   const maxTurns = options.maxTurns ?? Number.POSITIVE_INFINITY;
+  let queuedTask: string | null = null;
 
   while (sessions.length < maxTurns) {
-    const result = await startInteractiveSession({ ...options, ask, logger });
+    const result = await startInteractiveSession({ ...options, ask, logger, initialTaskDescription: queuedTask });
+    queuedTask = null;
     sessions.push(result);
 
     if (!result.taskDescription) {
@@ -55,10 +59,25 @@ export async function startInteractiveLoop(
       return { sessions, exited: true };
     }
 
-    const next = await ask('What next? [new/exit]: ');
-    if (isExit(next)) {
+    const nextSelection = parseNumberedPromptSelection(await ask(formatNumberedPrompt(nextActionPrompt())), {
+      question: 'What next?',
+      options: nextActionOptions(),
+      defaultId: 'new-task',
+      allowNaturalLanguage: true,
+    });
+
+    if (nextSelection.kind === 'control' && (nextSelection.control === 'exit' || nextSelection.control === 'cancel')) {
       logger.info('Leaving CleanClaw session.');
       return { sessions, exited: true };
+    }
+
+    if (nextSelection.kind === 'option' && nextSelection.option.id === 'exit') {
+      logger.info('Leaving CleanClaw session.');
+      return { sessions, exited: true };
+    }
+
+    if (nextSelection.kind === 'natural-language') {
+      queuedTask = nextSelection.text;
     }
 
     logger.info('Continuing CleanClaw session.');
@@ -77,7 +96,7 @@ export async function startInteractiveSession(
   logger.info('CleanClaw is ready.');
   logger.info('I will ask what we are working on before assuming which project is correct.');
 
-  const taskDescription = await ask('What are we working on today? ');
+  const taskDescription = options.initialTaskDescription ?? await ask('What are we working on today? ');
   if (!taskDescription.trim()) {
     logger.info('No task captured. Nothing will change.');
     return {
@@ -253,6 +272,31 @@ export async function startInteractiveSession(
     planChoice: null,
     selectedPlan: null,
   };
+}
+
+function nextActionPrompt() {
+  return {
+    question: 'What next?',
+    options: nextActionOptions(),
+    defaultId: 'new-task',
+    allowNaturalLanguage: true,
+  };
+}
+
+function nextActionOptions(): NumberedPromptOption[] {
+  return [
+    {
+      id: 'new-task',
+      label: 'Start or continue work',
+      description: 'Describe the next task or project question.',
+      recommended: true,
+    },
+    {
+      id: 'exit',
+      label: 'Exit CleanClaw',
+      description: 'Leave this interactive session.',
+    },
+  ];
 }
 
 async function createNewDraftPlan(input: {

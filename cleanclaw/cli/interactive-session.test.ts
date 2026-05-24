@@ -237,7 +237,7 @@ describe('interactive session', () => {
       updatedAt: '2026-05-24T00:00:00.000Z',
     }));
     const answers = [
-      'Fix login cache', 'y', '', '', '', 'new',
+      'Fix login cache', 'y', '', '', '', '',
       'What stack does this project use?', 'y', 'exit',
     ];
 
@@ -252,6 +252,31 @@ describe('interactive session', () => {
     expect(result.exited).toBe(true);
     expect(result.sessions).toHaveLength(2);
     expect(result.sessions[0].mode).toBe('planning');
+    expect(result.sessions[1].mode).toBe('read-only-question');
+  });
+
+  it('accepts natural language at the top-level numbered menu as the next task', async () => {
+    saveProjectSettings(tmpDir, createProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Demo',
+      updatedAt: '2026-05-24T00:00:00.000Z',
+    }));
+    const answers = [
+      'Fix login cache', 'y', '', '', '',
+      'What stack does this project use?', 'y', '2',
+    ];
+
+    const result = await startInteractiveLoop({
+      cwd: tmpDir,
+      globalProject: null,
+      logger: createMemoryLogger(),
+      ask: async () => answers.shift() ?? '',
+      maxTurns: 3,
+    });
+
+    expect(result.exited).toBe(true);
+    expect(result.sessions).toHaveLength(2);
+    expect(result.sessions[1].taskDescription).toBe('What stack does this project use?');
     expect(result.sessions[1].mode).toBe('read-only-question');
   });
 });
