@@ -434,7 +434,7 @@ cleanclaw starts
 - [x] Support low-token fix and full-fix plan variants.
 - [x] Track plan statuses: draft, needs-user-review, approved, ready-for-execution, blocked, cancelled, complete.
 - [x] Move completed plans into a completed folder.
-- [ ] Compare plans by token cost, safety, speed, maintainability, risk, and scope size.
+- [x] Compare plans by token cost, safety, speed, maintainability, risk, and scope size.
 - [ ] Recommend a plan only when there is a clear winner; otherwise present tradeoffs and leave the choice to the user.
 - [x] Create task record immediately after intake.
 - [x] Create plan file before implementation.
@@ -491,6 +491,7 @@ cleanclaw starts
 - [x] Added headless plan preparation gating so approved plans can become `ready-for-execution` only after required headless metadata is present.
 - [x] Added grouped plan discovery so multiple plans are visible by task with numbered choices across same-task and different-task plans.
 - [x] Added low-token and full-fix plan variant definitions with numbered formatting, token profile, intent, and tradeoffs.
+- [x] Added plan comparison scoring and formatting across token cost, safety, speed, maintainability, risk, and scope size.
 
 ### Root Behavior
 
