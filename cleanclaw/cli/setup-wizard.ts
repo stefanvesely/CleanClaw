@@ -5,11 +5,17 @@ import readline from 'readline';
 import { saveState } from '../core/state-manager.js';
 import { createProjectSettings, saveProjectSettings } from '../core/project-settings.js';
 import { appendToRegistry } from '../projectmap/project-registry.js';
+import type { CleanClawConfig } from '../config/config-schema.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
 import { detectProjectMarkers } from '../core/project-markers.js';
 import { formatNumberedPrompt, parseNumberedPromptSelection } from '../core/numbered-prompt.js';
 import { formatStackInference, inferProjectStack } from '../core/stack-inference.js';
 import { stackSelectionOptions } from '../core/stack-selection.js';
+import {
+  createProjectMapFreshnessPrompt,
+  formatProjectMapFreshnessSummary,
+} from '../projectmap/freshness-decision.js';
+import { inspectProjectMapFreshness } from '../projectmap/manifest.js';
 import {
   CLEANCLAW_PROVIDER_METADATA,
   CLEANCLAW_WIZARD_PROVIDER_IDS,
@@ -145,14 +151,45 @@ async function runProjectInitFlow(
   logger.info(`\nInitialised. Config written to cleanclaw.config.json`);
 
   if (config.embeddings) {
-    const buildNow = await ask(rl, '\nBuild ProjectMap index now? (recommended) [y/n]: ');
-    if (buildNow.toLowerCase() === 'y') {
-      const { build } = await import('../projectmap/build.js');
-      await build(process.cwd(), config as unknown as import('../config/config-schema.js').CleanClawConfig, logger);
-    }
+    await askProjectMapBuildDecision(rl, config as unknown as CleanClawConfig, logger);
   }
 
   logger.info('Run: cleanclaw run "Your task description"');
+}
+
+async function askProjectMapBuildDecision(
+  rl: readline.Interface,
+  config: CleanClawConfig,
+  logger: CleanClawLogger,
+): Promise<void> {
+  const freshness = inspectProjectMapFreshness(process.cwd());
+  logger.info(`\n${formatProjectMapFreshnessSummary(freshness)}`);
+
+  const prompt = createProjectMapFreshnessPrompt(freshness);
+  if (!prompt) return;
+
+  let selection = parseNumberedPromptSelection(await ask(rl, formatNumberedPrompt(prompt)), prompt);
+  while (selection.kind === 'invalid' || selection.kind === 'natural-language' || selection.kind === 'control') {
+    if (selection.kind === 'control' && (selection.control === 'cancel' || selection.control === 'exit')) {
+      logger.info('ProjectMap build skipped.');
+      return;
+    }
+    const retry = selection.kind === 'invalid' ? `\n${selection.reason}\n` : '\nPlease choose one of the numbered options.\n';
+    selection = parseNumberedPromptSelection(await ask(rl, `${retry}${formatNumberedPrompt(prompt)}`), prompt);
+  }
+
+  if (selection.option.id === 'build' || selection.option.id === 'rebuild') {
+    const { build } = await import('../projectmap/build.js');
+    await build(process.cwd(), config, logger);
+    return;
+  }
+
+  if (selection.option.id === 'continue-stale') {
+    logger.info('Continuing with the existing stale ProjectMap for now.');
+    return;
+  }
+
+  logger.info('ProjectMap build skipped.');
 }
 
 async function askProjectStack(rl: readline.Interface, logger: CleanClawLogger): Promise<string> {
