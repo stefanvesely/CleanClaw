@@ -495,6 +495,7 @@ cleanclaw starts
 - [x] Added plan recommendation boundaries so CleanClaw recommends only on a clear score gap and otherwise leaves the choice to the user.
 - [x] Added approval-gated project discovery so folder scanning can find candidate projects only after explicit user approval.
 - [x] Added project working context helpers so CleanClaw can tell whether the current folder is the project root, a nested project folder, or outside the active project.
+- [x] Added an interactive session loop so no-arg `cleanclaw` keeps accepting work until the user exits.
 
 ### Root Behavior
 
@@ -503,7 +504,7 @@ cleanclaw starts
 - [x] If launched outside a project, it asks for the project directory.
 - [x] Folder scanning can help find projects, but only after user approval.
 - [x] Once attached, CleanClaw works naturally inside the project folder.
-- [ ] The user should not need to repeatedly type `cleanclaw ...` during an active session.
+- [x] The user should not need to repeatedly type `cleanclaw ...` during an active session.
 
 ### Headless Planning Behavior
 

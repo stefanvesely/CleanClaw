@@ -33,6 +33,40 @@ export interface InteractiveSessionOptions {
   logger?: CleanClawLogger;
 }
 
+export interface InteractiveLoopResult {
+  sessions: InteractiveSessionResult[];
+  exited: boolean;
+}
+
+export async function startInteractiveLoop(
+  options: InteractiveSessionOptions & { maxTurns?: number } = {},
+): Promise<InteractiveLoopResult> {
+  const ask = options.ask ?? defaultAsk;
+  const logger = options.logger ?? createConsoleLogger();
+  const sessions: InteractiveSessionResult[] = [];
+  const maxTurns = options.maxTurns ?? Number.POSITIVE_INFINITY;
+
+  while (sessions.length < maxTurns) {
+    const result = await startInteractiveSession({ ...options, ask, logger });
+    sessions.push(result);
+
+    if (!result.taskDescription) {
+      logger.info('Leaving CleanClaw session.');
+      return { sessions, exited: true };
+    }
+
+    const next = await ask('What next? [new/exit]: ');
+    if (isExit(next)) {
+      logger.info('Leaving CleanClaw session.');
+      return { sessions, exited: true };
+    }
+
+    logger.info('Continuing CleanClaw session.');
+  }
+
+  return { sessions, exited: false };
+}
+
 export async function startInteractiveSession(
   options: InteractiveSessionOptions = {},
 ): Promise<InteractiveSessionResult> {
@@ -327,6 +361,11 @@ async function confirmProjectCandidate(options: {
 function isYes(value: string): boolean {
   const trimmed = value.trim().toLowerCase();
   return trimmed === '' || trimmed === 'y' || trimmed === 'yes';
+}
+
+function isExit(value: string): boolean {
+  const trimmed = value.trim().toLowerCase();
+  return trimmed === 'exit' || trimmed === 'quit' || trimmed === 'q' || trimmed === 'n' || trimmed === 'no';
 }
 
 async function defaultAsk(question: string): Promise<string> {

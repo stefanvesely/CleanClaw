@@ -8,8 +8,8 @@ program
 
 program
   .action(async () => {
-    const { startInteractiveSession } = await import("../dist/cleanclaw/cli/interactive-session.js");
-    await startInteractiveSession();
+    const { startInteractiveLoop } = await import("../dist/cleanclaw/cli/interactive-session.js");
+    await startInteractiveLoop();
   });
 
 program

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createMemoryLogger } from '../core/logger.js';
 import { createProjectSettings, saveProjectSettings } from '../core/project-settings.js';
 import { loadTaskState } from '../core/task-records.js';
-import { startInteractiveSession } from './interactive-session.js';
+import { startInteractiveLoop, startInteractiveSession } from './interactive-session.js';
 
 describe('interactive session', () => {
   let tmpDir: string;
@@ -49,7 +49,7 @@ describe('interactive session', () => {
       },
       taskId: 'task1',
       taskStatePath: path.join(tmpDir, '.cleanclaw', 'tasks', 'task1', 'state.json'),
-      draftPlanPath: path.join(tmpDir, 'plans', 'inprogress', '2026-05-20-fix-login-cache.md'),
+      draftPlanPath: path.join(tmpDir, 'plans', 'inprogress', '2026-05-24-fix-login-cache.md'),
       mode: 'planning',
       planChoice: 'new',
       selectedPlan: null,
@@ -150,7 +150,7 @@ describe('interactive session', () => {
       },
       taskId: 'task1',
       taskStatePath: path.join(projectDir, '.cleanclaw', 'tasks', 'task1', 'state.json'),
-      draftPlanPath: path.join(projectDir, 'plans', 'inprogress', '2026-05-20-fix-login-cache.md'),
+      draftPlanPath: path.join(projectDir, 'plans', 'inprogress', '2026-05-24-fix-login-cache.md'),
       mode: 'planning',
       planChoice: 'new',
       selectedPlan: null,
@@ -180,7 +180,7 @@ describe('interactive session', () => {
     expect(result.projectConfirmed).toBe(true);
     expect(result.taskWhy?.approved).toBe(true);
     expect(result.taskId).toBe('task1');
-    expect(result.draftPlanPath).toBe(path.join(correctProject, 'plans', 'inprogress', '2026-05-20-fix-login-cache.md'));
+    expect(result.draftPlanPath).toBe(path.join(correctProject, 'plans', 'inprogress', '2026-05-24-fix-login-cache.md'));
     expect(result.mode).toBe('planning');
     expect(result.planChoice).toBe('new');
   });
@@ -228,5 +228,30 @@ describe('interactive session', () => {
     expect(result.taskDescription).toBeNull();
     expect(result.projectConfirmed).toBe(false);
     expect(result.mode).toBeNull();
+  });
+
+  it('keeps an active session open for another task until the user exits', async () => {
+    saveProjectSettings(tmpDir, createProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Demo',
+      updatedAt: '2026-05-24T00:00:00.000Z',
+    }));
+    const answers = [
+      'Fix login cache', 'y', '', '', '', 'new',
+      'What stack does this project use?', 'y', 'exit',
+    ];
+
+    const result = await startInteractiveLoop({
+      cwd: tmpDir,
+      globalProject: null,
+      logger: createMemoryLogger(),
+      ask: async () => answers.shift() ?? '',
+      maxTurns: 3,
+    });
+
+    expect(result.exited).toBe(true);
+    expect(result.sessions).toHaveLength(2);
+    expect(result.sessions[0].mode).toBe('planning');
+    expect(result.sessions[1].mode).toBe('read-only-question');
   });
 });
