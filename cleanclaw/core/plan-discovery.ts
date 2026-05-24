@@ -6,8 +6,14 @@ export interface InProgressPlanSummary {
   filepath: string;
   title: string;
   status: string;
+  taskId: string;
   preview: string;
   updatedAt: string;
+}
+
+export interface PlanTaskGroup {
+  taskId: string;
+  plans: InProgressPlanSummary[];
 }
 
 export function listInProgressPlans(projectRoot: string): InProgressPlanSummary[] {
@@ -23,6 +29,22 @@ export function listInProgressPlans(projectRoot: string): InProgressPlanSummary[
     .sort((a, b) => a.filename.localeCompare(b.filename));
 }
 
+export function groupPlansByTask(plans: InProgressPlanSummary[]): PlanTaskGroup[] {
+  const groups = new Map<string, InProgressPlanSummary[]>();
+
+  for (const plan of plans) {
+    const taskId = plan.taskId || 'unassigned';
+    groups.set(taskId, [...(groups.get(taskId) ?? []), plan]);
+  }
+
+  return [...groups.entries()]
+    .map(([taskId, taskPlans]) => ({
+      taskId,
+      plans: taskPlans.sort((a, b) => a.filename.localeCompare(b.filename)),
+    }))
+    .sort((a, b) => a.taskId.localeCompare(b.taskId));
+}
+
 export function formatInProgressPlanChoices(plans: InProgressPlanSummary[]): string {
   if (plans.length === 0) {
     return 'No in-progress plans found.';
@@ -36,6 +58,29 @@ export function formatInProgressPlanChoices(plans: InProgressPlanSummary[]): str
   ].join('\n')).join('\n');
 }
 
+export function formatGroupedPlanChoices(groups: PlanTaskGroup[]): string {
+  if (groups.length === 0) {
+    return 'No in-progress plans found.';
+  }
+
+  let option = 1;
+  return groups.map(group => {
+    const lines = [`Task: ${group.taskId}`];
+
+    for (const plan of group.plans) {
+      lines.push(
+        `${option}. ${plan.title}`,
+        `   File: ${plan.filename}`,
+        `   Status: ${plan.status}`,
+        `   Preview: ${plan.preview}`,
+      );
+      option += 1;
+    }
+
+    return lines.join('\n');
+  }).join('\n\n');
+}
+
 function summarizePlan(filepath: string): InProgressPlanSummary {
   const content = fs.readFileSync(filepath, 'utf-8');
   const lines = content.split(/\r?\n/);
@@ -44,6 +89,8 @@ function summarizePlan(filepath: string): InProgressPlanSummary {
     || path.basename(filepath, '.md');
   const status = lines.find(line => /^Status:/i.test(line))?.replace(/^Status:\s*/i, '').trim()
     || 'unknown';
+  const taskId = lines.find(line => /^Task ID:/i.test(line))?.replace(/^Task ID:\s*/i, '').trim()
+    || 'unassigned';
   const preview = lines
     .filter(line => line.trim() && !line.startsWith('#') && !/^Status:/i.test(line))
     .slice(0, 2)
@@ -56,6 +103,7 @@ function summarizePlan(filepath: string): InProgressPlanSummary {
     filepath,
     title,
     status,
+    taskId,
     preview,
     updatedAt: stat.mtime.toISOString(),
   };
