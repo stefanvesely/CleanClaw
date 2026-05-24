@@ -501,6 +501,7 @@ cleanclaw starts
 - [x] Added headless plan granularity checks for bounded steps with their own why, files, validation, and stop condition.
 - [x] Added headless model role validation requiring coder and reviewer/planner model roles.
 - [x] Added headless coder task packages so coder models receive only one selected granular step, not sibling plan context.
+- [x] Added headless local-first coder routing for small, low-risk, tightly scoped tasks.
 
 ### Root Behavior
 
@@ -521,8 +522,8 @@ cleanclaw starts
 - [x] Headless-ready plans must be as granular as possible.
 - [x] Headless must require two model roles: coder and reviewer/planner.
 - [x] Headless coder receives only one single task at a time, not the full scope.
-- [ ] Smaller code tasks can use a local model as coder.
-- [ ] Local-first applies to small headless code tasks.
+- [x] Smaller code tasks can use a local model as coder.
+- [x] Local-first applies to small headless code tasks.
 - [ ] Reviewer/planner can make bounded decisions from the approved why.
 - [ ] Blocked headless execution highlights the blocker, allows interaction, and creates a report.
 - [ ] Headless stops and reports when it cannot continue within approved plan, scope, why, model policy, validation policy, or runtime policy.
