@@ -500,6 +500,7 @@ cleanclaw starts
 - [x] Added a headless execution policy check requiring ready plan status, explicit opt-in, and coder/reviewer roles.
 - [x] Added headless plan granularity checks for bounded steps with their own why, files, validation, and stop condition.
 - [x] Added headless model role validation requiring coder and reviewer/planner model roles.
+- [x] Added headless coder task packages so coder models receive only one selected granular step, not sibling plan context.
 
 ### Root Behavior
 
@@ -519,7 +520,7 @@ cleanclaw starts
 - [x] Headless execution can only run plans marked `ready-for-execution`.
 - [x] Headless-ready plans must be as granular as possible.
 - [x] Headless must require two model roles: coder and reviewer/planner.
-- [ ] Headless coder receives only one single task at a time, not the full scope.
+- [x] Headless coder receives only one single task at a time, not the full scope.
 - [ ] Smaller code tasks can use a local model as coder.
 - [ ] Local-first applies to small headless code tasks.
 - [ ] Reviewer/planner can make bounded decisions from the approved why.
