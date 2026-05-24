@@ -429,7 +429,7 @@ cleanclaw starts
 - [x] Map natural user requests onto planning/review actions while still showing numbered choices at decision points.
 - [x] Let the user ask project questions, workflow questions, planning questions, or anything project-related.
 - [x] Let the user create multiple approved plans for later execution.
-- [ ] Let the user prepare multiple approved plans for headless execution.
+- [x] Let the user prepare multiple approved plans for headless execution.
 - [ ] Support multiple plans for the same task and different tasks in a project session.
 - [ ] Support low-token fix and full-fix plan variants.
 - [x] Track plan statuses: draft, needs-user-review, approved, ready-for-execution, blocked, cancelled, complete.
@@ -488,6 +488,7 @@ cleanclaw starts
 - [x] Updated `listInProgressPlans` in `plan-discovery.ts` to filter out plans with terminal statuses (complete, cancelled).
 - [x] Added `plan-status.test.ts`, `plan-lifecycle.test.ts`, and extended `plan-discovery.test.ts` with plan lifecycle tests.
 - [x] Added approved session plan creation so multiple approved plans can sit side by side in `plans/inprogress/` without overwriting one another.
+- [x] Added headless plan preparation gating so approved plans can become `ready-for-execution` only after required headless metadata is present.
 
 ### Root Behavior
 
@@ -501,10 +502,10 @@ cleanclaw starts
 ### Headless Planning Behavior
 
 - [ ] Planning cannot be headless.
-- [ ] The user can create multiple approved plans for future headless execution.
-- [ ] Each headless plan needs its own approved why, scope tree, risk limits, validation policy, storage policy, model policy, and stop conditions.
+- [x] The user can create multiple approved plans for future headless execution.
+- [x] Each headless plan needs its own approved why, scope tree, risk limits, validation policy, storage policy, model policy, and stop conditions.
 - [ ] Headless execution remains opt-in and requires coder/reviewer model roles.
-- [ ] Headless execution can only run plans marked `ready-for-execution`.
+- [x] Headless execution can only run plans marked `ready-for-execution`.
 - [ ] Headless-ready plans must be as granular as possible.
 - [ ] Headless must require two model roles: coder and reviewer/planner.
 - [ ] Headless coder receives only one single task at a time, not the full scope.
