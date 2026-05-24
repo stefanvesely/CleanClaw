@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createDraftSessionPlan } from './session-plan.js';
+import { createApprovedSessionPlan, createDraftSessionPlan } from './session-plan.js';
 
 describe('session draft plan', () => {
   let tmpDir: string;
@@ -66,5 +66,29 @@ describe('session draft plan', () => {
     expect(fs.readFileSync(filepath, 'utf-8')).toContain(
       '- src/auth/login-cache.ts (edit): aligned - Updates login cache reliability.',
     );
+  });
+
+  it('creates multiple approved plans without overwriting existing plans', () => {
+    const input = {
+      projectRoot: tmpDir,
+      taskDescription: 'Fix login cache',
+      taskWhy: {
+        text: 'Keep login cache reliable',
+        approved: true,
+        approvedByUserText: 'yes',
+      },
+      requester: 'Mali',
+      beneficiary: 'Support users',
+      taskId: 'task1',
+      createdAt: '2026-05-20T00:00:00.000Z',
+    };
+
+    const first = createApprovedSessionPlan(input);
+    const second = createApprovedSessionPlan(input);
+
+    expect(first).toBe(path.join(tmpDir, 'plans', 'inprogress', '2026-05-20-fix-login-cache.md'));
+    expect(second).toBe(path.join(tmpDir, 'plans', 'inprogress', '2026-05-20-fix-login-cache-2.md'));
+    expect(fs.readFileSync(first, 'utf-8')).toContain('Status: approved');
+    expect(fs.readFileSync(second, 'utf-8')).toContain('Status: approved');
   });
 });

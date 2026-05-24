@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import type { TaskWhyIntake } from './task-why.js';
 import { assessScopeWhyAlignments, formatScopeWhyAlignments, type ProposedScopeItem } from './why-alignment.js';
+import type { PlanStatus } from './plan-status.js';
 
 export interface DraftSessionPlanInput {
   projectRoot: string;
@@ -12,9 +13,18 @@ export interface DraftSessionPlanInput {
   taskId: string;
   plannedScopeItems?: ProposedScopeItem[];
   createdAt?: string;
+  status?: Extract<PlanStatus, 'draft' | 'approved' | 'ready-for-execution'>;
 }
 
 export function createDraftSessionPlan(input: DraftSessionPlanInput): string {
+  return createSessionPlan({ ...input, status: 'draft' });
+}
+
+export function createApprovedSessionPlan(input: Omit<DraftSessionPlanInput, 'status'>): string {
+  return createSessionPlan({ ...input, status: 'approved' });
+}
+
+function createSessionPlan(input: DraftSessionPlanInput): string {
   const createdAt = input.createdAt ?? new Date().toISOString();
   const plansDir = path.join(input.projectRoot, 'plans', 'inprogress');
   fs.mkdirSync(plansDir, { recursive: true });
@@ -26,6 +36,7 @@ export function createDraftSessionPlan(input: DraftSessionPlanInput): string {
 }
 
 export function formatDraftSessionPlan(input: DraftSessionPlanInput & { createdAt: string }): string {
+  const status = input.status ?? 'draft';
   const scopeAlignments = assessScopeWhyAlignments({
     approvedWhy: input.taskWhy,
     items: input.plannedScopeItems ?? [],
@@ -35,7 +46,7 @@ export function formatDraftSessionPlan(input: DraftSessionPlanInput & { createdA
     `# ${input.taskDescription.trim()}`,
     '',
     `Created: ${input.createdAt}`,
-    'Status: draft',
+    `Status: ${status}`,
     `Task ID: ${input.taskId}`,
     `Requester: ${input.requester.trim() || 'not specified'}`,
     `Beneficiary: ${input.beneficiary.trim() || 'not specified'}`,

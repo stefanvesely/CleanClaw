@@ -428,7 +428,7 @@ cleanclaw starts
 - [x] Show "what CleanClaw knows" and "what CleanClaw needs confirmed" in planning output.
 - [x] Map natural user requests onto planning/review actions while still showing numbered choices at decision points.
 - [x] Let the user ask project questions, workflow questions, planning questions, or anything project-related.
-- [ ] Let the user create multiple approved plans for later execution.
+- [x] Let the user create multiple approved plans for later execution.
 - [ ] Let the user prepare multiple approved plans for headless execution.
 - [ ] Support multiple plans for the same task and different tasks in a project session.
 - [ ] Support low-token fix and full-fix plan variants.
@@ -487,6 +487,7 @@ cleanclaw starts
 - [x] Added `cleanclaw/core/plan-lifecycle.ts` with `completePlan()` to move plans from inprogress to complete with status update.
 - [x] Updated `listInProgressPlans` in `plan-discovery.ts` to filter out plans with terminal statuses (complete, cancelled).
 - [x] Added `plan-status.test.ts`, `plan-lifecycle.test.ts`, and extended `plan-discovery.test.ts` with plan lifecycle tests.
+- [x] Added approved session plan creation so multiple approved plans can sit side by side in `plans/inprogress/` without overwriting one another.
 
 ### Root Behavior
 
