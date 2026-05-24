@@ -50,7 +50,6 @@ export function saveTable(
   rows: StoreRow[],
   vectors: number[][]
 ): void {
-  if (vectors.length === 0) return;
   mkdirSync(storeDir, { recursive: true });
   writeFileSync(indexPath(storeDir, layer), JSON.stringify(vectors, null, 2), "utf-8");
   writeFileSync(metaPath(storeDir, layer), JSON.stringify(rows, null, 2), "utf-8");

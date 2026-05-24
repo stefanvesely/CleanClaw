@@ -660,8 +660,8 @@ Project root selected
 - [x] Add ProjectMap freshness manifest.
 - [x] Reuse existing ProjectMap when fresh.
 - [x] Ask before building or rebuilding ProjectMap.
-- [ ] Incrementally update ProjectMap after task completion.
-- [ ] Make ProjectMap updater use local embedding defaults even when explicit `embeddings` config is absent.
+- [x] Incrementally update ProjectMap after task completion.
+- [x] Make ProjectMap updater use local embedding defaults even when explicit `embeddings` config is absent.
 
 ### ProjectMap Manifest
 
@@ -686,6 +686,8 @@ Storage note: existing ProjectMap build/update code and the new manifest helper 
 
 Freshness prompt note: setup now inspects the ProjectMap manifest before building. Fresh ProjectMap is reused without rebuilding, missing ProjectMap asks before build, and stale ProjectMap asks before rebuild, continue-stale, or skip.
 
+Incremental update note: the existing post-change ProjectMap hook now runs when `projectMap.enabled` is true even if explicit `embeddings` config is absent, uses local embedding defaults through `getProvider`, removes deleted files from backend/frontend/mediator/misc tables, and refreshes the manifest after updates.
+
 ### ProjectMap Storage Policy
 
 - [x] ProjectMap/vector files are per-project and live under `.cleanclaw/projectmap/`.
@@ -704,7 +706,7 @@ Freshness prompt note: setup now inspects the ProjectMap manifest before buildin
 ### ProjectMap Freshness Behavior
 
 - [x] If ProjectMap exists and manifest matches the current project state, reuse it.
-- [ ] If files changed, update only changed files.
+- [x] If files changed, update only changed files.
 - [ ] If embedding model/provider changed, ask before rebuilding.
 - [x] If ProjectMap is missing, ask to build it.
 - [ ] If ProjectMap is stale, show:
@@ -782,11 +784,11 @@ Stack inference must not become permission creep. Detecting a database, deployme
 - [x] Missing ProjectMap asks before build.
 - [x] Fresh ProjectMap is reused.
 - [ ] Stale ProjectMap offers update/rebuild/stale/skip choices.
-- [ ] Changed files update incrementally after task completion.
-- [ ] New files are added to ProjectMap after task completion.
-- [ ] Deleted files are removed from ProjectMap.
+- [x] Changed files update incrementally after task completion.
+- [x] New files are added to ProjectMap after task completion.
+- [x] Deleted files are removed from ProjectMap.
 - [ ] ProjectMap above 50 MB triggers storage-policy prompt.
-- [ ] Updater defaults to local embeddings when explicit embeddings config is missing.
+- [x] Updater defaults to local embeddings when explicit embeddings config is missing.
 
 ### Exit Criteria
 

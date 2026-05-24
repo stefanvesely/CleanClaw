@@ -8,7 +8,8 @@ export async function triggerProjectMapUpdate(
   config: CleanClawConfig,
   logger: CleanClawLogger = createConsoleLogger(),
 ): Promise<void> {
-  if (!config.embeddings) return;
+  if (config.projectMap?.enabled === false) return;
+  if (!config.projectMap?.enabled && !config.embeddings) return;
 
   try {
     await update(projectRoot, filePath, config, logger);
