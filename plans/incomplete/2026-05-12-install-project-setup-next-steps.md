@@ -431,7 +431,7 @@ cleanclaw starts
 - [x] Let the user create multiple approved plans for later execution.
 - [x] Let the user prepare multiple approved plans for headless execution.
 - [x] Support multiple plans for the same task and different tasks in a project session.
-- [ ] Support low-token fix and full-fix plan variants.
+- [x] Support low-token fix and full-fix plan variants.
 - [x] Track plan statuses: draft, needs-user-review, approved, ready-for-execution, blocked, cancelled, complete.
 - [x] Move completed plans into a completed folder.
 - [ ] Compare plans by token cost, safety, speed, maintainability, risk, and scope size.
@@ -490,6 +490,7 @@ cleanclaw starts
 - [x] Added approved session plan creation so multiple approved plans can sit side by side in `plans/inprogress/` without overwriting one another.
 - [x] Added headless plan preparation gating so approved plans can become `ready-for-execution` only after required headless metadata is present.
 - [x] Added grouped plan discovery so multiple plans are visible by task with numbered choices across same-task and different-task plans.
+- [x] Added low-token and full-fix plan variant definitions with numbered formatting, token profile, intent, and tradeoffs.
 
 ### Root Behavior
 
