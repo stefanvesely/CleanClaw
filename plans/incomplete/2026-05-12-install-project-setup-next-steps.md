@@ -493,13 +493,14 @@ cleanclaw starts
 - [x] Added low-token and full-fix plan variant definitions with numbered formatting, token profile, intent, and tradeoffs.
 - [x] Added plan comparison scoring and formatting across token cost, safety, speed, maintainability, risk, and scope size.
 - [x] Added plan recommendation boundaries so CleanClaw recommends only on a clear score gap and otherwise leaves the choice to the user.
+- [x] Added approval-gated project discovery so folder scanning can find candidate projects only after explicit user approval.
 
 ### Root Behavior
 
 - [x] CleanClaw can launch from anywhere.
 - [x] If launched inside a project, it suggests the current folder and asks the user to confirm.
 - [x] If launched outside a project, it asks for the project directory.
-- [ ] Folder scanning can help find projects, but only after user approval.
+- [x] Folder scanning can help find projects, but only after user approval.
 - [ ] Once attached, CleanClaw works naturally inside the project folder.
 - [ ] The user should not need to repeatedly type `cleanclaw ...` during an active session.
 
