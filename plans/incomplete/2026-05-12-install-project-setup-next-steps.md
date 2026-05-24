@@ -505,6 +505,7 @@ cleanclaw starts
 - [x] Added a bounded headless reviewer decision gate based on approved options and why alignment.
 - [x] Added blocked headless execution reports with a highlighted blocker and numbered user interaction choices.
 - [x] Added headless stop-policy reporting for approved-plan, scope, why, model-policy, validation-policy, and runtime-policy violations.
+- [x] Added a hard headless git policy guard that rejects commits during headless execution.
 
 ### Root Behavior
 
@@ -530,7 +531,7 @@ cleanclaw starts
 - [x] Reviewer/planner can make bounded decisions from the approved why.
 - [x] Blocked headless execution highlights the blocker, allows interaction, and creates a report.
 - [x] Headless stops and reports when it cannot continue within approved plan, scope, why, model policy, validation policy, or runtime policy.
-- [ ] Headless must never commit; commits remain explicit user actions outside headless execution.
+- [x] Headless must never commit; commits remain explicit user actions outside headless execution.
 
 ### Tests
 
