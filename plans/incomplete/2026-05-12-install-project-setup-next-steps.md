@@ -435,7 +435,7 @@ cleanclaw starts
 - [x] Track plan statuses: draft, needs-user-review, approved, ready-for-execution, blocked, cancelled, complete.
 - [x] Move completed plans into a completed folder.
 - [x] Compare plans by token cost, safety, speed, maintainability, risk, and scope size.
-- [ ] Recommend a plan only when there is a clear winner; otherwise present tradeoffs and leave the choice to the user.
+- [x] Recommend a plan only when there is a clear winner; otherwise present tradeoffs and leave the choice to the user.
 - [x] Create task record immediately after intake.
 - [x] Create plan file before implementation.
 - [x] Prevent edits while in planning states.
@@ -492,6 +492,7 @@ cleanclaw starts
 - [x] Added grouped plan discovery so multiple plans are visible by task with numbered choices across same-task and different-task plans.
 - [x] Added low-token and full-fix plan variant definitions with numbered formatting, token profile, intent, and tradeoffs.
 - [x] Added plan comparison scoring and formatting across token cost, safety, speed, maintainability, risk, and scope size.
+- [x] Added plan recommendation boundaries so CleanClaw recommends only on a clear score gap and otherwise leaves the choice to the user.
 
 ### Root Behavior
 
