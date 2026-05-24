@@ -496,6 +496,7 @@ cleanclaw starts
 - [x] Added approval-gated project discovery so folder scanning can find candidate projects only after explicit user approval.
 - [x] Added project working context helpers so CleanClaw can tell whether the current folder is the project root, a nested project folder, or outside the active project.
 - [x] Added an interactive session loop so no-arg `cleanclaw` keeps accepting work until the user exits.
+- [x] Added a headless planning guard so intake, why, scope, plan, and plan approval phases cannot run headless.
 
 ### Root Behavior
 
@@ -508,7 +509,7 @@ cleanclaw starts
 
 ### Headless Planning Behavior
 
-- [ ] Planning cannot be headless.
+- [x] Planning cannot be headless.
 - [x] The user can create multiple approved plans for future headless execution.
 - [x] Each headless plan needs its own approved why, scope tree, risk limits, validation policy, storage policy, model policy, and stop conditions.
 - [ ] Headless execution remains opt-in and requires coder/reviewer model roles.
