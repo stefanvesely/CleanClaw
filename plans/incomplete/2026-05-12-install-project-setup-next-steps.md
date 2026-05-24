@@ -573,7 +573,7 @@ Goal: users do not need to type provider ids, model names, stack ids, or approva
 
 ### Deliverables
 
-- [ ] Add reusable numbered prompt helper.
+- [x] Add reusable numbered prompt helper.
 - [ ] Use numbered options at clear decision points, not as the default starting point for every interaction.
 - [ ] Keep normal interaction natural-language and status-aware by default.
 - [ ] Use numbered menus for major choices:
@@ -586,13 +586,13 @@ Goal: users do not need to type provider ids, model names, stack ids, or approva
   - model escalation preference
   - headless setup
   - validation command approval
-- [ ] Enter selects the recommended default where appropriate.
-- [ ] Explain why an option is recommended.
-- [ ] Advanced users can type exact ids.
-- [ ] Unknown text and out-of-range numbers retry clearly.
-- [ ] Menus render cleanly in PowerShell, cmd, and POSIX shells.
-- [ ] Users can still type natural language at any time.
-- [ ] Users can type back, cancel, or exit instead of requiring visible menu entries everywhere.
+- [x] Enter selects the recommended default where appropriate.
+- [x] Explain why an option is recommended.
+- [x] Advanced users can type exact ids.
+- [x] Unknown text and out-of-range numbers retry clearly.
+- [x] Menus render cleanly in PowerShell, cmd, and POSIX shells.
+- [x] Users can still type natural language at any time.
+- [x] Users can type back, cancel, or exit instead of requiring visible menu entries everywhere.
 - [ ] Save user preferences per project for approval granularity, preferred plan style, runtime mode, and advanced option visibility.
 
 ### Example Top-Level Menu
@@ -611,12 +611,12 @@ What do you want to do?
 
 ### Tests
 
-- [ ] Valid number selects option.
-- [ ] Enter selects default.
-- [ ] Invalid number retries.
-- [ ] Typed id fallback works.
-- [ ] Natural language input routes to the nearest safe planning path with confirmation.
-- [ ] Prompt output is readable in Windows shells.
+- [x] Valid number selects option.
+- [x] Enter selects default.
+- [x] Invalid number retries.
+- [x] Typed id fallback works.
+- [x] Natural language input routes to the nearest safe planning path with confirmation.
+- [x] Prompt output is readable in Windows shells.
 
 ### Exit Criteria
 
