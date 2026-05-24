@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { detectProjectMarkers, formatProjectMarkers } from './project-markers.js';
+import { detectProjectMarkers, detectProjectMarkersFromPaths, formatProjectMarkers } from './project-markers.js';
 
 describe('project marker detection', () => {
   let tmpDir: string;
@@ -31,5 +31,18 @@ describe('project marker detection', () => {
 
   it('formats empty marker sets clearly', () => {
     expect(formatProjectMarkers([])).toEqual(['none']);
+  });
+
+  it('detects markers from ProjectMap-style relative paths', () => {
+    const markers = detectProjectMarkersFromPaths(tmpDir, [
+      'package.json',
+      'src/app.ts',
+      'next.config.mjs',
+    ]);
+
+    expect(markers.map(marker => `${marker.relativePath}:${marker.label}`)).toEqual([
+      'package.json:Node package',
+      'next.config.mjs:Next.js config',
+    ]);
   });
 });

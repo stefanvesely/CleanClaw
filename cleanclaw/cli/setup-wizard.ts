@@ -7,7 +7,7 @@ import { createProjectSettings, saveProjectSettings } from '../core/project-sett
 import { appendToRegistry } from '../projectmap/project-registry.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
 import { createConsoleLogger, type CleanClawLogger } from '../core/logger.js';
-import { detectProjectMarkers } from '../core/project-markers.js';
+import { detectProjectMarkers, detectProjectMarkersFromPaths, type DetectedProjectMarker } from '../core/project-markers.js';
 import { formatNumberedPrompt, parseNumberedPromptSelection } from '../core/numbered-prompt.js';
 import { formatStackInference, inferProjectStack } from '../core/stack-inference.js';
 import { stackSelectionOptions } from '../core/stack-selection.js';
@@ -15,7 +15,7 @@ import {
   createProjectMapFreshnessPrompt,
   formatProjectMapFreshnessSummary,
 } from '../projectmap/freshness-decision.js';
-import { inspectProjectMapFreshness } from '../projectmap/manifest.js';
+import { inspectProjectMapFreshness, loadProjectMapManifest } from '../projectmap/manifest.js';
 import { update as updateProjectMapFile } from '../projectmap/updater-worker.js';
 import {
   createProjectMapStoragePolicyPrompt,
@@ -239,7 +239,7 @@ async function askProjectMapStoragePolicyIfNeeded(
 }
 
 async function askProjectStack(rl: readline.Interface, logger: CleanClawLogger): Promise<string> {
-  const inference = inferProjectStack(detectProjectMarkers(process.cwd()));
+  const inference = inferProjectStack(detectStackMarkersWithProjectMap(process.cwd()));
   if (!inference.bestGuess) {
     const stackRaw = await ask(rl, 'Stack (dotnet/svelte/angular/blazor) [dotnet]: ');
     return stackRaw || 'dotnet';
@@ -268,6 +268,22 @@ async function askProjectStack(rl: readline.Interface, logger: CleanClawLogger):
   }
 
   return inference.bestGuess.stack;
+}
+
+function detectStackMarkersWithProjectMap(projectRoot: string): DetectedProjectMarker[] {
+  const liveMarkers = detectProjectMarkers(projectRoot);
+  const manifest = loadProjectMapManifest(projectRoot);
+  if (!manifest) return liveMarkers;
+
+  const projectMapMarkers = detectProjectMarkersFromPaths(
+    projectRoot,
+    manifest.files.map(file => file.path),
+  );
+  const byKey = new Map<string, DetectedProjectMarker>();
+  for (const marker of [...liveMarkers, ...projectMapMarkers]) {
+    byKey.set(`${marker.label}:${marker.relativePath}`, marker);
+  }
+  return [...byKey.values()];
 }
 
 export async function runSetupWizard(

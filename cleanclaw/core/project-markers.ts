@@ -48,6 +48,25 @@ export function detectProjectMarkers(projectRoot: string): DetectedProjectMarker
   });
 }
 
+export function detectProjectMarkersFromPaths(projectRoot: string, relativePaths: string[]): DetectedProjectMarker[] {
+  const root = path.resolve(projectRoot);
+  const normalizedPaths = relativePaths.map(normalizeRelativePath);
+
+  return MARKERS.flatMap(marker => {
+    const matches = marker.relativePath.includes('*')
+      ? findWildcardPathMatches(normalizedPaths, marker.relativePath)
+      : normalizedPaths.includes(normalizeRelativePath(marker.relativePath))
+        ? [normalizeRelativePath(marker.relativePath)]
+        : [];
+
+    return matches.map(relativePath => ({
+      ...marker,
+      absolutePath: path.join(root, relativePath),
+      relativePath,
+    }));
+  });
+}
+
 export function formatProjectMarkers(markers: DetectedProjectMarker[]): string[] {
   if (markers.length === 0) return ['none'];
   return markers.map(marker => `${marker.relativePath} (${marker.label})`);
@@ -70,6 +89,21 @@ function findWildcardMatches(root: string, relativePattern: string): string[] {
     .map(name => path.join(searchDir, name));
 }
 
+function findWildcardPathMatches(relativePaths: string[], relativePattern: string): string[] {
+  const directory = normalizeRelativePath(path.dirname(relativePattern));
+  const basenamePattern = path.basename(relativePattern);
+  const regex = new RegExp(`^${escapeRegExp(basenamePattern).replace('\\*', '.*')}$`);
+  return relativePaths.filter(relativePath => {
+    const normalized = normalizeRelativePath(relativePath);
+    const relativeDir = normalizeRelativePath(path.dirname(normalized));
+    return (directory === '.' || relativeDir === directory) && regex.test(path.basename(normalized));
+  });
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeRelativePath(relativePath: string): string {
+  return relativePath.split(path.sep).join('/');
 }

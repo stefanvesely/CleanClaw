@@ -656,7 +656,7 @@ Project root selected
 - [x] Ask user to approve or override with a numbered menu.
 - [x] Store selected stack in project-local settings.
 - [x] Expand agent routing beyond the current stack list.
-- [ ] Integrate stack inference with ProjectMap.
+- [x] Integrate stack inference with ProjectMap.
 - [x] Add ProjectMap freshness manifest.
 - [x] Reuse existing ProjectMap when fresh.
 - [x] Ask before building or rebuilding ProjectMap.
@@ -687,6 +687,8 @@ Storage note: existing ProjectMap build/update code and the new manifest helper 
 Freshness prompt note: setup now inspects the ProjectMap manifest before building. Fresh ProjectMap is reused without rebuilding, missing ProjectMap asks before build, and stale ProjectMap asks before rebuild, continue-stale, or skip.
 
 Incremental update note: the existing post-change ProjectMap hook now runs when `projectMap.enabled` is true even if explicit `embeddings` config is absent, uses local embedding defaults through `getProvider`, removes deleted files from backend/frontend/mediator/misc tables, and refreshes the manifest after updates.
+
+Stack inference note: setup stack inference now merges live marker detection with ProjectMap manifest file-list markers, de-duplicates evidence, and scores the combined evidence before asking the user to confirm the stack.
 
 ### ProjectMap Storage Policy
 
