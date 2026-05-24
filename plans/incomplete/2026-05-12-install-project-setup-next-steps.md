@@ -498,6 +498,7 @@ cleanclaw starts
 - [x] Added an interactive session loop so no-arg `cleanclaw` keeps accepting work until the user exits.
 - [x] Added a headless planning guard so intake, why, scope, plan, and plan approval phases cannot run headless.
 - [x] Added a headless execution policy check requiring ready plan status, explicit opt-in, and coder/reviewer roles.
+- [x] Added headless plan granularity checks for bounded steps with their own why, files, validation, and stop condition.
 
 ### Root Behavior
 
@@ -515,7 +516,7 @@ cleanclaw starts
 - [x] Each headless plan needs its own approved why, scope tree, risk limits, validation policy, storage policy, model policy, and stop conditions.
 - [x] Headless execution remains opt-in and requires coder/reviewer model roles.
 - [x] Headless execution can only run plans marked `ready-for-execution`.
-- [ ] Headless-ready plans must be as granular as possible.
+- [x] Headless-ready plans must be as granular as possible.
 - [ ] Headless must require two model roles: coder and reviewer/planner.
 - [ ] Headless coder receives only one single task at a time, not the full scope.
 - [ ] Smaller code tasks can use a local model as coder.
