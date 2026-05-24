@@ -8,6 +8,7 @@ import {
   ensureProjectSettings,
   loadProjectSettings,
   projectSettingsPath,
+  saveSelectedStack,
   saveProjectSettings,
 } from './project-settings.js';
 
@@ -103,5 +104,25 @@ describe('CleanClaw project settings', () => {
       projectName: 'Demo',
       approvalGranularity: 'per-file',
     }))).toBe('per-file');
+  });
+
+  it('saves selected stack without changing existing approval preferences', () => {
+    saveProjectSettings(tmpDir, createProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Demo',
+      approvalGranularity: 'per-file',
+      updatedAt: '2026-05-18T00:00:00.000Z',
+    }));
+
+    const updated = saveSelectedStack(tmpDir, 'nextjs', '2026-05-24T00:00:00.000Z');
+
+    expect(updated).toMatchObject({
+      projectRoot: path.resolve(tmpDir),
+      projectName: 'Demo',
+      approvalGranularity: 'per-file',
+      selectedStack: 'nextjs',
+      updatedAt: '2026-05-24T00:00:00.000Z',
+    });
+    expect(loadProjectSettings(tmpDir)?.selectedStack).toBe('nextjs');
   });
 });

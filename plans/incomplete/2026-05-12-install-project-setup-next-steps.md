@@ -654,7 +654,7 @@ Project root selected
 - [x] Detect mixed-stack projects.
 - [x] Show best guess and evidence.
 - [ ] Ask user to approve or override with a numbered menu.
-- [ ] Store selected stack in project-local settings.
+- [x] Store selected stack in project-local settings.
 - [ ] Expand agent routing beyond the current stack list.
 - [ ] Integrate stack inference with ProjectMap.
 - [ ] Add ProjectMap freshness manifest.

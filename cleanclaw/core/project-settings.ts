@@ -9,6 +9,7 @@ export interface CleanClawProjectSettings {
   projectName: string;
   approvalGranularity: 'per-change' | 'per-file' | 'per-step';
   plansDir: string;
+  selectedStack?: string;
   detectedMarkers?: ProjectMarkerSetting[];
   updatedAt: string;
 }
@@ -28,10 +29,11 @@ export function createProjectSettings(input: {
   projectName: string;
   approvalGranularity?: 'per-change' | 'per-file' | 'per-step';
   plansDir?: string;
+  selectedStack?: string;
   detectedMarkers?: ProjectMarkerSetting[];
   updatedAt?: string;
 }): CleanClawProjectSettings {
-  return {
+  const settings: CleanClawProjectSettings = {
     projectRoot: path.resolve(input.projectRoot),
     projectName: input.projectName,
     approvalGranularity: input.approvalGranularity ?? 'per-change',
@@ -39,6 +41,12 @@ export function createProjectSettings(input: {
     detectedMarkers: input.detectedMarkers ?? [],
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
+
+  if (input.selectedStack) {
+    settings.selectedStack = input.selectedStack;
+  }
+
+  return settings;
 }
 
 export function saveProjectSettings(projectRoot: string, settings: CleanClawProjectSettings): string {
@@ -59,6 +67,7 @@ export function ensureProjectSettings(input: {
   projectName: string;
   approvalGranularity?: 'per-change' | 'per-file' | 'per-step';
   plansDir?: string;
+  selectedStack?: string;
   detectedMarkers?: ProjectMarkerSetting[];
 }): CleanClawProjectSettings {
   const existing = loadProjectSettings(input.projectRoot);
@@ -78,6 +87,22 @@ export function ensureProjectSettings(input: {
   const settings = createProjectSettings(input);
   saveProjectSettings(input.projectRoot, settings);
   return settings;
+}
+
+export function saveSelectedStack(projectRoot: string, stack: string, updatedAt?: string): CleanClawProjectSettings {
+  const existing = loadProjectSettings(projectRoot);
+  const settings = existing ?? createProjectSettings({
+    projectRoot,
+    projectName: path.basename(path.resolve(projectRoot)),
+  });
+  const updated = {
+    ...settings,
+    selectedStack: stack,
+    updatedAt: updatedAt ?? new Date().toISOString(),
+  };
+
+  saveProjectSettings(projectRoot, updated);
+  return updated;
 }
 
 export function approvalModeFromProjectSettings(
