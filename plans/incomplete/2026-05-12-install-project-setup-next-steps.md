@@ -692,16 +692,18 @@ Incremental update note: the existing post-change ProjectMap hook now runs when 
 
 - [x] ProjectMap/vector files are per-project and live under `.cleanclaw/projectmap/`.
 - [ ] ProjectMap is commit-eligible by default.
-- [ ] If `.cleanclaw/projectmap/` is `<= 50 MB`, keep it inside the project repo and treat it as valid project memory.
-- [ ] If `.cleanclaw/projectmap/` is `> 50 MB`, warn the user and show current size.
-- [ ] Over 50 MB, offer numbered choices:
+- [x] If `.cleanclaw/projectmap/` is `<= 50 MB`, keep it inside the project repo and treat it as valid project memory.
+- [x] If `.cleanclaw/projectmap/` is `> 50 MB`, warn the user and show current size.
+- [x] Over 50 MB, offer numbered choices:
   - `1. Commit anyway`
   - `2. Keep locally but add/keep ignored`
   - `3. Compact/rebuild ProjectMap`
   - `4. Exclude selected folders`
-- [ ] 50 MB is a default warning threshold, not a hard block.
+- [x] 50 MB is a default warning threshold, not a hard block.
 - [ ] Headless cannot override the storage policy unless the approved headless plan includes that policy.
-- [ ] Store the threshold and chosen policy in the ProjectMap manifest.
+- [x] Store the threshold and chosen policy in the ProjectMap manifest.
+
+Storage policy note: setup now inspects `.cleanclaw/projectmap/` size after reusing or building ProjectMap, reports whether it is within the 50 MB warning threshold, and prompts with numbered choices when over threshold. The selected policy and last observed size are stored in the manifest.
 
 ### ProjectMap Freshness Behavior
 
@@ -787,7 +789,7 @@ Stack inference must not become permission creep. Detecting a database, deployme
 - [x] Changed files update incrementally after task completion.
 - [x] New files are added to ProjectMap after task completion.
 - [x] Deleted files are removed from ProjectMap.
-- [ ] ProjectMap above 50 MB triggers storage-policy prompt.
+- [x] ProjectMap above 50 MB triggers storage-policy prompt.
 - [x] Updater defaults to local embeddings when explicit embeddings config is missing.
 
 ### Exit Criteria

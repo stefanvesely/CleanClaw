@@ -17,6 +17,12 @@ import {
 } from '../projectmap/freshness-decision.js';
 import { inspectProjectMapFreshness } from '../projectmap/manifest.js';
 import {
+  createProjectMapStoragePolicyPrompt,
+  formatProjectMapStorageSummary,
+  inspectProjectMapStorage,
+  saveProjectMapStorageChoice,
+} from '../projectmap/storage-policy.js';
+import {
   CLEANCLAW_PROVIDER_METADATA,
   CLEANCLAW_WIZARD_PROVIDER_IDS,
   type CleanClawProvider,
@@ -166,7 +172,10 @@ async function askProjectMapBuildDecision(
   logger.info(`\n${formatProjectMapFreshnessSummary(freshness)}`);
 
   const prompt = createProjectMapFreshnessPrompt(freshness);
-  if (!prompt) return;
+  if (!prompt) {
+    await askProjectMapStoragePolicyIfNeeded(rl, logger);
+    return;
+  }
 
   let selection = parseNumberedPromptSelection(await ask(rl, formatNumberedPrompt(prompt)), prompt);
   while (selection.kind === 'invalid' || selection.kind === 'natural-language' || selection.kind === 'control') {
@@ -181,15 +190,41 @@ async function askProjectMapBuildDecision(
   if (selection.option.id === 'build' || selection.option.id === 'rebuild') {
     const { build } = await import('../projectmap/build.js');
     await build(process.cwd(), config, logger);
+    await askProjectMapStoragePolicyIfNeeded(rl, logger);
     return;
   }
 
   if (selection.option.id === 'continue-stale') {
     logger.info('Continuing with the existing stale ProjectMap for now.');
+    await askProjectMapStoragePolicyIfNeeded(rl, logger);
     return;
   }
 
   logger.info('ProjectMap build skipped.');
+}
+
+async function askProjectMapStoragePolicyIfNeeded(
+  rl: readline.Interface,
+  logger: CleanClawLogger,
+): Promise<void> {
+  const inspection = inspectProjectMapStorage(process.cwd());
+  logger.info(formatProjectMapStorageSummary(inspection));
+
+  const prompt = createProjectMapStoragePolicyPrompt(inspection);
+  if (!prompt) return;
+
+  let selection = parseNumberedPromptSelection(await ask(rl, formatNumberedPrompt(prompt)), prompt);
+  while (selection.kind === 'invalid' || selection.kind === 'natural-language' || selection.kind === 'control') {
+    if (selection.kind === 'control' && (selection.control === 'cancel' || selection.control === 'exit')) {
+      logger.info('ProjectMap storage policy not changed.');
+      return;
+    }
+    const retry = selection.kind === 'invalid' ? `\n${selection.reason}\n` : '\nPlease choose one of the numbered options.\n';
+    selection = parseNumberedPromptSelection(await ask(rl, `${retry}${formatNumberedPrompt(prompt)}`), prompt);
+  }
+
+  saveProjectMapStorageChoice(process.cwd(), selection.option.id as 'commit' | 'local' | 'compact' | 'exclude');
+  logger.info(`ProjectMap storage policy recorded: ${selection.option.id}`);
 }
 
 async function askProjectStack(rl: readline.Interface, logger: CleanClawLogger): Promise<string> {

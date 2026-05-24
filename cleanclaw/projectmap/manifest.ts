@@ -39,6 +39,7 @@ export interface ProjectMapManifest {
   createdAt: string;
   updatedAt: string;
   fileCount: number;
+  lastSizeBytes: number;
   files: ProjectMapManifestFile[];
   storagePolicy: ProjectMapStoragePolicy;
 }
@@ -101,6 +102,7 @@ export function loadProjectMapManifest(projectRoot: string): ProjectMapManifest 
     createdAt: parsed.createdAt ?? new Date(0).toISOString(),
     updatedAt: parsed.updatedAt ?? new Date(0).toISOString(),
     fileCount: parsed.fileCount ?? parsed.files.length,
+    lastSizeBytes: parsed.lastSizeBytes ?? 0,
     files: parsed.files,
     storagePolicy: parsed.storagePolicy ?? {
       warningThresholdBytes: PROJECTMAP_SIZE_WARNING_BYTES,
@@ -117,15 +119,40 @@ export function writeProjectMapManifest(projectRoot: string, now = new Date()): 
     createdAt: existing?.createdAt ?? now.toISOString(),
     updatedAt: now.toISOString(),
     fileCount: files.length,
+    lastSizeBytes: projectMapDirectorySizeBytes(projectRoot),
     files,
     storagePolicy: existing?.storagePolicy ?? {
       warningThresholdBytes: PROJECTMAP_SIZE_WARNING_BYTES,
     },
   };
 
-  mkdirSync(projectMapDir(projectRoot), { recursive: true });
-  writeFileSync(projectMapManifestPath(projectRoot), `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
+  saveProjectMapManifest(manifest);
   return manifest;
+}
+
+export function saveProjectMapManifest(manifest: ProjectMapManifest): void {
+  mkdirSync(projectMapDir(manifest.projectRoot), { recursive: true });
+  writeFileSync(projectMapManifestPath(manifest.projectRoot), `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
+}
+
+export function projectMapDirectorySizeBytes(projectRoot: string): number {
+  const root = projectMapDir(projectRoot);
+  if (!existsSync(root)) return 0;
+
+  let total = 0;
+  function walk(dir: string): void {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const absolutePath = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(absolutePath);
+      } else {
+        total += statSync(absolutePath).size;
+      }
+    }
+  }
+
+  walk(root);
+  return total;
 }
 
 export function inspectProjectMapFreshness(projectRoot: string): ProjectMapFreshness {
