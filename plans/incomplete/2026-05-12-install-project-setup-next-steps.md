@@ -618,6 +618,12 @@ What do you want to do?
 - [x] Natural language input routes to the nearest safe planning path with confirmation.
 - [x] Prompt output is readable in Windows shells.
 
+### Phase 3 Implementation Progress
+
+- [x] Added `cleanclaw/core/numbered-prompt.ts` with formatting and parsing for numbered choices, defaults, typed ids, controls, and natural-language fallback.
+- [x] Wired numbered choices into the top-level interactive session loop.
+- [x] Wired numbered choices into the existing-plan continue/new decision.
+
 ### Exit Criteria
 
 - A non-engineer can complete setup and normal planning without typing internal ids.

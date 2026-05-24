@@ -99,6 +99,37 @@ describe('interactive session', () => {
     expect(logger.records.map(record => String(record.message)).join('\n')).toContain('I found 1 in-progress plan');
   });
 
+  it('uses a numbered choice when existing plans are found', async () => {
+    saveProjectSettings(tmpDir, createProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Demo',
+      updatedAt: '2026-05-24T00:00:00.000Z',
+    }));
+    const inProgress = path.join(tmpDir, 'plans', 'inprogress');
+    fs.mkdirSync(inProgress, { recursive: true });
+    fs.writeFileSync(path.join(inProgress, '2026-05-24-demo.md'), [
+      '# Demo Plan',
+      'Status: In Progress',
+      '',
+      'Fix login cache behavior.',
+    ].join('\n'), 'utf-8');
+    const questions: string[] = [];
+    const answers = ['Fix login cache', 'y', '', '1', 'y'];
+
+    const result = await startInteractiveSession({
+      cwd: tmpDir,
+      logger: createMemoryLogger(),
+      ask: async question => {
+        questions.push(question);
+        return answers.shift() ?? '';
+      },
+    });
+
+    expect(result.planChoice).toBe('continue');
+    expect(result.selectedPlan?.title).toBe('Demo Plan');
+    expect(questions.some(question => question.includes('1. Continue an existing plan'))).toBe(true);
+  });
+
   it('does not search in-progress plans when the project is not confirmed', async () => {
     saveProjectSettings(tmpDir, createProjectSettings({
       projectRoot: tmpDir,

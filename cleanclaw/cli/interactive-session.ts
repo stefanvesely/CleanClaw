@@ -197,9 +197,12 @@ export async function startInteractiveSession(
 
     logger.info(`I found ${plans.length} in-progress plan${plans.length === 1 ? '' : 's'} in this project.`);
     logger.info(formatInProgressPlanChoices(plans));
-    const choice = await ask('Continue one of these plans, or start new? [continue/new]: ');
-    const normalizedChoice = choice.trim().toLowerCase();
-    const planChoice = normalizedChoice.startsWith('c') ? 'continue' : 'new';
+    const selection = parseNumberedPromptSelection(await ask(formatNumberedPrompt(planChoicePrompt())), planChoicePrompt());
+    const planChoice = selection.kind === 'option' && selection.option.id === 'continue-plan'
+      ? 'continue'
+      : selection.kind === 'natural-language' && selection.text.toLowerCase().includes('continue')
+        ? 'continue'
+        : 'new';
 
     if (planChoice === 'continue') {
       const selectedPlan = plans[0];
@@ -297,6 +300,27 @@ function nextActionOptions(): NumberedPromptOption[] {
       description: 'Leave this interactive session.',
     },
   ];
+}
+
+function planChoicePrompt() {
+  return {
+    question: 'I found existing plans. What should CleanClaw do?',
+    options: [
+      {
+        id: 'continue-plan',
+        label: 'Continue an existing plan',
+        description: 'Review the current plan summary before continuing.',
+        recommended: true,
+      },
+      {
+        id: 'new-plan',
+        label: 'Start a new plan',
+        description: 'Create a fresh plan for this task.',
+      },
+    ],
+    defaultId: 'continue-plan',
+    allowNaturalLanguage: true,
+  };
 }
 
 async function createNewDraftPlan(input: {
