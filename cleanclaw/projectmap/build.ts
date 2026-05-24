@@ -3,6 +3,7 @@ import { join, relative, extname, basename } from "node:path";
 import { classifyFile } from "./classifier.js";
 import { getProvider } from "./embedder.js";
 import { extractMethods, embedTextForMethod, embedTextForMisc, isCodeFile } from "./extractor.js";
+import { writeProjectMapManifest } from "./manifest.js";
 import { saveTable } from "./store.js";
 import type { MethodRow, MiscRow } from "./store.js";
 import type { CleanClawConfig } from "../config/config-schema.js";
@@ -87,5 +88,6 @@ export async function build(
     saveTable(storeDir, MISC_LAYER, miscRows, vectors);
   }
 
+  writeProjectMapManifest(projectRoot);
   logger.info("[ProjectMap] Build complete.");
 }

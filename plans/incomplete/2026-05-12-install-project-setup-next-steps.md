@@ -657,7 +657,7 @@ Project root selected
 - [x] Store selected stack in project-local settings.
 - [x] Expand agent routing beyond the current stack list.
 - [ ] Integrate stack inference with ProjectMap.
-- [ ] Add ProjectMap freshness manifest.
+- [x] Add ProjectMap freshness manifest.
 - [ ] Reuse existing ProjectMap when fresh.
 - [ ] Ask before building or rebuilding ProjectMap.
 - [ ] Incrementally update ProjectMap after task completion.
@@ -680,9 +680,13 @@ Project root selected
 - size warning threshold
 - user storage policy
 
+Implementation note: `cleanclaw/projectmap/manifest.ts` now writes and reads a project-local manifest, records source file paths, sizes, modified times, schema version, project root, file count, and the 50 MB warning threshold, and detects fresh/stale/missing state with changed, added, deleted, and unchanged file lists. Full ProjectMap builds write this manifest after indexing.
+
+Storage note: existing ProjectMap build/update code and the new manifest helper all use the active project root plus `.cleanclaw/projectmap/`, so ProjectMap data is project-local by default.
+
 ### ProjectMap Storage Policy
 
-- [ ] ProjectMap/vector files are per-project and live under `.cleanclaw/projectmap/`.
+- [x] ProjectMap/vector files are per-project and live under `.cleanclaw/projectmap/`.
 - [ ] ProjectMap is commit-eligible by default.
 - [ ] If `.cleanclaw/projectmap/` is `<= 50 MB`, keep it inside the project repo and treat it as valid project memory.
 - [ ] If `.cleanclaw/projectmap/` is `> 50 MB`, warn the user and show current size.
