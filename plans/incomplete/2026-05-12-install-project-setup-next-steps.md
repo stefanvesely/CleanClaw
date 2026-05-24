@@ -31,6 +31,19 @@ CleanClaw must feel conversational and useful, but the user must remain fully in
 - Every non-trivial task writes records: plan file, task log, changelog, validation record, approval records, model-routing record, scope tree, and optional commit message.
 - All project-related CleanClaw data lives inside the project repo under `.cleanclaw/`.
 
+## Reconciled Remaining Work Snapshot
+
+Updated: 2026-05-24 12:02 Africa/Johannesburg
+
+This plan was reconciled after the 2026-05-24 implementation run. Completed duplicate checklist items were marked complete where current code/tests support them. The real remaining work is concentrated in these areas:
+
+- Phase 3 numbered prompt/menu helper and project preference storage.
+- Phase 4 stack inference, expanded stack agents, and ProjectMap freshness/reuse/update policy.
+- Phase 5 full model-routing layer, local chat/coding provider abstraction, local runtime lifecycle, frontier reviewer escalation recording, and same-model coder/reviewer warning records.
+- Phase 6 NemoClaw/OpenShell runtime detection, startup, fallback, sandbox, credential, and secret-handling integration.
+- Phase 7 end-to-end controlled execution wiring and acceptance tests.
+- Documentation/readme alignment after the runtime and setup flows settle.
+
 ## Project-Local Data Layout
 
 CleanClaw project memory must travel with the repo. Global user config may store known projects, recent paths, provider preferences, or pointers, but the project-local `.cleanclaw/` folder is the source of truth for project records.
@@ -135,7 +148,7 @@ Planning cannot be headless. The user is the link to the client, so the user mus
   - `recordWhyAlignment`
 - [x] Define what CleanClaw may do without asking.
 - [x] Define what CleanClaw must never do without asking.
-- [ ] Define headless mode as a special subsection, not a default mode.
+- [x] Define headless mode as a special subsection, not a default mode.
 
 ### Implementation Progress
 
@@ -146,6 +159,7 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 - [x] Wired `runPipeline` task startup to save `.cleanclaw/tasks/task<id>/state.json` and record approved task why when workflow answers are present.
 - [x] Added `cleanclaw/core/permitted-actions.ts` with explicit `PERMITTED_WITHOUT_ASKING` and `NEVER_WITHOUT_ASKING` action policy lists.
 - [x] Added frontier model purpose-specific rejection tests to `control-contract.test.ts`.
+- [x] Added explicit headless planning, preparation, execution, role, granularity, stop-reporting, and no-commit guard modules.
 
 ### Task State Shape
 
@@ -187,39 +201,39 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 
 ### Control Rules
 
-- [ ] No source edits before plan approval.
-- [ ] No edits outside the approved file list.
-- [ ] No new files without scope re-approval.
-- [ ] No dependency install, network call, service start/stop, destructive file action, commit, or push without explicit approval.
-- [ ] No frontier model call without explicit approval.
-- [ ] No project-root widening without explicit approval.
+- [x] No source edits before plan approval.
+- [x] No edits outside the approved file list.
+- [x] No new files without scope re-approval.
+- [x] No dependency install, network call, service start/stop, destructive file action, commit, or push without explicit approval.
+- [x] No frontier model call without explicit approval.
+- [x] No project-root widening without explicit approval.
 - [ ] No hidden provider/model/sandbox changes.
-- [ ] Reads inside the active project root are allowed during scope/inspection.
-- [ ] Reads outside the active project root require approval, a reason, and why alignment.
-- [ ] Broad project scans should be announced and logged.
-- [ ] Validation commands always require approval.
-- [ ] Granular approvals are the default.
-- [ ] Bundled approvals are allowed only when the exact bundle is displayed and the user explicitly chooses that bundle.
+- [x] Reads inside the active project root are allowed during scope/inspection.
+- [x] Reads outside the active project root require approval, a reason, and why alignment.
+- [x] Broad project scans should be announced and logged.
+- [x] Validation commands always require approval.
+- [x] Granular approvals are the default.
+- [x] Bundled approvals are allowed only when the exact bundle is displayed and the user explicitly chooses that bundle.
 
 ### Model Policy
 
-- [ ] Default to local-first.
+- [x] Default to local-first.
 - [ ] Allow the local model to summarize, inspect, draft the why, draft the plan, suggest file scope, classify stack, and draft low-risk suggestions.
 - [ ] If the local model takes too long, returns low confidence, hits a complexity threshold, or detects high-risk work, CleanClaw may ask to pass the step to a frontier reviewer model.
-- [ ] The frontier model is a reviewer/policeman, not the client link.
+- [x] The frontier model is a reviewer/policeman, not the client link.
 - [ ] Frontier reviewer use requires approval unless the user has configured that phase explicitly.
 
 ### Headless Mode
 
-- [ ] Headless mode is available only after user-approved planning.
-- [ ] Headless mode requires user-approved why, plan, file scope, risk limits, validation policy, storage policy, model policy, and headless permissions.
-- [ ] Headless mode requires a frontier coder role and a frontier reviewer/policeman role.
+- [x] Headless mode is available only after user-approved planning.
+- [x] Headless mode requires user-approved why, plan, file scope, risk limits, validation policy, storage policy, model policy, and headless permissions.
+- [x] Headless mode requires a frontier coder role and a frontier reviewer/policeman role.
 - [ ] Prefer distinct frontier model identities for coder and reviewer.
 - [ ] Allow the same model for coder and reviewer only after a warning and explicit user approval.
 - [ ] If the same model is used for both roles, record reduced review independence in `approval-records.json` and `model-routing.md`.
-- [ ] Reviewer model checks why alignment, file scope, diff, validation, risk limits, and whether the user must be called back.
-- [ ] All headless decisions are recorded.
-- [ ] Headless optional permissions are explicit subsections:
+- [x] Reviewer model checks why alignment, file scope, diff, validation, risk limits, and whether the user must be called back.
+- [x] All headless decisions are recorded.
+- [x] Headless optional permissions are explicit subsections:
   - allow validation commands
   - allow dependency install
   - allow file creation
@@ -228,7 +242,7 @@ Planning cannot be headless. The user is the link to the client, so the user mus
   - allow commit message draft
   - allow commit
   - allow push
-- [ ] Default headless permissions:
+- [x] Default headless permissions:
   - edit files only inside approved scope
   - create files only when listed
   - run only approved validation commands
@@ -237,30 +251,30 @@ Planning cannot be headless. The user is the link to the client, so the user mus
   - prepare commit message
   - no automatic commit
   - no automatic push
-- [ ] Push should remain manual at first.
+- [x] Push should remain manual at first.
 
 ### Tests
 
-- [ ] Invalid state transitions are rejected.
-- [ ] Cannot leave intake without task summary.
-- [ ] Cannot leave why definition without user-approved why.
-- [ ] Cannot approve plan if why is missing.
-- [ ] Misaligned plan step blocks execution.
-- [ ] File read inside root is allowed during scope.
-- [ ] File read outside root requires approval.
-- [ ] Editing before approval fails.
-- [ ] Editing a file outside approved scope fails.
-- [ ] Adding a new file requires scope approval.
-- [ ] Validation command requires approval.
-- [ ] Frontier model use is blocked until approved.
+- [x] Invalid state transitions are rejected.
+- [x] Cannot leave intake without task summary.
+- [x] Cannot leave why definition without user-approved why.
+- [x] Cannot approve plan if why is missing.
+- [x] Misaligned plan step blocks execution.
+- [x] File read inside root is allowed during scope.
+- [x] File read outside root requires approval.
+- [x] Editing before approval fails.
+- [x] Editing a file outside approved scope fails.
+- [x] Adding a new file requires scope approval.
+- [x] Validation command requires approval.
+- [x] Frontier model use is blocked until approved.
 - [ ] Local timeout or complexity threshold triggers frontier-review prompt.
-- [ ] Headless mode is rejected before planning is complete.
-- [ ] Headless mode is rejected without coder and reviewer roles.
+- [x] Headless mode is rejected before planning is complete.
+- [x] Headless mode is rejected without coder and reviewer roles.
 - [ ] Same-model headless coder/reviewer requires warning and explicit approval.
-- [ ] Headless commit is rejected unless explicitly configured.
-- [ ] Commit and push are blocked until approved.
-- [ ] Push is rejected by default.
-- [ ] Approval record stores user text.
+- [x] Headless commit is rejected.
+- [x] Commit and push are blocked until approved.
+- [x] Push is rejected by default.
+- [x] Approval record stores user text.
 
 ### Exit Criteria
 
@@ -535,13 +549,13 @@ cleanclaw starts
 
 ### Tests
 
-- [ ] No-arg command starts session.
-- [ ] Plan-only mode never edits files.
-- [ ] Execution cannot start without plan approval.
-- [ ] Resume loads previous task state.
-- [ ] Task completion returns to planning.
-- [ ] Project questions can be answered without creating an execution task.
-- [ ] Headless plan creation requires interactive planning.
+- [x] No-arg command starts session.
+- [x] Plan-only mode never edits files.
+- [x] Execution cannot start without plan approval.
+- [x] Resume loads previous task state.
+- [x] Task completion returns to planning.
+- [x] Project questions can be answered without creating an execution task.
+- [x] Headless plan creation requires interactive planning.
 
 ### Exit Criteria
 
@@ -947,26 +961,26 @@ Records should include:
 
 ### Coding Constraints
 
-- [ ] Add a dedicated model-routing layer before changing pipeline behavior.
-- [ ] Do not retrofit local/frontier/reviewer routing directly into `runPipeline()`.
+- [x] Add a dedicated model-routing layer before changing pipeline behavior.
+- [x] Do not retrofit local/frontier/reviewer routing directly into `runPipeline()`.
 - [ ] Replace the single active provider assumption with model roles/policies.
 - [ ] Add a local chat/coding provider abstraction; local embeddings are not enough.
 - [ ] Integrate local runtime lifecycle through NemoClaw/OpenShell where possible.
 - [ ] Treat confidence as a practical signal set, not a raw model score.
-- [ ] Change headless so it runs only from pre-approved plans.
+- [x] Change headless so it runs only from pre-approved plans.
 - [ ] Add a reviewer gate before execution, before each risky/scope-changing edit, and before headless completion.
 
 ### Tests
 
 - [ ] Local unavailable gives clear setup guidance.
 - [ ] Local runtime does not start until CleanClaw runs.
-- [ ] Frontier model is blocked without approval.
+- [x] Frontier model is blocked without approval.
 - [ ] Approved frontier use is recorded.
 - [ ] Local-only task never calls frontier.
 - [ ] High-risk task prompts for reviewer.
-- [ ] Headless mode is blocked unless coder and reviewer roles are configured.
+- [x] Headless mode is blocked unless coder and reviewer roles are configured.
 - [ ] Same-model coder/reviewer warning is shown and recorded.
-- [ ] Reviewer model can block headless execution.
+- [x] Reviewer model can block headless execution.
 - [ ] Local runtime only runs during CleanClaw session unless explicitly configured otherwise.
 
 ### Exit Criteria
@@ -1190,12 +1204,12 @@ Goal: connect planning, state machine, guardrails, local/frontier model policy, 
 
 ### Approved Defaults
 
-- [ ] Normal interactive approval defaults to `per-change`.
-- [ ] Validation defaults to asking before each command.
-- [ ] After successful task completion, CleanClaw returns to planning mode.
-- [ ] CleanClaw always defaults to the most granular approval mode.
-- [ ] CleanClaw does not automatically loosen approval based on task type, seniority, or inferred user skill.
-- [ ] The user may explicitly change approval preference for the project.
+- [x] Normal interactive approval defaults to `per-change`.
+- [x] Validation defaults to asking before each command.
+- [x] After successful task completion, CleanClaw returns to planning mode.
+- [x] CleanClaw always defaults to the most granular approval mode.
+- [x] CleanClaw does not automatically loosen approval based on task type, seniority, or inferred user skill.
+- [x] The user may explicitly change approval preference for the project.
 
 Project-local approval setting:
 
@@ -1453,19 +1467,19 @@ Headless cannot improvise.
 
 ### Tests
 
-- [ ] Execution starts only from an approved plan.
-- [ ] Every edit is checked against why and scope.
-- [ ] New files require approval unless already listed.
-- [ ] Validation commands require approval.
-- [ ] Validation asks before each command.
-- [ ] Scope changes pause execution.
-- [ ] Default approval granularity is per-change.
-- [ ] Project-level approval preference changes only after explicit user request.
-- [ ] Broader approval preference is saved in project-local settings.
+- [x] Execution starts only from an approved plan.
+- [x] Every edit is checked against why and scope.
+- [x] New files require approval unless already listed.
+- [x] Validation commands require approval.
+- [x] Validation asks before each command.
+- [x] Scope changes pause execution.
+- [x] Default approval granularity is per-change.
+- [x] Project-level approval preference changes only after explicit user request.
+- [x] Broader approval preference is saved in project-local settings.
 - [ ] ProjectMap updates after completed task.
-- [ ] Task records and changelog are written project-locally.
-- [ ] After task completion, CleanClaw returns to planning mode.
-- [ ] Headless execution stops instead of expanding scope.
+- [x] Task records and changelog are written project-locally.
+- [x] After task completion, CleanClaw returns to planning mode.
+- [x] Headless execution stops instead of expanding scope.
 
 ### Exit Criteria
 
