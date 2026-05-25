@@ -219,7 +219,7 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 
 - [x] Default to local-first.
 - [x] Allow the local model to summarize, inspect, draft the why, draft the plan, suggest file scope, classify stack, and draft low-risk suggestions.
-- [ ] If the local model takes too long, returns low confidence, hits a complexity threshold, or detects high-risk work, CleanClaw may ask to pass the step to a frontier reviewer model.
+- [x] If the local model takes too long, returns low confidence, hits a complexity threshold, or detects high-risk work, CleanClaw may ask to pass the step to a frontier reviewer model.
 - [x] The frontier model is a reviewer/policeman, not the client link.
 - [ ] Frontier reviewer use requires approval unless the user has configured that phase explicitly.
 
@@ -267,7 +267,7 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 - [x] Adding a new file requires scope approval.
 - [x] Validation command requires approval.
 - [x] Frontier model use is blocked until approved.
-- [ ] Local timeout or complexity threshold triggers frontier-review prompt.
+- [x] Local timeout or complexity threshold triggers frontier-review prompt.
 - [x] Headless mode is rejected before planning is complete.
 - [x] Headless mode is rejected without coder and reviewer roles.
 - [x] Same-model headless coder/reviewer requires warning and explicit approval.
