@@ -218,7 +218,7 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 ### Model Policy
 
 - [x] Default to local-first.
-- [ ] Allow the local model to summarize, inspect, draft the why, draft the plan, suggest file scope, classify stack, and draft low-risk suggestions.
+- [x] Allow the local model to summarize, inspect, draft the why, draft the plan, suggest file scope, classify stack, and draft low-risk suggestions.
 - [ ] If the local model takes too long, returns low confidence, hits a complexity threshold, or detects high-risk work, CleanClaw may ask to pass the step to a frontier reviewer model.
 - [x] The frontier model is a reviewer/policeman, not the client link.
 - [ ] Frontier reviewer use requires approval unless the user has configured that phase explicitly.
