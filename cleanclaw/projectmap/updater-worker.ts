@@ -25,7 +25,7 @@ export async function update(
 
   if (!fs.existsSync(absolutePath)) {
     const removed = removeFileFromProjectMapTables(storeDir, rel);
-    writeProjectMapManifest(projectRoot);
+    writeProjectMapManifest(projectRoot, new Date(), config);
     logger.warn(`[ProjectMap] File not found, removed ${removed} stale row${removed === 1 ? '' : 's'}: ${absolutePath}`);
     return;
   }
@@ -51,7 +51,7 @@ export async function update(
 
   if (newRows.length === 0) {
     saveTable(storeDir, layer as Layer, kept, keptVectors);
-    writeProjectMapManifest(projectRoot);
+    writeProjectMapManifest(projectRoot, new Date(), config);
     return;
   }
 
@@ -60,7 +60,7 @@ export async function update(
   const newVectors = await provider.embed(texts);
 
   saveTable(storeDir, layer as Layer, [...kept, ...newRows], [...keptVectors, ...newVectors]);
-  writeProjectMapManifest(projectRoot);
+  writeProjectMapManifest(projectRoot, new Date(), config);
 }
 
 function removeFileFromProjectMapTables(storeDir: string, rel: string): number {

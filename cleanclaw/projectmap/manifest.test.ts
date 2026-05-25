@@ -34,14 +34,34 @@ describe("ProjectMap manifest", () => {
   });
 
   it("reports fresh when files match the manifest", () => {
-    writeProjectMapManifest(tmpDir);
+    writeProjectMapManifest(tmpDir, new Date(), {
+      embeddings: { provider: "local", model: "Xenova/all-MiniLM-L6-v2" },
+    } as never);
 
-    expect(inspectProjectMapFreshness(tmpDir)).toMatchObject({
+    expect(inspectProjectMapFreshness(tmpDir, {
+      embeddings: { provider: "local", model: "Xenova/all-MiniLM-L6-v2" },
+    } as never)).toMatchObject({
       status: "fresh",
       changed: [],
       added: [],
       deleted: [],
+      embeddingChanged: false,
     });
+  });
+
+  it("reports stale when embedding provider or model changed", () => {
+    writeProjectMapManifest(tmpDir, new Date(), {
+      embeddings: { provider: "local", model: "old-model" },
+    } as never);
+
+    const freshness = inspectProjectMapFreshness(tmpDir, {
+      embeddings: { provider: "local", model: "new-model" },
+    } as never);
+
+    expect(freshness.status).toBe("stale");
+    expect(freshness.embeddingChanged).toBe(true);
+    expect(freshness.previousEmbedding).toEqual({ provider: "local", model: "old-model" });
+    expect(freshness.currentEmbedding).toEqual({ provider: "local", model: "new-model" });
   });
 
   it("reports changed, added, and deleted files", () => {

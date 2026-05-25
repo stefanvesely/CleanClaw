@@ -7,9 +7,11 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join, relative, sep } from "node:path";
+import type { CleanClawConfig } from "../config/config-schema.js";
 
 export const PROJECTMAP_MANIFEST_VERSION = 1;
 export const PROJECTMAP_SIZE_WARNING_BYTES = 50 * 1024 * 1024;
+export const DEFAULT_LOCAL_EMBEDDING_MODEL = "Xenova/all-MiniLM-L6-v2";
 
 const SKIP_DIRS = new Set([
   ".git",
@@ -40,6 +42,8 @@ export interface ProjectMapManifest {
   updatedAt: string;
   fileCount: number;
   lastSizeBytes: number;
+  embeddingProvider?: string;
+  embeddingModel?: string;
   files: ProjectMapManifestFile[];
   storagePolicy: ProjectMapStoragePolicy;
 }
@@ -51,6 +55,14 @@ export interface ProjectMapFreshness {
   added: string[];
   deleted: string[];
   unchanged: string[];
+  embeddingChanged: boolean;
+  previousEmbedding?: ProjectMapEmbeddingIdentity;
+  currentEmbedding?: ProjectMapEmbeddingIdentity;
+}
+
+export interface ProjectMapEmbeddingIdentity {
+  provider: string;
+  model: string;
 }
 
 export function projectMapDir(projectRoot: string): string {
@@ -103,6 +115,8 @@ export function loadProjectMapManifest(projectRoot: string): ProjectMapManifest 
     updatedAt: parsed.updatedAt ?? new Date(0).toISOString(),
     fileCount: parsed.fileCount ?? parsed.files.length,
     lastSizeBytes: parsed.lastSizeBytes ?? 0,
+    embeddingProvider: parsed.embeddingProvider,
+    embeddingModel: parsed.embeddingModel,
     files: parsed.files,
     storagePolicy: parsed.storagePolicy ?? {
       warningThresholdBytes: PROJECTMAP_SIZE_WARNING_BYTES,
@@ -110,9 +124,14 @@ export function loadProjectMapManifest(projectRoot: string): ProjectMapManifest 
   };
 }
 
-export function writeProjectMapManifest(projectRoot: string, now = new Date()): ProjectMapManifest {
+export function writeProjectMapManifest(
+  projectRoot: string,
+  now = new Date(),
+  config?: CleanClawConfig,
+): ProjectMapManifest {
   const existing = loadProjectMapManifest(projectRoot);
   const files = collectProjectMapManifestFiles(projectRoot);
+  const embedding = config ? projectMapEmbeddingIdentity(config) : manifestEmbeddingIdentity(existing);
   const manifest: ProjectMapManifest = {
     version: PROJECTMAP_MANIFEST_VERSION,
     projectRoot,
@@ -120,6 +139,10 @@ export function writeProjectMapManifest(projectRoot: string, now = new Date()): 
     updatedAt: now.toISOString(),
     fileCount: files.length,
     lastSizeBytes: projectMapDirectorySizeBytes(projectRoot),
+    ...(embedding ? {
+      embeddingProvider: embedding.provider,
+      embeddingModel: embedding.model,
+    } : {}),
     files,
     storagePolicy: existing?.storagePolicy ?? {
       warningThresholdBytes: PROJECTMAP_SIZE_WARNING_BYTES,
@@ -155,7 +178,7 @@ export function projectMapDirectorySizeBytes(projectRoot: string): number {
   return total;
 }
 
-export function inspectProjectMapFreshness(projectRoot: string): ProjectMapFreshness {
+export function inspectProjectMapFreshness(projectRoot: string, config?: CleanClawConfig): ProjectMapFreshness {
   const manifestPath = projectMapManifestPath(projectRoot);
   const manifest = loadProjectMapManifest(projectRoot);
   if (!manifest) {
@@ -166,10 +189,21 @@ export function inspectProjectMapFreshness(projectRoot: string): ProjectMapFresh
       added: [],
       deleted: [],
       unchanged: [],
+      embeddingChanged: false,
     };
   }
 
   const current = collectProjectMapManifestFiles(projectRoot);
+  const previousEmbedding = manifestEmbeddingIdentity(manifest);
+  const currentEmbedding = config ? projectMapEmbeddingIdentity(config) : undefined;
+  const embeddingChanged = Boolean(
+    previousEmbedding
+    && currentEmbedding
+    && (
+      previousEmbedding.provider !== currentEmbedding.provider
+      || previousEmbedding.model !== currentEmbedding.model
+    ),
+  );
   const previousByPath = new Map(manifest.files.map(file => [file.path, file]));
   const currentByPath = new Map(current.map(file => [file.path, file]));
   const changed: string[] = [];
@@ -195,15 +229,32 @@ export function inspectProjectMapFreshness(projectRoot: string): ProjectMapFresh
   }
 
   return {
-    status: changed.length === 0 && added.length === 0 && deleted.length === 0 ? "fresh" : "stale",
+    status: changed.length === 0 && added.length === 0 && deleted.length === 0 && !embeddingChanged ? "fresh" : "stale",
     manifestPath,
     changed,
     added,
     deleted,
     unchanged,
+    embeddingChanged,
+    previousEmbedding,
+    currentEmbedding,
   };
 }
 
 function normalizeRelativePath(path: string): string {
   return path.split(sep).join("/");
+}
+
+export function projectMapEmbeddingIdentity(config: CleanClawConfig): ProjectMapEmbeddingIdentity {
+  const provider = config.embeddings?.provider ?? "local";
+  const model = config.embeddings?.model ?? (provider === "local" ? DEFAULT_LOCAL_EMBEDDING_MODEL : "text-embedding-3-small");
+  return { provider, model };
+}
+
+function manifestEmbeddingIdentity(manifest: ProjectMapManifest | null | undefined): ProjectMapEmbeddingIdentity | undefined {
+  if (!manifest?.embeddingProvider || !manifest.embeddingModel) return undefined;
+  return {
+    provider: manifest.embeddingProvider,
+    model: manifest.embeddingModel,
+  };
 }

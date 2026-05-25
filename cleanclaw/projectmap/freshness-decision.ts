@@ -24,6 +24,9 @@ export function formatProjectMapFreshnessSummary(freshness: ProjectMapFreshness)
     `Added: ${freshness.added.length}`,
     `Deleted: ${freshness.deleted.length}`,
   ];
+  if (freshness.embeddingChanged && freshness.previousEmbedding && freshness.currentEmbedding) {
+    lines.push(`Embedding changed: ${freshness.previousEmbedding.provider}/${freshness.previousEmbedding.model} -> ${freshness.currentEmbedding.provider}/${freshness.currentEmbedding.model}`);
+  }
   const examples = [...freshness.changed, ...freshness.added, ...freshness.deleted].slice(0, 5);
   if (examples.length > 0) {
     lines.push("Examples:");
@@ -57,18 +60,23 @@ export function createProjectMapFreshnessPrompt(freshness: ProjectMapFreshness):
 
   return {
     question: "ProjectMap is stale. What should CleanClaw do?",
-    defaultId: "update-changed",
+    defaultId: freshness.embeddingChanged ? "rebuild" : "update-changed",
     options: [
       {
         id: "update-changed",
         label: "Update changed files only",
-        description: "Refresh only changed, added, and deleted files listed by the manifest.",
-        recommended: true,
+        description: freshness.embeddingChanged
+          ? "Available only if you intentionally keep the existing embedding model for unchanged vectors."
+          : "Refresh only changed, added, and deleted files listed by the manifest.",
+        recommended: !freshness.embeddingChanged,
       },
       {
         id: "rebuild",
         label: "Rebuild full ProjectMap",
-        description: "Refresh project memory from the current project files.",
+        description: freshness.embeddingChanged
+          ? "Required to rebuild all vectors with the current embedding provider/model."
+          : "Refresh project memory from the current project files.",
+        recommended: freshness.embeddingChanged,
       },
       {
         id: "continue-stale",

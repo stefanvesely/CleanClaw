@@ -88,6 +88,6 @@ export async function build(
     saveTable(storeDir, MISC_LAYER, miscRows, vectors);
   }
 
-  writeProjectMapManifest(projectRoot);
+  writeProjectMapManifest(projectRoot, new Date(), config);
   logger.info("[ProjectMap] Build complete.");
 }

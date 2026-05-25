@@ -169,7 +169,7 @@ async function askProjectMapBuildDecision(
   config: CleanClawConfig,
   logger: CleanClawLogger,
 ): Promise<void> {
-  const freshness = inspectProjectMapFreshness(process.cwd());
+  const freshness = inspectProjectMapFreshness(process.cwd(), config);
   logger.info(`\n${formatProjectMapFreshnessSummary(freshness)}`);
 
   const prompt = createProjectMapFreshnessPrompt(freshness);

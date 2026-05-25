@@ -690,6 +690,8 @@ Incremental update note: the existing post-change ProjectMap hook now runs when 
 
 Stack inference note: setup stack inference now merges live marker detection with ProjectMap manifest file-list markers, de-duplicates evidence, and scores the combined evidence before asking the user to confirm the stack.
 
+Embedding freshness note: ProjectMap manifests now record embedding provider/model, freshness inspection detects mismatches against current config, and stale prompts prefer full rebuild when vectors were created with a different embedding identity.
+
 ### ProjectMap Storage Policy
 
 - [x] ProjectMap/vector files are per-project and live under `.cleanclaw/projectmap/`.
@@ -711,7 +713,7 @@ Storage policy note: setup now inspects `.cleanclaw/projectmap/` size after reus
 
 - [x] If ProjectMap exists and manifest matches the current project state, reuse it.
 - [x] If files changed, update only changed files.
-- [ ] If embedding model/provider changed, ask before rebuilding.
+- [x] If embedding model/provider changed, ask before rebuilding.
 - [x] If ProjectMap is missing, ask to build it.
 - [x] If ProjectMap is stale, show:
   - `1. Update changed files only`

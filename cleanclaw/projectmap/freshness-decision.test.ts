@@ -14,6 +14,7 @@ function freshness(status: ProjectMapFreshness["status"], patch: Partial<Project
     added: [],
     deleted: [],
     unchanged: [],
+    embeddingChanged: false,
     ...patch,
   };
 }
@@ -49,5 +50,19 @@ describe("ProjectMap freshness decisions", () => {
     expect(prompt?.options.map(option => option.id)).toEqual(["update-changed", "rebuild", "continue-stale", "skip"]);
     expect(formatProjectMapFreshnessSummary(stale)).toContain("Changed: 1");
     expect(formatProjectMapFreshnessSummary(stale)).toContain("src/old.ts");
+  });
+
+  it("prefers rebuild when embedding provider or model changed", () => {
+    const stale = freshness("stale", {
+      embeddingChanged: true,
+      previousEmbedding: { provider: "local", model: "old-model" },
+      currentEmbedding: { provider: "local", model: "new-model" },
+    });
+    const prompt = createProjectMapFreshnessPrompt(stale);
+
+    expect(decideProjectMapFreshnessAction(stale)).toBe("update-changed");
+    expect(prompt?.defaultId).toBe("rebuild");
+    expect(prompt?.options.find(option => option.id === "rebuild")?.recommended).toBe(true);
+    expect(formatProjectMapFreshnessSummary(stale)).toContain("Embedding changed");
   });
 });
