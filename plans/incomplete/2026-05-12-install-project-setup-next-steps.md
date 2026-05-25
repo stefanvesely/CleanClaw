@@ -991,7 +991,7 @@ Records should include:
 - [ ] Integrate local runtime lifecycle through NemoClaw/OpenShell where possible.
 - [x] Treat confidence as a practical signal set, not a raw model score.
 - [x] Change headless so it runs only from pre-approved plans.
-- [ ] Add a reviewer gate before execution, before each risky/scope-changing edit, and before headless completion.
+- [x] Add a reviewer gate before execution, before each risky/scope-changing edit, and before headless completion.
 
 ### Tests
 
