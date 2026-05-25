@@ -1,3 +1,5 @@
+import type { NumberedPromptConfig } from './numbered-prompt.js';
+
 export interface FrontierReviewerPolicyInput {
   purpose: string;
   phase: string;
@@ -79,6 +81,39 @@ export function evaluateReviewerGate(input: ReviewerGateInput): ReviewerGateDeci
     reviewRequired: reasons.length > 0,
     purpose: purposeForReviewerGate(input),
     reasons,
+  };
+}
+
+export function createReviewerGatePrompt(decision: ReviewerGateDecision): NumberedPromptConfig | null {
+  if (!decision.reviewRequired) return null;
+
+  return {
+    question: [
+      'Reviewer checkpoint required.',
+      'Why review is needed:',
+      ...decision.reasons.map(reason => `- ${reason}`),
+      '',
+      'What should CleanClaw do?',
+    ].join('\n'),
+    defaultId: 'ask-reviewer',
+    options: [
+      {
+        id: 'ask-reviewer',
+        label: 'Ask reviewer',
+        description: `Request approval to use the reviewer for ${decision.purpose}.`,
+        recommended: true,
+      },
+      {
+        id: 'revise-plan',
+        label: 'Revise plan',
+        description: 'Return to planning and reduce risk or scope before continuing.',
+      },
+      {
+        id: 'stop',
+        label: 'Stop',
+        description: 'Stop the task and leave the current records unchanged.',
+      },
+    ],
   };
 }
 

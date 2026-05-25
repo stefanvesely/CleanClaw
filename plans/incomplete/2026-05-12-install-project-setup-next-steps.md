@@ -1000,7 +1000,7 @@ Records should include:
 - [x] Frontier model is blocked without approval.
 - [x] Approved frontier use is recorded.
 - [ ] Local-only task never calls frontier.
-- [ ] High-risk task prompts for reviewer.
+- [x] High-risk task prompts for reviewer.
 - [x] Headless mode is blocked unless coder and reviewer roles are configured.
 - [x] Same-model coder/reviewer warning is shown and recorded.
 - [x] Reviewer model can block headless execution.

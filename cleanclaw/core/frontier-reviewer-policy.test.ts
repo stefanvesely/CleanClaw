@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertFrontierReviewerAllowed,
   checkFrontierReviewerPolicy,
+  createReviewerGatePrompt,
   evaluateReviewerGate,
 } from './frontier-reviewer-policy.js';
 
@@ -84,5 +85,28 @@ describe('frontier reviewer policy', () => {
       purpose: 'review-before-execution',
       reasons: [],
     });
+    expect(createReviewerGatePrompt(evaluateReviewerGate({
+      stage: 'before-edit',
+      risk: 'low',
+    }))).toBeNull();
+  });
+
+  it('formats a numbered reviewer prompt for high-risk work', () => {
+    const prompt = createReviewerGatePrompt(evaluateReviewerGate({
+      stage: 'before-edit',
+      risk: 'high',
+    }));
+
+    expect(prompt).toMatchObject({
+      defaultId: 'ask-reviewer',
+      options: [
+        { id: 'ask-reviewer', recommended: true },
+        { id: 'revise-plan' },
+        { id: 'stop' },
+      ],
+    });
+    expect(prompt?.question).toContain('Reviewer checkpoint required.');
+    expect(prompt?.question).toContain('- high-risk change');
+    expect(prompt?.options[0].description).toContain('review-risky-change');
   });
 });
