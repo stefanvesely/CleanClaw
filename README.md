@@ -22,7 +22,7 @@ CleanClaw is being rebuilt into its own controlled coding agent with NemoClaw/Op
 
 ## Current Implementation Status
 
-The active rebuild has started with the control and record foundation.
+The active rebuild is now a working CleanClaw coding-agent foundation. It is still a test project, but the core workflow pieces are in place: project attachment, planning-first interaction, visible scope, project-local records, stack inference, ProjectMap freshness/storage policy, local-first model routing policy, NemoClaw/OpenShell runtime prompts, reviewer gates, headless guardrails, and conservative per-change approval defaults.
 
 Implemented so far:
 
@@ -39,32 +39,33 @@ Implemented so far:
 - Pipeline file proposals now resolve relative paths against the active project root before filesystem checks or writes, and per-file execution applies the root guard before changes land.
 - Scope trees now include lifecycle metadata for why approval, pre-edit checks, validation planning, applied changes, and completion.
 - Broad project file scans now require interactive approval, are announced with a reason, and are recorded under `.cleanclaw/scan-approval-records.json`; headless mode fails closed.
-- Focused tests cover the control contract, task record persistence, scope tree persistence, project-local settings, active project resolution, and root-aware config loading.
+- `cleanclaw attach <path>` attaches a repo, detects project markers, stores project-local settings, and updates the active project pointer.
+- Interactive `cleanclaw` sessions can confirm the project, discover in-progress plans, create or continue plans, answer project questions, and return to planning after task completion.
+- Stack inference covers common frontend, backend, mobile, Docker, and CI markers; stack selection can be confirmed or overridden and persisted.
+- ProjectMap stores project-local registry/vector data under `.cleanclaw/projectmap/`, tracks freshness, warns at the 50 MB storage threshold, and updates incrementally after task changes.
+- Numbered menus are available for major choices while advanced users can still type ids or natural language where appropriate.
+- Model routing is role-based: planner, coder, reviewer, local coder, and embedding roles are explicit; local-only mode blocks frontier routes.
+- Local chat/coding provider abstraction exists for `ollama-local` and `vllm-local`; runtime lifecycle policy starts local runtime only during CleanClaw sessions unless configured otherwise.
+- NemoClaw/OpenShell setup/startup prompts ask before install/configure, start, standalone fallback, runtime settings, or stop.
+- Sandbox fallback prompts ask before continuing on the host when sandbox execution was expected.
+- Reviewer gates and high-risk reviewer prompts exist before execution, risky/scope-changing edits, and headless completion.
+- Headless execution is allowed only from approved granular plans with model roles, why, scope, validation, stop conditions, and storage policy.
+- Focused tests cover the control contract, task records, scope trees, project settings, active project resolution, root guard, route changes, numbered prompts, stack inference, ProjectMap freshness/storage, local model policy, runtime prompts, reviewer gates, and headless safety policies.
 
 Still planned:
 
-- Add `cleanclaw attach <path>` and make root selection/detected project markers fully interactive.
-- Move remaining legacy state behavior into project-local `.cleanclaw/` records.
-- Add the planning-first `cleanclaw` session loop.
-- Add numbered menus, stack inference, ProjectMap freshness, local model routing, NemoClaw startup checks, and guarded headless execution.
+- Run and document the full smoke suite: fresh setup, planning-only task, controlled execution task, scope expansion, headless rejection, and NemoClaw degraded runtime.
+- Close the final release acceptance checklist once smoke validation passes.
+- Keep normalized approval events as a later enterprise-gateway enhancement.
 
 CleanClaw is a coding-agent workflow layer for AI-assisted development. It is designed to sit between a developer and an implementation agent: it asks for project context, builds a scoped plan, routes work through provider and sandbox policy, requires human approval before changes land, and leaves a permanent audit trail of plans, decisions, diffs, and rollback metadata.
 
 CleanClaw is being aligned with NemoClaw so it can run as a first-class project workflow inside the OpenShell/NemoClaw environment while still working as a standalone local tool. Current integration work includes NemoClaw provider parity, gateway routing, credential handoff, structured logging, secret redaction, runtime context handoff, and sandbox-aware execution.
 
-The next major setup milestone is to make CleanClaw feel more like a coding agent that is installed once and then attached to a project: setup should request the project directory, infer the stack, use numbered menus, default to local embeddings without model selection, add broader stack-agent coverage, and provide a shorter task entrypoint so users do not have to type `cleanclaw run ...` for every task.
+The next major milestone is smoke validation: prove that a non-engineer can install CleanClaw, attach it to a project, infer stack, build or reuse ProjectMap, plan first, execute a controlled task with granular approval, return to planning, refuse unsafe headless mode, and see NemoClaw runtime status clearly.
 
-> **Historical status note: Initial setup ready for testing.**
-> Some items in this old note have since been completed; it is retained as archival context until the documentation is fully refreshed.
-> The core workflow, provider parity, and Python-free install are complete.
-> The following steps are still needed to fully align with NemoClaw:
->
-> - **Credentials** — CleanClaw reads env vars only; needs fallback to NemoClaw's `~/.nemoclaw/credentials.json` registry, and `createDevTask()` must export credentials before calling CleanClaw
-> - **Logging** — Replace `console.log` with a structured logger that integrates with OpenClaw's log aggregator when running inside NemoClaw
-> - **Secret scanner** — Scan plan/log files for secrets before writing to disk
-> - **Gateway routing** — Route inference through `inference.local/v1` when running inside NemoClaw context (detected via `NEMOCLAW_SESSION_ID`)
-> - **Session context** — Pass blueprint profile and session/auth context from NemoClaw to CleanClaw
-> - **Sandbox (Phase 8)** — Move CleanClaw into the OpenShell container and enable Landlock enforcement
+> **Current testing note.**
+> Provider parity, credential fallback, structured logging, secret redaction, gateway routing, runtime context handoff, sandbox-aware execution helpers, and NemoClaw/OpenShell prompt policies are implemented as code-level foundations. Full live smoke validation still depends on the user's local credentials, local runtime, and OpenShell/NemoClaw availability.
 
 ---
 
@@ -76,13 +77,13 @@ Inference routing supports Anthropic, OpenAI, NVIDIA NIM, and vLLM. ProjectMap b
 
 ## How it works
 
-1. `cleanclaw init` — declare your project root and configure inference. ProjectMap index is built automatically (embedding provider auto-detected; local model used if no API key is set)
-2. `cleanclaw run "your task"` — describe what you want to build or fix
-3. CleanClaw scans your repo, finds relevant files, and asks four questions to scope the task
-4. A planning agent generates a step-by-step plan — you approve before execution starts
-5. Each proposed change is shown as a Before/After diff — you approve, reject, or explain
-6. The scope guard checks every change against the approved plan. The project root guard hard-blocks any write outside your declared project directory
-7. Every decision is logged to `plans/task{N}/task{N}A_log.md` — a permanent audit trail
+1. `cleanclaw attach <path>` or `cleanclaw init` declares the project root and stores project-local settings.
+2. `cleanclaw` starts the interactive project session; it confirms the project, asks what task you want to do, and discovers whether to continue an in-progress plan or create a new one.
+3. CleanClaw asks why the work matters, builds a visible scope tree, detects the stack, and uses ProjectMap when it is fresh.
+4. A planning-first loop creates an approved plan before execution. Planning itself is never headless.
+5. During execution, each proposed change is checked against why, scope, route, model, approval, command, and root-guard policy.
+6. Granular approval defaults to `per-change`; broader modes are saved only when explicitly requested for that project.
+7. Task records, plan files, approval records, validation records, changelogs, and ProjectMap updates live under the project-local `.cleanclaw/` folder.
 
 ---
 
@@ -105,11 +106,17 @@ npm install -g .
 # Set up a project (run once per repo)
 cleanclaw init
 
-# Start a task
+# Attach an existing project explicitly
+cleanclaw attach .
+
+# Start or continue an interactive project session
+cleanclaw
+
+# Run a specific task directly when needed
 cleanclaw run "your task description"
 ```
 
-`cleanclaw init` walks you through declaring your project root, choosing your inference provider, and optionally configuring the ProjectMap embedding provider. If you skip the embedding provider prompt, local embedding via `all-MiniLM-L6-v2` is used automatically — no API key required.
+`cleanclaw init` walks you through declaring your project root, choosing your inference provider, and configuring ProjectMap. Local embedding is the default when no embedding provider is specified. Runtime prompts ask before starting NemoClaw/OpenShell, continuing standalone, changing settings, or stopping.
 
 CleanClaw will not write outside the declared project root under any circumstances.
 
@@ -118,12 +125,12 @@ CleanClaw will not write outside the declared project root under any circumstanc
 | Field | Default | Description |
 |---|---|---|
 | `projectName` | required | Your project name |
-| `provider` | `anthropic` | `anthropic` or `openai` |
+| `provider` | `nvidia-nim` | Supported provider id, including NVIDIA, OpenAI, Anthropic, compatible endpoints, `ollama-local`, or `vllm-local` |
 | `approvalGranularity` | `per-change` | `per-change`, `per-file`, or `per-step` |
-| `stack` | `dotnet` | `dotnet`, `svelte`, `angular`, or `blazor` |
+| `stack` | inferred | Inferred or selected stack, including common frontend, backend, mobile, Docker, and CI stacks |
 | `plansDir` | `./plans` | Where plans and logs are written |
 | `logFormat` | `markdown` | `markdown` or `json` |
-| `projectRoots` | `[]` | Declared project roots — set on first run, persisted globally |
+| `projectRoots` | `[]` | Declared project roots; project-local `.cleanclaw/settings.json` is preferred for active project work |
 | `enableWizardDelegation` | `false` | When true, LLM pre-populates task scoping questions |
 | `embeddings` | — | ProjectMap embedding config (see below) |
 | `layerMap` | — | Path prefix overrides for layer classification e.g. `{ "src/Shared": "backend" }` |
