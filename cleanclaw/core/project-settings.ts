@@ -8,6 +8,9 @@ export interface CleanClawProjectSettings {
   projectRoot: string;
   projectName: string;
   approvalGranularity: 'per-change' | 'per-file' | 'per-step';
+  preferredPlanStyle: 'guided' | 'concise' | 'detailed';
+  runtimeMode: 'ask' | 'standalone' | 'nemoclaw-preferred';
+  advancedOptionsVisible: boolean;
   plansDir: string;
   selectedStack?: string;
   detectedMarkers?: ProjectMarkerSetting[];
@@ -28,6 +31,9 @@ export function createProjectSettings(input: {
   projectRoot: string;
   projectName: string;
   approvalGranularity?: 'per-change' | 'per-file' | 'per-step';
+  preferredPlanStyle?: CleanClawProjectSettings['preferredPlanStyle'];
+  runtimeMode?: CleanClawProjectSettings['runtimeMode'];
+  advancedOptionsVisible?: boolean;
   plansDir?: string;
   selectedStack?: string;
   detectedMarkers?: ProjectMarkerSetting[];
@@ -37,6 +43,9 @@ export function createProjectSettings(input: {
     projectRoot: path.resolve(input.projectRoot),
     projectName: input.projectName,
     approvalGranularity: input.approvalGranularity ?? 'per-change',
+    preferredPlanStyle: input.preferredPlanStyle ?? 'guided',
+    runtimeMode: input.runtimeMode ?? 'ask',
+    advancedOptionsVisible: input.advancedOptionsVisible ?? false,
     plansDir: input.plansDir ?? './plans',
     detectedMarkers: input.detectedMarkers ?? [],
     updatedAt: input.updatedAt ?? new Date().toISOString(),
@@ -98,6 +107,29 @@ export function saveSelectedStack(projectRoot: string, stack: string, updatedAt?
   const updated = {
     ...settings,
     selectedStack: stack,
+    updatedAt: updatedAt ?? new Date().toISOString(),
+  };
+
+  saveProjectSettings(projectRoot, updated);
+  return updated;
+}
+
+export function updateProjectPreferences(
+  projectRoot: string,
+  preferences: Partial<Pick<
+    CleanClawProjectSettings,
+    'approvalGranularity' | 'preferredPlanStyle' | 'runtimeMode' | 'advancedOptionsVisible'
+  >>,
+  updatedAt?: string,
+): CleanClawProjectSettings {
+  const existing = loadProjectSettings(projectRoot);
+  const settings = existing ?? createProjectSettings({
+    projectRoot,
+    projectName: path.basename(path.resolve(projectRoot)),
+  });
+  const updated = {
+    ...settings,
+    ...preferences,
     updatedAt: updatedAt ?? new Date().toISOString(),
   };
 

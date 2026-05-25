@@ -593,7 +593,7 @@ Goal: users do not need to type provider ids, model names, stack ids, or approva
 - [x] Menus render cleanly in PowerShell, cmd, and POSIX shells.
 - [x] Users can still type natural language at any time.
 - [x] Users can type back, cancel, or exit instead of requiring visible menu entries everywhere.
-- [ ] Save user preferences per project for approval granularity, preferred plan style, runtime mode, and advanced option visibility.
+- [x] Save user preferences per project for approval granularity, preferred plan style, runtime mode, and advanced option visibility.
 
 ### Example Top-Level Menu
 

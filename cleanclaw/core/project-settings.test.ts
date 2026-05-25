@@ -10,6 +10,7 @@ import {
   projectSettingsPath,
   saveSelectedStack,
   saveProjectSettings,
+  updateProjectPreferences,
 } from './project-settings.js';
 
 describe('CleanClaw project settings', () => {
@@ -32,6 +33,9 @@ describe('CleanClaw project settings', () => {
       projectRoot: path.resolve(tmpDir),
       projectName: 'Demo',
       approvalGranularity: 'per-change',
+      preferredPlanStyle: 'guided',
+      runtimeMode: 'ask',
+      advancedOptionsVisible: false,
       plansDir: './plans',
       detectedMarkers: [],
       updatedAt: '2026-05-18T00:00:00.000Z',
@@ -124,5 +128,48 @@ describe('CleanClaw project settings', () => {
       updatedAt: '2026-05-24T00:00:00.000Z',
     });
     expect(loadProjectSettings(tmpDir)?.selectedStack).toBe('nextjs');
+  });
+
+  it('saves project workflow preferences without erasing existing settings', () => {
+    saveProjectSettings(tmpDir, createProjectSettings({
+      projectRoot: tmpDir,
+      projectName: 'Demo',
+      approvalGranularity: 'per-change',
+      selectedStack: 'nextjs',
+      updatedAt: '2026-05-18T00:00:00.000Z',
+    }));
+
+    const updated = updateProjectPreferences(tmpDir, {
+      approvalGranularity: 'per-file',
+      preferredPlanStyle: 'detailed',
+      runtimeMode: 'nemoclaw-preferred',
+      advancedOptionsVisible: true,
+    }, '2026-05-25T00:00:00.000Z');
+
+    expect(updated).toMatchObject({
+      projectName: 'Demo',
+      selectedStack: 'nextjs',
+      approvalGranularity: 'per-file',
+      preferredPlanStyle: 'detailed',
+      runtimeMode: 'nemoclaw-preferred',
+      advancedOptionsVisible: true,
+      updatedAt: '2026-05-25T00:00:00.000Z',
+    });
+    expect(loadProjectSettings(tmpDir)).toEqual(updated);
+  });
+
+  it('creates settings when saving preferences for a new project', () => {
+    const updated = updateProjectPreferences(tmpDir, {
+      runtimeMode: 'standalone',
+    }, '2026-05-25T00:00:00.000Z');
+
+    expect(updated).toMatchObject({
+      projectRoot: path.resolve(tmpDir),
+      projectName: path.basename(path.resolve(tmpDir)),
+      approvalGranularity: 'per-change',
+      preferredPlanStyle: 'guided',
+      runtimeMode: 'standalone',
+      advancedOptionsVisible: false,
+    });
   });
 });
