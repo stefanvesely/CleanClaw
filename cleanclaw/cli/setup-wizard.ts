@@ -67,8 +67,13 @@ async function runGlobalConfigWizard(
     const baseUrlRaw = providerMetadata.defaultBaseURL
       ? await ask(rl, `${providerMetadata.label} base URL [${providerMetadata.defaultBaseURL}]: `)
       : await ask(rl, `${providerMetadata.label} base URL (leave blank for provider default): `);
+    const apiKey = resolveSetupCredentialValue(
+      await ask(rl, credentialSetupPrompt(provider)),
+      provider,
+    );
     globalConfig.openai = {
       model: modelRaw || providerMetadata.defaultModel,
+      ...(apiKey ? { apiKey } : {}),
       ...(baseUrlRaw || providerMetadata.defaultBaseURL
         ? { baseURL: baseUrlRaw || providerMetadata.defaultBaseURL }
         : {}),
@@ -76,8 +81,13 @@ async function runGlobalConfigWizard(
   } else {
     const modelRaw = await ask(rl, `Default model [${providerMetadata.defaultModel}]: `);
     const baseUrlRaw = await ask(rl, `${providerMetadata.label} base URL (leave blank for provider default): `);
+    const apiKey = resolveSetupCredentialValue(
+      await ask(rl, credentialSetupPrompt(provider)),
+      provider,
+    );
     globalConfig.anthropic = {
       model: modelRaw || providerMetadata.defaultModel,
+      ...(apiKey ? { apiKey } : {}),
       ...(baseUrlRaw ? { baseURL: baseUrlRaw } : {}),
     };
   }
@@ -85,6 +95,28 @@ async function runGlobalConfigWizard(
   fs.mkdirSync(path.dirname(GLOBAL_CONFIG_PATH), { recursive: true });
   fs.writeFileSync(GLOBAL_CONFIG_PATH, JSON.stringify(globalConfig, null, 2), 'utf-8');
   logger.info(`\nGlobal config written to ${GLOBAL_CONFIG_PATH}`);
+}
+
+export function defaultSetupCredentialValue(provider: CleanClawProvider): string | null {
+  if (provider === 'ollama-local') return 'ollama';
+  if (provider === 'vllm-local') return 'vllm-local';
+  return null;
+}
+
+export function credentialSetupPrompt(provider: CleanClawProvider): string {
+  const providerMetadata = CLEANCLAW_PROVIDER_METADATA[provider];
+  const defaultCredential = defaultSetupCredentialValue(provider);
+  if (defaultCredential) {
+    return `${providerMetadata.label} API key/token [${defaultCredential}]: `;
+  }
+
+  return `${providerMetadata.label} API key/token (leave blank to use ${providerMetadata.credentialEnv} later): `;
+}
+
+export function resolveSetupCredentialValue(input: string, provider: CleanClawProvider): string | null {
+  const trimmed = input.trim();
+  if (trimmed) return trimmed;
+  return defaultSetupCredentialValue(provider);
 }
 
 async function runProjectInitFlow(

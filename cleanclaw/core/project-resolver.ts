@@ -1,11 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import { loadActiveProject } from './state-manager.js';
+import { detectProjectMarkers } from './project-markers.js';
 import { loadProjectSettings, projectSettingsPath } from './project-settings.js';
 
 export interface ActiveProjectResolution {
   projectRoot: string | null;
-  source: 'project-settings' | 'project-config' | 'global-active-project' | 'none';
+  source: 'project-settings' | 'project-config' | 'project-marker' | 'global-active-project' | 'none';
 }
 
 export function resolveActiveProject(options: {
@@ -28,6 +29,14 @@ export function resolveActiveProject(options: {
     return {
       projectRoot: localRoot,
       source: 'project-config',
+    };
+  }
+
+  const markerRoot = findProjectMarkerRoot(cwd);
+  if (markerRoot) {
+    return {
+      projectRoot: markerRoot,
+      source: 'project-marker',
     };
   }
 
@@ -58,5 +67,33 @@ function findLocalProjectRoot(startDir: string): string | null {
     const parent = path.dirname(current);
     if (parent === current) return null;
     current = parent;
+  }
+}
+
+function findProjectMarkerRoot(startDir: string): string | null {
+  let current = path.resolve(startDir);
+
+  while (true) {
+    if (safeDetectProjectMarkers(current).length > 0) {
+      return current;
+    }
+
+    const parent = path.dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
+function safeDetectProjectMarkers(projectRoot: string) {
+  try {
+    return detectProjectMarkers(projectRoot);
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error) {
+      const code = (error as { code?: string }).code;
+      if (code === 'EPERM' || code === 'EACCES' || code === 'ENOENT') {
+        return [];
+      }
+    }
+    throw error;
   }
 }

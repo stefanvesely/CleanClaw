@@ -35,12 +35,36 @@ export function resolveUserProjectDirectory(input: string, cwd?: string): Projec
   const trimmed = input.trim();
   if (!trimmed) return null;
 
-  const resolvedRoot = path.resolve(cwd ?? process.cwd(), trimmed);
+  const baseDir = path.resolve(cwd ?? process.cwd());
+  const resolvedRoot = isCurrentDirectoryReference(trimmed)
+    ? baseDir
+    : path.resolve(baseDir, trimmed);
   if (!fs.existsSync(resolvedRoot) || !fs.statSync(resolvedRoot).isDirectory()) {
     return null;
   }
 
   return createProjectIntakeCandidate(resolvedRoot, 'user-directory');
+}
+
+function isCurrentDirectoryReference(input: string): boolean {
+  const normalized = input.trim().toLowerCase().replace(/[.!?]+$/g, '').replace(/\s+/g, ' ');
+  return [
+    '.',
+    './',
+    'here',
+    'this folder',
+    'this directory',
+    'current folder',
+    'current directory',
+    'the current folder',
+    'the current directory',
+    'the folder i started in',
+    'the directory i started in',
+    'the directory i started from',
+    'the folder i started from',
+    'the folder cleanclaw started in',
+    'the directory cleanclaw started in',
+  ].includes(normalized);
 }
 
 export function formatProjectIntakeCandidate(candidate: ProjectIntakeCandidate, taskDescription: string): string {

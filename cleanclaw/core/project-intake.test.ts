@@ -48,6 +48,16 @@ describe('project intake', () => {
     expect(candidate?.source).toBe('user-directory');
   });
 
+  it('resolves natural current-folder phrases to the startup directory', () => {
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{}', 'utf-8');
+
+    const candidate = resolveUserProjectDirectory('the directory I started in', tmpDir);
+
+    expect(candidate?.projectRoot).toBe(path.resolve(tmpDir));
+    expect(candidate?.source).toBe('user-directory');
+    expect(candidate?.markers.map(marker => marker.label)).toContain('Node package');
+  });
+
   it('formats the candidate with why, root, and project signals', () => {
     fs.writeFileSync(path.join(tmpDir, 'package.json'), '{}', 'utf-8');
     const candidate = resolveUserProjectDirectory(tmpDir);

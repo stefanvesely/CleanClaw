@@ -29,6 +29,7 @@ describe('numbered prompt', () => {
     expect(output).toContain('2. Ask a project question');
     expect(output).toContain('Press Enter for: Start a new task plan');
     expect(output).toContain('You can also type what you want in plain language.');
+    expect(output.endsWith('\n')).toBe(true);
   });
 
   it('selects an option by number', () => {

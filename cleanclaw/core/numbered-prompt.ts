@@ -42,7 +42,7 @@ export function formatNumberedPrompt(config: NumberedPromptConfig): string {
     lines.push('You can also type what you want in plain language.');
   }
 
-  return lines.join('\n');
+  return `${lines.join('\n')}\n`;
 }
 
 export function parseNumberedPromptSelection(

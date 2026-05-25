@@ -56,6 +56,27 @@ describe('active project resolver', () => {
     });
   });
 
+  it('prefers the current project marker over a stale global active project', () => {
+    const globalProject = path.join(os.tmpdir(), 'global-cleanclaw-project');
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{}', 'utf-8');
+
+    expect(resolveActiveProject({ cwd: tmpDir, globalProject })).toEqual({
+      projectRoot: path.resolve(tmpDir),
+      source: 'project-marker',
+    });
+  });
+
+  it('walks upward to find the nearest project marker', () => {
+    const nested = path.join(tmpDir, 'src', 'feature');
+    fs.mkdirSync(nested, { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{}', 'utf-8');
+
+    expect(resolveActiveProject({ cwd: nested, globalProject: null })).toEqual({
+      projectRoot: path.resolve(tmpDir),
+      source: 'project-marker',
+    });
+  });
+
   it('falls back to global active project when no local project exists', () => {
     const globalProject = path.join(os.tmpdir(), 'global-cleanclaw-project');
 
