@@ -748,35 +748,35 @@ Task update note: per-change execution now awaits the non-fatal ProjectMap updat
 
 ### Stack Agents
 
-- [ ] TypeScript / JavaScript
-- [ ] Node package manager
-- [ ] CLI interaction
-- [ ] Git and changelog
-- [ ] Testing and validation
-- [ ] Documentation / README
-- [ ] Local LLM runtime
-- [ ] Embeddings / search
-- [ ] Security and permissions
-- [ ] Project planning records
-- [ ] React
-- [ ] Next.js
-- [ ] Vue
-- [ ] Nuxt
-- [ ] Node/Express
-- [ ] Python/FastAPI
-- [ ] Python/Django
-- [ ] Java/Spring
-- [ ] Go
-- [ ] Rust
-- [ ] PHP/Laravel
-- [ ] Ruby/Rails
-- [ ] Flutter
-- [ ] React Native
-- [ ] Docker / deployment
-- [ ] CI/CD
-- [ ] NemoClaw guardrails
-- [ ] Release packaging
-- [ ] Enterprise policy
+- [x] TypeScript / JavaScript
+- [x] Node package manager
+- [x] CLI interaction
+- [x] Git and changelog
+- [x] Testing and validation
+- [x] Documentation / README
+- [x] Local LLM runtime
+- [x] Embeddings / search
+- [x] Security and permissions
+- [x] Project planning records
+- [x] React
+- [x] Next.js
+- [x] Vue
+- [x] Nuxt
+- [x] Node/Express
+- [x] Python/FastAPI
+- [x] Python/Django
+- [x] Java/Spring
+- [x] Go
+- [x] Rust
+- [x] PHP/Laravel
+- [x] Ruby/Rails
+- [x] Flutter
+- [x] React Native
+- [x] Docker / deployment
+- [x] CI/CD
+- [x] NemoClaw guardrails
+- [x] Release packaging
+- [x] Enterprise policy
 
 ### Guardrail
 
@@ -788,7 +788,7 @@ Stack inference must not become permission creep. Detecting a database, deployme
 - [ ] Mixed-stack fixture.
 - [ ] Unknown project fallback.
 - [ ] Override persists.
-- [ ] Routing test per stack agent.
+- [x] Routing test per stack agent.
 - [x] Missing ProjectMap asks before build.
 - [x] Fresh ProjectMap is reused.
 - [x] Stale ProjectMap offers update/rebuild/stale/skip choices.

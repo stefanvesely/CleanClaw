@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { resolveLanguageAgent } from './agent-router.js';
+import { BUILT_IN_GENERIC_AGENT_DEFINITIONS, resolveLanguageAgent } from './agent-router.js';
 import type { CleanClawConfig } from '../config/config-schema.js';
 
 describe('agent router', () => {
   it('routes inferred generic stacks to built-in generic agents', () => {
     for (const stack of ['node', 'nextjs', 'vite', 'python', 'go', 'rust', 'java']) {
+      expect(resolveLanguageAgent(configFor(stack)).stack).toBe(stack);
+    }
+  });
+
+  it('routes every planned built-in generic specialist agent', () => {
+    for (const stack of Object.keys(BUILT_IN_GENERIC_AGENT_DEFINITIONS)) {
       expect(resolveLanguageAgent(configFor(stack)).stack).toBe(stack);
     }
   });
