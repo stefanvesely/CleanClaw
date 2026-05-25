@@ -207,7 +207,7 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 - [x] No dependency install, network call, service start/stop, destructive file action, commit, or push without explicit approval.
 - [x] No frontier model call without explicit approval.
 - [x] No project-root widening without explicit approval.
-- [ ] No hidden provider/model/sandbox changes.
+- [x] No hidden provider/model/sandbox changes.
 - [x] Reads inside the active project root are allowed during scope/inspection.
 - [x] Reads outside the active project root require approval, a reason, and why alignment.
 - [x] Broad project scans should be announced and logged.
