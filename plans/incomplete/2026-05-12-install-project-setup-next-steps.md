@@ -986,7 +986,7 @@ Records should include:
 
 - [x] Add a dedicated model-routing layer before changing pipeline behavior.
 - [x] Do not retrofit local/frontier/reviewer routing directly into `runPipeline()`.
-- [ ] Replace the single active provider assumption with model roles/policies.
+- [x] Replace the single active provider assumption with model roles/policies.
 - [ ] Add a local chat/coding provider abstraction; local embeddings are not enough.
 - [ ] Integrate local runtime lifecycle through NemoClaw/OpenShell where possible.
 - [x] Treat confidence as a practical signal set, not a raw model score.
