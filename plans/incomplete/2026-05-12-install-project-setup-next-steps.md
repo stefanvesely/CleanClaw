@@ -1204,18 +1204,18 @@ If a health check fails, CleanClaw pauses with numbered options.
 
 ### Tests
 
-- [ ] CleanClaw detects standalone mode.
-- [ ] CleanClaw detects NemoClaw-backed mode.
+- [x] CleanClaw detects standalone mode.
+- [x] CleanClaw detects NemoClaw-backed mode.
 - [ ] Setup checks for NemoClaw/OpenShell.
 - [ ] Startup checks whether NemoClaw is running.
 - [ ] NemoClaw missing offers install/configure, standalone, or stop.
 - [ ] NemoClaw installed but stopped offers start, standalone, or stop.
 - [x] Auto-start obeys project setting.
 - [ ] Sandbox unavailable asks before host fallback.
-- [ ] Missing credential stops with guidance.
-- [ ] Provider route change asks.
-- [ ] Secrets are not written to logs.
-- [ ] Outside-root execution is blocked.
+- [x] Missing credential stops with guidance.
+- [x] Provider route change asks.
+- [x] Secrets are not written to logs.
+- [x] Outside-root execution is blocked.
 
 ### Exit Criteria
 
