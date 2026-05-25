@@ -988,15 +988,15 @@ Records should include:
 - [x] Do not retrofit local/frontier/reviewer routing directly into `runPipeline()`.
 - [x] Replace the single active provider assumption with model roles/policies.
 - [x] Add a local chat/coding provider abstraction; local embeddings are not enough.
-- [ ] Integrate local runtime lifecycle through NemoClaw/OpenShell where possible.
+- [x] Integrate local runtime lifecycle through NemoClaw/OpenShell where possible.
 - [x] Treat confidence as a practical signal set, not a raw model score.
 - [x] Change headless so it runs only from pre-approved plans.
 - [x] Add a reviewer gate before execution, before each risky/scope-changing edit, and before headless completion.
 
 ### Tests
 
-- [ ] Local unavailable gives clear setup guidance.
-- [ ] Local runtime does not start until CleanClaw runs.
+- [x] Local unavailable gives clear setup guidance.
+- [x] Local runtime does not start until CleanClaw runs.
 - [x] Frontier model is blocked without approval.
 - [x] Approved frontier use is recorded.
 - [ ] Local-only task never calls frontier.
@@ -1004,7 +1004,7 @@ Records should include:
 - [x] Headless mode is blocked unless coder and reviewer roles are configured.
 - [x] Same-model coder/reviewer warning is shown and recorded.
 - [x] Reviewer model can block headless execution.
-- [ ] Local runtime only runs during CleanClaw session unless explicitly configured otherwise.
+- [x] Local runtime only runs during CleanClaw session unless explicitly configured otherwise.
 
 ### Exit Criteria
 
@@ -1210,7 +1210,7 @@ If a health check fails, CleanClaw pauses with numbered options.
 - [ ] Startup checks whether NemoClaw is running.
 - [ ] NemoClaw missing offers install/configure, standalone, or stop.
 - [ ] NemoClaw installed but stopped offers start, standalone, or stop.
-- [ ] Auto-start obeys project setting.
+- [x] Auto-start obeys project setting.
 - [ ] Sandbox unavailable asks before host fallback.
 - [ ] Missing credential stops with guidance.
 - [ ] Provider route change asks.
