@@ -53,4 +53,30 @@ describe('frontier escalation policy', () => {
       'stop-and-plan',
     ]);
   });
+
+  it('derives escalation from practical confidence signals', () => {
+    const decision = evaluateFrontierEscalation({
+      confidenceSignals: [
+        {
+          id: 'project',
+          label: 'Project confirmed',
+          status: 'confirmed',
+          reason: 'User confirmed the project.',
+        },
+        {
+          id: 'designs',
+          label: 'Designs missing',
+          status: 'blocked',
+          reason: 'Jacob has not supplied designs.',
+        },
+      ],
+      complexity: 'moderate',
+      risk: 'medium',
+    });
+
+    expect(decision).toEqual({
+      escalationRecommended: true,
+      reasons: ['local confidence is low'],
+    });
+  });
 });

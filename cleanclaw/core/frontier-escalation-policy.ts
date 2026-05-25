@@ -1,8 +1,13 @@
 import type { NumberedPromptConfig } from './numbered-prompt.js';
+import {
+  evaluateConfidenceSignals,
+  type ConfidenceSignal,
+} from './confidence-signals.js';
 
 export interface FrontierEscalationInput {
   localTimedOut?: boolean;
   localConfidence?: 'high' | 'medium' | 'low' | 'unknown';
+  confidenceSignals?: ConfidenceSignal[];
   complexity?: 'simple' | 'moderate' | 'complex';
   risk?: 'low' | 'medium' | 'high';
 }
@@ -14,10 +19,12 @@ export interface FrontierEscalationDecision {
 
 export function evaluateFrontierEscalation(input: FrontierEscalationInput): FrontierEscalationDecision {
   const reasons: string[] = [];
+  const localConfidence = input.localConfidence
+    ?? (input.confidenceSignals ? evaluateConfidenceSignals(input.confidenceSignals).confidence : undefined);
 
   if (input.localTimedOut) reasons.push('local model timed out');
-  if (input.localConfidence === 'low' || input.localConfidence === 'unknown') {
-    reasons.push(`local confidence is ${input.localConfidence}`);
+  if (localConfidence === 'low' || localConfidence === 'unknown') {
+    reasons.push(`local confidence is ${localConfidence}`);
   }
   if (input.complexity === 'complex') reasons.push('task complexity is high');
   if (input.risk === 'high') reasons.push('task risk is high');

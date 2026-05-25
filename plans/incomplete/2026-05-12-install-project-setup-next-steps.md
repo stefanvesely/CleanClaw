@@ -989,7 +989,7 @@ Records should include:
 - [ ] Replace the single active provider assumption with model roles/policies.
 - [ ] Add a local chat/coding provider abstraction; local embeddings are not enough.
 - [ ] Integrate local runtime lifecycle through NemoClaw/OpenShell where possible.
-- [ ] Treat confidence as a practical signal set, not a raw model score.
+- [x] Treat confidence as a practical signal set, not a raw model score.
 - [x] Change headless so it runs only from pre-approved plans.
 - [ ] Add a reviewer gate before execution, before each risky/scope-changing edit, and before headless completion.
 
