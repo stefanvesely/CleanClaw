@@ -189,7 +189,7 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 
 - [x] Store the user's approval text as the source of truth for now.
 - [x] Append approval records to the task approval log.
-- [ ] Keep normalized approval events as a later enterprise-gateway enhancement.
+- [x] Keep normalized approval events as a later enterprise-gateway enhancement.
 
 ```json
 {
