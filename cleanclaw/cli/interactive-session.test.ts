@@ -9,6 +9,7 @@ import { startInteractiveLoop, startInteractiveSession } from './interactive-ses
 
 describe('interactive session', () => {
   let tmpDir: string;
+  const today = new Date().toISOString().slice(0, 10);
 
   beforeEach(() => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cleanclaw-interactive-session-'));
@@ -49,7 +50,7 @@ describe('interactive session', () => {
       },
       taskId: 'task1',
       taskStatePath: path.join(tmpDir, '.cleanclaw', 'tasks', 'task1', 'state.json'),
-      draftPlanPath: path.join(tmpDir, 'plans', 'inprogress', '2026-05-24-fix-login-cache.md'),
+      draftPlanPath: path.join(tmpDir, 'plans', 'inprogress', `${today}-fix-login-cache.md`),
       mode: 'planning',
       planChoice: 'new',
       selectedPlan: null,
@@ -181,7 +182,7 @@ describe('interactive session', () => {
       },
       taskId: 'task1',
       taskStatePath: path.join(projectDir, '.cleanclaw', 'tasks', 'task1', 'state.json'),
-      draftPlanPath: path.join(projectDir, 'plans', 'inprogress', '2026-05-24-fix-login-cache.md'),
+      draftPlanPath: path.join(projectDir, 'plans', 'inprogress', `${today}-fix-login-cache.md`),
       mode: 'planning',
       planChoice: 'new',
       selectedPlan: null,
@@ -211,7 +212,7 @@ describe('interactive session', () => {
     expect(result.projectConfirmed).toBe(true);
     expect(result.taskWhy?.approved).toBe(true);
     expect(result.taskId).toBe('task1');
-    expect(result.draftPlanPath).toBe(path.join(correctProject, 'plans', 'inprogress', '2026-05-24-fix-login-cache.md'));
+    expect(result.draftPlanPath).toBe(path.join(correctProject, 'plans', 'inprogress', `${today}-fix-login-cache.md`));
     expect(result.mode).toBe('planning');
     expect(result.planChoice).toBe('new');
   });

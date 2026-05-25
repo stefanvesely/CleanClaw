@@ -1568,7 +1568,7 @@ README should explain:
   - asks to build ProjectMap
   - checks NemoClaw runtime
   - enters planning mode
-- [ ] Planning-only task:
+- [x] Planning-only task:
   - asks why
   - creates plan
   - shows workspace scope tree
@@ -1594,11 +1594,11 @@ README should explain:
   - asks approval
   - records approval text
   - updates scope tree
-- [ ] Headless rejection:
+- [x] Headless rejection:
   - CleanClaw refuses headless without approved planning
   - explains why
   - offers to create an approved plan first
-- [ ] NemoClaw degraded runtime:
+- [x] NemoClaw degraded runtime:
   - CleanClaw warns
   - offers start NemoClaw, standalone, settings, or stop
   - does not silently degrade
@@ -1629,13 +1629,13 @@ And project-level records exist:
 ### Final Acceptance Criteria
 
 - [ ] A non-engineer can install and start CleanClaw.
-- [ ] CleanClaw can attach to a project and infer stack.
-- [ ] CleanClaw can build/reuse ProjectMap.
-- [ ] CleanClaw can run planning-first.
+- [x] CleanClaw can attach to a project and infer stack.
+- [x] CleanClaw can build/reuse ProjectMap.
+- [x] CleanClaw can run planning-first.
 - [ ] CleanClaw can execute a controlled task with granular approval.
-- [ ] CleanClaw returns to planning after completion.
-- [ ] CleanClaw refuses unsafe headless mode.
-- [ ] CleanClaw makes NemoClaw runtime status visible.
+- [x] CleanClaw returns to planning after completion.
+- [x] CleanClaw refuses unsafe headless mode.
+- [x] CleanClaw makes NemoClaw runtime status visible.
 - [x] README matches the real workflow.
 - [x] Changelog and plan records are current.
 
