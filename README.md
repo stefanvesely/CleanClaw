@@ -120,6 +120,86 @@ cleanclaw run "your task description"
 
 CleanClaw will not write outside the declared project root under any circumstances.
 
+## Local coding model with Ollama
+
+CleanClaw does not bundle a full coding LLM. For local coding work, the current manual setup path is Ollama plus a coding model such as `qwen3-coder:30b`.
+
+Install Ollama for Windows from [ollama.com/download](https://ollama.com/download), then open a new PowerShell window.
+
+Check Ollama is installed:
+
+```powershell
+ollama --version
+```
+
+Check the local Ollama server is responding:
+
+```powershell
+Invoke-WebRequest http://localhost:11434/api/tags
+```
+
+Pull and run the recommended local coding model:
+
+```powershell
+ollama run qwen3-coder:30b
+```
+
+`qwen3-coder:30b` is large. If the machine cannot run it comfortably, use a smaller Ollama coding model and store that model name in the project settings/config instead.
+
+Inside the Ollama prompt, test the model:
+
+```text
+Write a tiny TypeScript function that adds two numbers.
+```
+
+Exit the Ollama prompt:
+
+```text
+/bye
+```
+
+Confirm the model exists locally:
+
+```powershell
+ollama list
+```
+
+Test the Ollama chat API:
+
+```powershell
+$body = @{
+  model = "qwen3-coder:30b"
+  messages = @(
+    @{
+      role = "user"
+      content = "Say CleanClaw local model is ready."
+    }
+  )
+  stream = $false
+} | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod `
+  -Uri "http://localhost:11434/api/chat" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+CleanClaw's local chat/coding provider expects the OpenAI-compatible Ollama endpoint:
+
+```json
+{
+  "provider": "ollama-local",
+  "openai": {
+    "apiKey": "ollama",
+    "model": "qwen3-coder:30b",
+    "baseURL": "http://localhost:11434/v1"
+  }
+}
+```
+
+Future setup work should make this automatic: detect Ollama, ask before pulling the recommended model, save it as the project's local coder model, and verify it before continuing.
+
 ## Config reference (`cleanclaw.config.json`)
 
 | Field | Default | Description |
