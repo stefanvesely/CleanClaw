@@ -14,6 +14,7 @@ export interface ModelRolePolicyInput {
   defaultModel: string;
   routes?: ModelRoleRoute[];
   requireReviewer?: boolean;
+  localOnly?: boolean;
 }
 
 export interface ModelRolePolicyDecision {
@@ -36,6 +37,9 @@ export function resolveModelRolePolicy(input: ModelRolePolicyInput): ModelRolePo
     if (!providerMetadata(route.provider)) warnings.push(`unknown provider for ${route.role}: ${route.provider}`);
     if (isLocalRole(route.role) && !LOCAL_PROVIDERS.has(route.provider)) {
       missing.push(`${route.role} must use a local provider`);
+    }
+    if (input.localOnly && !LOCAL_PROVIDERS.has(route.provider)) {
+      missing.push(`${route.role} must stay local in local-only mode`);
     }
   }
 

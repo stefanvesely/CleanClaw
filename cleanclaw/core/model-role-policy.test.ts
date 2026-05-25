@@ -95,4 +95,37 @@ describe('model role policy', () => {
     expect(decision.valid).toBe(true);
     expect(decision.missing).toEqual([]);
   });
+
+  it('blocks frontier default routes in local-only mode', () => {
+    const decision = resolveModelRolePolicy({
+      defaultProvider: 'openai-api',
+      defaultModel: 'gpt-5.4',
+      localOnly: true,
+    });
+
+    expect(decision.valid).toBe(false);
+    expect(decision.missing).toEqual([
+      'planner must stay local in local-only mode',
+      'coder must stay local in local-only mode',
+    ]);
+  });
+
+  it('allows all-local routes in local-only mode', () => {
+    const decision = resolveModelRolePolicy({
+      defaultProvider: 'ollama-local',
+      defaultModel: 'nemotron-3-nano:30b',
+      localOnly: true,
+      routes: [
+        {
+          role: 'reviewer',
+          provider: 'vllm-local',
+          model: 'local-reviewer',
+          reason: 'Local reviewer for local-only task.',
+        },
+      ],
+    });
+
+    expect(decision.valid).toBe(true);
+    expect(decision.missing).toEqual([]);
+  });
 });

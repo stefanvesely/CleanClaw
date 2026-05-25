@@ -999,7 +999,7 @@ Records should include:
 - [x] Local runtime does not start until CleanClaw runs.
 - [x] Frontier model is blocked without approval.
 - [x] Approved frontier use is recorded.
-- [ ] Local-only task never calls frontier.
+- [x] Local-only task never calls frontier.
 - [x] High-risk task prompts for reviewer.
 - [x] Headless mode is blocked unless coder and reviewer roles are configured.
 - [x] Same-model coder/reviewer warning is shown and recorded.
