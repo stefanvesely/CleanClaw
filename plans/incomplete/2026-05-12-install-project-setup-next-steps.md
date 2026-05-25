@@ -695,7 +695,7 @@ Embedding freshness note: ProjectMap manifests now record embedding provider/mod
 ### ProjectMap Storage Policy
 
 - [x] ProjectMap/vector files are per-project and live under `.cleanclaw/projectmap/`.
-- [ ] ProjectMap is commit-eligible by default.
+- [x] ProjectMap is commit-eligible by default.
 - [x] If `.cleanclaw/projectmap/` is `<= 50 MB`, keep it inside the project repo and treat it as valid project memory.
 - [x] If `.cleanclaw/projectmap/` is `> 50 MB`, warn the user and show current size.
 - [x] Over 50 MB, offer numbered choices:

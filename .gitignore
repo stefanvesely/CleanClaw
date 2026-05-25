@@ -23,7 +23,10 @@ cleanclaw.config.json
 
 # CleanClaw runtime workspace data (local only — never commit)
 .cleanclaw/plans/
-.cleanclaw/projectmap/
+
+# CleanClaw project memory is commit-eligible by default.
+# The storage policy warns at 50 MB before large ProjectMap files are committed.
+.cleanclaw/projectmap/registry.json
 
 # Project-specific
 .nemoclaw-maintainer/
