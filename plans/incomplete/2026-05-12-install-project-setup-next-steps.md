@@ -720,12 +720,14 @@ Storage policy note: setup now inspects `.cleanclaw/projectmap/` size after reus
   - `2. Rebuild full ProjectMap`
   - `3. Continue with stale ProjectMap`
   - `4. Skip ProjectMap for this task`
-- [ ] After every completed task:
+- [x] After every completed task:
   - edited files are re-indexed
   - new files are added to ProjectMap
   - deleted files are removed from ProjectMap
   - vectors are updated incrementally
   - scope tree records changed files and ProjectMap update status
+
+Task update note: per-change execution now awaits the non-fatal ProjectMap update result and appends `updated`, `skipped`, or `failed` records to the task scope tree for each applied file change.
 
 ### Detection Signals
 
@@ -1497,7 +1499,7 @@ Headless cannot improvise.
 - [x] Default approval granularity is per-change.
 - [x] Project-level approval preference changes only after explicit user request.
 - [x] Broader approval preference is saved in project-local settings.
-- [ ] ProjectMap updates after completed task.
+- [x] ProjectMap updates after completed task.
 - [x] Task records and changelog are written project-locally.
 - [x] After task completion, CleanClaw returns to planning mode.
 - [x] Headless execution stops instead of expanding scope.

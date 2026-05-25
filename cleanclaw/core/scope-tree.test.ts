@@ -16,6 +16,7 @@ import {
   markScopeTreeWhyApproved,
   recordScopeTreeAppliedChange,
   recordScopeTreePreEditCheck,
+  recordScopeTreeProjectMapUpdate,
   requiresOutOfRootApproval,
   saveScopeTree,
   setScopeTreeValidationCommands,
@@ -58,6 +59,7 @@ describe('CleanClaw scope tree', () => {
       plannedNewFiles: ['src/menu.ts'],
       validationCommands: ['npm test'],
       outOfRootRequests: [],
+      projectMapUpdates: [],
       updatedAt: '2026-05-18T00:00:00.000Z',
     });
   });
@@ -118,6 +120,7 @@ describe('CleanClaw scope tree', () => {
     expect(formatScopeTree(tree)).toContain('- src/index.ts');
     expect(formatScopeTree(tree)).toContain('- src/menu.ts');
     expect(formatScopeTree(tree)).toContain('- npm test');
+    expect(formatScopeTree(tree)).toContain('ProjectMap updates');
   });
 
   it('formats workspace scope before generated plan for review', () => {
@@ -229,5 +232,41 @@ describe('CleanClaw scope tree', () => {
     });
     expect(completed.validationCommands).toEqual(['npm test']);
     expect(completed.updatedAt).toBe('2026-05-18T00:05:00.000Z');
+  });
+
+  it('records ProjectMap update status per changed file', () => {
+    const tree = createScopeTree({
+      taskId: 'task-1',
+      projectRoot: tmpDir,
+      updatedAt: '2026-05-18T00:00:00.000Z',
+    });
+
+    const updated = recordScopeTreeProjectMapUpdate(tree, {
+      filePath: 'src/index.ts',
+      status: 'updated',
+      updatedAt: '2026-05-18T00:01:00.000Z',
+    });
+    const failed = recordScopeTreeProjectMapUpdate(updated, {
+      filePath: 'src/old.ts',
+      status: 'failed',
+      reason: 'ProjectMap update failed',
+      updatedAt: '2026-05-18T00:02:00.000Z',
+    });
+
+    expect(failed.projectMapUpdates).toEqual([
+      {
+        filePath: 'src/index.ts',
+        status: 'updated',
+        updatedAt: '2026-05-18T00:01:00.000Z',
+      },
+      {
+        filePath: 'src/old.ts',
+        status: 'failed',
+        reason: 'ProjectMap update failed',
+        updatedAt: '2026-05-18T00:02:00.000Z',
+      },
+    ]);
+    expect(failed.updatedAt).toBe('2026-05-18T00:02:00.000Z');
+    expect(formatScopeTree(failed)).toContain('src/old.ts (failed; ProjectMap update failed)');
   });
 });

@@ -25,6 +25,7 @@ import {
   formatWorkspaceScopeReview,
   isFileInScopeTree,
   markScopeTreeWhyApproved,
+  recordScopeTreeProjectMapUpdate,
   recordScopeTreeAppliedChange,
   recordScopeTreePreEditCheck,
   saveScopeTree,
@@ -332,9 +333,10 @@ async function runPipelinePerChange(
     }
 
     applyChange(proposed);
-    triggerProjectMapUpdate(proposed.filename, activeRoot, config, logger);
+    const projectMapUpdate = await triggerProjectMapUpdate(proposed.filename, activeRoot, config, logger);
     appendLogEntry(taskId, variant, changeNumber, proposed, before, why, model, plansDir, config.logFormat ?? 'markdown');
     markStepComplete(planPath, step.body, completedPlanPath, logger);
+    scopeTree = recordScopeTreeProjectMapUpdate(scopeTree, projectMapUpdate);
     scopeTree = recordScopeTreeAppliedChange(scopeTree);
     saveScopeTree(activeRoot, scopeTree);
     logger.info(`[CleanClaw] Change ${changeNumber} applied and logged.`);

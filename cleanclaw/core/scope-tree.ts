@@ -20,6 +20,7 @@ export interface ScopeTree {
   plannedNewFiles: string[];
   validationCommands: string[];
   outOfRootRequests: OutOfRootRequest[];
+  projectMapUpdates: ProjectMapUpdateRecord[];
   updatedAt: string;
 }
 
@@ -31,6 +32,13 @@ export interface ScopeTreeLifecycle {
   completedAt: string | null;
 }
 
+export interface ProjectMapUpdateRecord {
+  filePath: string;
+  status: 'updated' | 'skipped' | 'failed';
+  reason?: string;
+  updatedAt: string;
+}
+
 export function createScopeTree(input: {
   taskId: string;
   projectRoot: string;
@@ -39,6 +47,7 @@ export function createScopeTree(input: {
   plannedNewFiles?: string[];
   validationCommands?: string[];
   outOfRootRequests?: OutOfRootRequest[];
+  projectMapUpdates?: ProjectMapUpdateRecord[];
   lifecycle?: Partial<ScopeTreeLifecycle>;
   updatedAt?: string;
 }): ScopeTree {
@@ -67,6 +76,7 @@ export function createScopeTree(input: {
       ...requestsFromPaths(plannedNewFiles.outOfRoot, 'planned new file'),
       ...(input.outOfRootRequests ?? []),
     ],
+    projectMapUpdates: input.projectMapUpdates ?? [],
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
 }
@@ -81,7 +91,11 @@ export function saveScopeTree(projectRoot: string, scopeTree: ScopeTree): string
 export function loadScopeTree(projectRoot: string, taskId: string): ScopeTree | null {
   const filepath = path.join(taskRecordDir(projectRoot, taskId), SCOPE_TREE_FILE);
   if (!fs.existsSync(filepath)) return null;
-  return JSON.parse(fs.readFileSync(filepath, 'utf-8')) as ScopeTree;
+  const parsed = JSON.parse(fs.readFileSync(filepath, 'utf-8')) as ScopeTree;
+  return {
+    ...parsed,
+    projectMapUpdates: parsed.projectMapUpdates ?? [],
+  };
 }
 
 export function isFileInScopeTree(scopeTree: ScopeTree, filePath: string): boolean {
@@ -197,6 +211,17 @@ export function recordScopeTreeAppliedChange(scopeTree: ScopeTree, updatedAt = n
   };
 }
 
+export function recordScopeTreeProjectMapUpdate(
+  scopeTree: ScopeTree,
+  update: ProjectMapUpdateRecord,
+): ScopeTree {
+  return {
+    ...scopeTree,
+    projectMapUpdates: [...scopeTree.projectMapUpdates, update],
+    updatedAt: update.updatedAt,
+  };
+}
+
 export function setScopeTreeValidationCommands(
   scopeTree: ScopeTree,
   validationCommands: string[],
@@ -248,6 +273,9 @@ export function formatScopeTree(scopeTree: ScopeTree): string {
     '',
     'Validation commands',
     formatList(scopeTree.validationCommands),
+    '',
+    'ProjectMap updates',
+    formatProjectMapUpdates(scopeTree.projectMapUpdates),
     '',
     'Outside project root requests',
     formatOutOfRootRequests(scopeTree.outOfRootRequests),
@@ -336,6 +364,13 @@ function formatOutOfRootRequests(items: OutOfRootRequest[]): string {
   if (items.length === 0) return '  - none';
   return items
     .map((item) => `  - ${item.path} (${item.reason}; ${item.whyAlignment}; approved: ${item.approved})`)
+    .join('\n');
+}
+
+function formatProjectMapUpdates(items: ProjectMapUpdateRecord[]): string {
+  if (items.length === 0) return '  - none';
+  return items
+    .map((item) => `  - ${item.filePath} (${item.status}${item.reason ? `; ${item.reason}` : ''})`)
     .join('\n');
 }
 
