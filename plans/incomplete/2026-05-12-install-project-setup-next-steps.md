@@ -704,7 +704,7 @@ Embedding freshness note: ProjectMap manifests now record embedding provider/mod
   - `3. Compact/rebuild ProjectMap`
   - `4. Exclude selected folders`
 - [x] 50 MB is a default warning threshold, not a hard block.
-- [ ] Headless cannot override the storage policy unless the approved headless plan includes that policy.
+- [x] Headless cannot override the storage policy unless the approved headless plan includes that policy.
 - [x] Store the threshold and chosen policy in the ProjectMap manifest.
 
 Storage policy note: setup now inspects `.cleanclaw/projectmap/` size after reusing or building ProjectMap, reports whether it is within the 50 MB warning threshold, and prompts with numbered choices when over threshold. The selected policy and last observed size are stored in the manifest.
