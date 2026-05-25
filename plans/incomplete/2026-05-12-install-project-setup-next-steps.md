@@ -228,9 +228,9 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 - [x] Headless mode is available only after user-approved planning.
 - [x] Headless mode requires user-approved why, plan, file scope, risk limits, validation policy, storage policy, model policy, and headless permissions.
 - [x] Headless mode requires a frontier coder role and a frontier reviewer/policeman role.
-- [ ] Prefer distinct frontier model identities for coder and reviewer.
-- [ ] Allow the same model for coder and reviewer only after a warning and explicit user approval.
-- [ ] If the same model is used for both roles, record reduced review independence in `approval-records.json` and `model-routing.md`.
+- [x] Prefer distinct frontier model identities for coder and reviewer.
+- [x] Allow the same model for coder and reviewer only after a warning and explicit user approval.
+- [x] If the same model is used for both roles, record reduced review independence in `approval-records.json` and `model-routing.md`.
 - [x] Reviewer model checks why alignment, file scope, diff, validation, risk limits, and whether the user must be called back.
 - [x] All headless decisions are recorded.
 - [x] Headless optional permissions are explicit subsections:
@@ -270,7 +270,7 @@ Planning cannot be headless. The user is the link to the client, so the user mus
 - [ ] Local timeout or complexity threshold triggers frontier-review prompt.
 - [x] Headless mode is rejected before planning is complete.
 - [x] Headless mode is rejected without coder and reviewer roles.
-- [ ] Same-model headless coder/reviewer requires warning and explicit approval.
+- [x] Same-model headless coder/reviewer requires warning and explicit approval.
 - [x] Headless commit is rejected.
 - [x] Commit and push are blocked until approved.
 - [x] Push is rejected by default.
@@ -1002,7 +1002,7 @@ Records should include:
 - [ ] Local-only task never calls frontier.
 - [ ] High-risk task prompts for reviewer.
 - [x] Headless mode is blocked unless coder and reviewer roles are configured.
-- [ ] Same-model coder/reviewer warning is shown and recorded.
+- [x] Same-model coder/reviewer warning is shown and recorded.
 - [x] Reviewer model can block headless execution.
 - [ ] Local runtime only runs during CleanClaw session unless explicitly configured otherwise.
 
