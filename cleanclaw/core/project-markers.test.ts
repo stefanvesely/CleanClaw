@@ -45,4 +45,36 @@ describe('project marker detection', () => {
       'next.config.mjs:Next.js config',
     ]);
   });
+
+  it('detects broader stack fixture marker files', () => {
+    for (const file of [
+      'angular.json',
+      'nuxt.config.ts',
+      'manage.py',
+      'composer.json',
+      'artisan',
+      'Gemfile',
+      'pubspec.yaml',
+      'react-native.config.js',
+      'Dockerfile',
+    ]) {
+      fs.writeFileSync(path.join(tmpDir, file), '', 'utf-8');
+    }
+    fs.mkdirSync(path.join(tmpDir, '.github', 'workflows'), { recursive: true });
+
+    const labels = detectProjectMarkers(tmpDir).map(marker => marker.label);
+
+    expect(labels).toEqual(expect.arrayContaining([
+      'Angular config',
+      'Nuxt config',
+      'Django manage.py',
+      'PHP Composer package',
+      'Laravel artisan',
+      'Ruby bundle',
+      'Flutter pubspec',
+      'React Native config',
+      'Dockerfile',
+      'GitHub Actions workflow',
+    ]));
+  });
 });

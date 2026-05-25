@@ -21,12 +21,23 @@ const MARKER_STACKS: Record<string, { stack: string; weight: number }> = {
   go: { stack: 'go', weight: 3 },
   rust: { stack: 'rust', weight: 3 },
   java: { stack: 'java', weight: 3 },
+  php: { stack: 'php', weight: 3 },
+  ruby: { stack: 'ruby', weight: 3 },
+  flutter: { stack: 'flutter', weight: 4 },
+  docker: { stack: 'docker', weight: 3 },
+  ci: { stack: 'cicd', weight: 3 },
 };
 
 const FRAMEWORK_LABELS: Array<{ pattern: RegExp; stack: string; weight: number }> = [
   { pattern: /next\.js/i, stack: 'nextjs', weight: 5 },
   { pattern: /vite/i, stack: 'vite', weight: 4 },
   { pattern: /svelte/i, stack: 'svelte', weight: 5 },
+  { pattern: /angular/i, stack: 'angular', weight: 5 },
+  { pattern: /vue/i, stack: 'vue', weight: 5 },
+  { pattern: /nuxt/i, stack: 'nuxt', weight: 5 },
+  { pattern: /django/i, stack: 'django', weight: 5 },
+  { pattern: /laravel/i, stack: 'laravel', weight: 5 },
+  { pattern: /react native/i, stack: 'react-native', weight: 5 },
 ];
 
 export function inferProjectStack(markers: DetectedProjectMarker[]): StackInferenceResult {

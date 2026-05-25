@@ -52,6 +52,34 @@ describe('stack inference', () => {
   it('formats missing stack evidence', () => {
     expect(formatStackInference(inferProjectStack([]))).toBe('No stack could be inferred from project markers.');
   });
+
+  it('covers stack fixture signals from known project markers', () => {
+    const fixtures: Array<[string, DetectedProjectMarker]> = [
+      ['nextjs', marker('Next.js config', 'next.config.mjs', 'framework')],
+      ['vite', marker('Vite config', 'vite.config.ts', 'framework')],
+      ['svelte', marker('Svelte config', 'svelte.config.js', 'framework')],
+      ['angular', marker('Angular config', 'angular.json', 'framework')],
+      ['vue', marker('Vue config', 'vue.config.js', 'framework')],
+      ['nuxt', marker('Nuxt config', 'nuxt.config.ts', 'framework')],
+      ['dotnet', marker('.NET project', 'App.csproj', 'dotnet')],
+      ['python', marker('Python project', 'pyproject.toml', 'python')],
+      ['django', marker('Django manage.py', 'manage.py', 'framework')],
+      ['go', marker('Go module', 'go.mod', 'go')],
+      ['rust', marker('Rust crate', 'Cargo.toml', 'rust')],
+      ['java', marker('Maven project', 'pom.xml', 'java')],
+      ['php', marker('PHP Composer package', 'composer.json', 'php')],
+      ['laravel', marker('Laravel artisan', 'artisan', 'framework')],
+      ['ruby', marker('Ruby bundle', 'Gemfile', 'ruby')],
+      ['flutter', marker('Flutter pubspec', 'pubspec.yaml', 'flutter')],
+      ['react-native', marker('React Native config', 'react-native.config.js', 'framework')],
+      ['docker', marker('Dockerfile', 'Dockerfile', 'docker')],
+      ['cicd', marker('GitHub Actions workflow', '.github/workflows', 'ci')],
+    ];
+
+    for (const [expected, signal] of fixtures) {
+      expect(inferProjectStack([signal]).bestGuess?.stack).toBe(expected);
+    }
+  });
 });
 
 function marker(

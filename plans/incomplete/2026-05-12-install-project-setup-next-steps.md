@@ -784,10 +784,10 @@ Stack inference must not become permission creep. Detecting a database, deployme
 
 ### Tests
 
-- [ ] Fixture per stack.
-- [ ] Mixed-stack fixture.
-- [ ] Unknown project fallback.
-- [ ] Override persists.
+- [x] Fixture per stack.
+- [x] Mixed-stack fixture.
+- [x] Unknown project fallback.
+- [x] Override persists.
 - [x] Routing test per stack agent.
 - [x] Missing ProjectMap asks before build.
 - [x] Fresh ProjectMap is reused.

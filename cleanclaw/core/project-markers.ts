@@ -4,7 +4,21 @@ import path from 'path';
 export interface ProjectMarker {
   label: string;
   relativePath: string;
-  kind: 'cleanclaw' | 'git' | 'node' | 'dotnet' | 'python' | 'go' | 'rust' | 'java' | 'framework';
+  kind:
+    | 'cleanclaw'
+    | 'git'
+    | 'node'
+    | 'dotnet'
+    | 'python'
+    | 'go'
+    | 'rust'
+    | 'java'
+    | 'php'
+    | 'ruby'
+    | 'flutter'
+    | 'docker'
+    | 'ci'
+    | 'framework';
 }
 
 const MARKERS: ProjectMarker[] = [
@@ -27,6 +41,17 @@ const MARKERS: ProjectMarker[] = [
   { label: 'Vite config', relativePath: 'vite.config.*', kind: 'framework' },
   { label: 'Next.js config', relativePath: 'next.config.*', kind: 'framework' },
   { label: 'Svelte config', relativePath: 'svelte.config.*', kind: 'framework' },
+  { label: 'Angular config', relativePath: 'angular.json', kind: 'framework' },
+  { label: 'Vue config', relativePath: 'vue.config.*', kind: 'framework' },
+  { label: 'Nuxt config', relativePath: 'nuxt.config.*', kind: 'framework' },
+  { label: 'Django manage.py', relativePath: 'manage.py', kind: 'framework' },
+  { label: 'PHP Composer package', relativePath: 'composer.json', kind: 'php' },
+  { label: 'Laravel artisan', relativePath: 'artisan', kind: 'framework' },
+  { label: 'Ruby bundle', relativePath: 'Gemfile', kind: 'ruby' },
+  { label: 'Flutter pubspec', relativePath: 'pubspec.yaml', kind: 'flutter' },
+  { label: 'React Native config', relativePath: 'react-native.config.*', kind: 'framework' },
+  { label: 'Dockerfile', relativePath: 'Dockerfile', kind: 'docker' },
+  { label: 'GitHub Actions workflow', relativePath: path.join('.github', 'workflows'), kind: 'ci' },
 ];
 
 export interface DetectedProjectMarker extends ProjectMarker {
