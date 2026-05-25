@@ -1637,7 +1637,7 @@ And project-level records exist:
 - [ ] CleanClaw refuses unsafe headless mode.
 - [ ] CleanClaw makes NemoClaw runtime status visible.
 - [x] README matches the real workflow.
-- [ ] Changelog and plan records are current.
+- [x] Changelog and plan records are current.
 
 ### Exit Criteria
 
