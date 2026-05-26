@@ -8,6 +8,12 @@ import { resolveActiveProject } from './project-resolver.js';
 
 export const GLOBAL_CONFIG_PATH = path.join(os.homedir(), '.cleanclaw', 'config.json');
 
+export interface ConfigFileStatus {
+  exists: boolean;
+  valid: boolean;
+  error?: string;
+}
+
 export function getConfig(projectRoot?: string): CleanClawConfig {
   const resolvedRoot = projectRoot ?? resolveActiveProject().projectRoot ?? process.cwd();
   return getConfigForProject(resolvedRoot);
@@ -18,6 +24,27 @@ export function getConfigForProject(projectRoot: string): CleanClawConfig {
   const projectConfig = readConfigFile(path.join(projectRoot, 'cleanclaw.config.json'));
   const withGlobal = mergeConfigs(defaultConfig as Partial<CleanClawConfig>, globalConfig);
   return mergeConfigs(withGlobal, projectConfig);
+}
+
+export function getGlobalConfigStatus(): ConfigFileStatus {
+  return getConfigFileStatus(GLOBAL_CONFIG_PATH);
+}
+
+function getConfigFileStatus(filepath: string): ConfigFileStatus {
+  if (!fs.existsSync(filepath)) {
+    return { exists: false, valid: false };
+  }
+
+  try {
+    JSON.parse(fs.readFileSync(filepath, 'utf-8'));
+    return { exists: true, valid: true };
+  } catch (error) {
+    return {
+      exists: true,
+      valid: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 function readConfigFile(filepath: string): Partial<CleanClawConfig> {

@@ -1,3 +1,13 @@
+# WARNING: CleanClaw Is Not Production-Ready
+
+CleanClaw is currently a test project and much of the work in this repository is scaffolding for future LLM-backed coding-agent behavior.
+
+The current implementation should not be treated as a complete, reliable, or production-ready coding agent. Several flows are still being wired together, validated, corrected, and aligned with NemoClaw/OpenShell. Some pieces are working foundations; other pieces are placeholders, policy shells, or setup paths intended to support later local/frontier LLM use.
+
+Please log improvement tickets before relying on CleanClaw for real project automation. Use it for controlled testing, setup validation, planning workflow experiments, and iterative development only.
+
+This warning exists because earlier implementation work overreached ahead of validation. The project is fixable and actively being corrected, but users should assume incomplete behavior until smoke tests and release gates prove otherwise.
+
 # CleanClaw
 
 > **NOTE: CleanClaw is a first test project.**

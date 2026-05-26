@@ -39,6 +39,12 @@ export interface CleanClawConfig {
     apiKey?: string;
     baseUrl?: string;
   };
+  localModel?: {
+    provider?: 'ollama-local' | 'vllm-local' | 'compatible-endpoint';
+    model?: string;
+    apiKey?: string;
+    baseURL?: string;
+  };
   projectMap?: {
     enabled: boolean;
   };

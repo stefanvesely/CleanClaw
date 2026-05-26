@@ -8,7 +8,18 @@ program
 
 program
   .action(async () => {
+    const { StartCleanClawStartupProcess } = await import("../dist/cleanclaw/core/start-process.js");
     const { startInteractiveLoop } = await import("../dist/cleanclaw/cli/interactive-session.js");
+    const startup = await StartCleanClawStartupProcess();
+    for (const step of startup.steps) {
+      if (step.message) {
+        console.log(step.message);
+      }
+    }
+    if (startup.status !== "continue-to-project-intake") {
+      process.exitCode = 1;
+      return;
+    }
     await startInteractiveLoop();
   });
 

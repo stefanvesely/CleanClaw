@@ -1,5 +1,6 @@
 ﻿import fs from 'fs';
 import os from 'os';
+import { createRequire } from 'module';
 import path from 'path';
 import readline from 'readline';
 import { saveState } from '../core/state-manager.js';
@@ -30,9 +31,23 @@ import {
 } from '../core/provider-metadata.js';
 
 const GLOBAL_CONFIG_PATH = path.join(os.homedir(), '.cleanclaw', 'config.json');
+const require = createRequire(import.meta.url);
+
+type LocalModelProvider = 'ollama-local' | 'vllm-local';
+
+interface NemoClawLocalInference {
+  getDefaultOllamaModel?: (gpu?: unknown) => string;
+  getLocalProviderValidationBaseUrl?: (provider: string) => string | null;
+  probeLocalProviderHealth?: (provider: string) => { ok: boolean; detail: string } | null;
+  validateOllamaModel?: (model: string) => { ok: boolean; message?: string };
+}
 
 function ask(rl: readline.Interface, question: string): Promise<string> {
   return new Promise(resolve => rl.question(question, answer => resolve(answer.trim())));
+}
+
+function loadNemoClawLocalInference(): NemoClawLocalInference {
+  return require('../../lib/local-inference.js');
 }
 
 async function runGlobalConfigWizard(
@@ -61,6 +76,7 @@ async function runGlobalConfigWizard(
 
   const globalConfig: Record<string, unknown> = { provider, approvalGranularity: granularity };
   const providerMetadata = CLEANCLAW_PROVIDER_METADATA[provider];
+  globalConfig.localModel = await askLocalModelSetup(rl, logger);
 
   if (providerMetadata.bridgeFamily === 'openai') {
     const modelRaw = await ask(rl, `Default model [${providerMetadata.defaultModel}]: `);
@@ -95,6 +111,90 @@ async function runGlobalConfigWizard(
   fs.mkdirSync(path.dirname(GLOBAL_CONFIG_PATH), { recursive: true });
   fs.writeFileSync(GLOBAL_CONFIG_PATH, JSON.stringify(globalConfig, null, 2), 'utf-8');
   logger.info(`\nGlobal config written to ${GLOBAL_CONFIG_PATH}`);
+}
+
+async function askLocalModelSetup(
+  rl: readline.Interface,
+  logger: CleanClawLogger,
+): Promise<Record<string, unknown>> {
+  const localInference = loadNemoClawLocalInference();
+  const defaultProvider: LocalModelProvider = 'ollama-local';
+  const providerRaw = await ask(rl, 'Local LLM provider (ollama-local/vllm-local) [ollama-local]: ');
+  const provider = (providerRaw || defaultProvider) as LocalModelProvider;
+  if (provider !== 'ollama-local' && provider !== 'vllm-local') {
+    throw new Error('Unsupported local LLM provider. Choose ollama-local or vllm-local.');
+  }
+
+  const health = localInference.probeLocalProviderHealth?.(provider);
+  if (health?.detail) {
+    logger.info(health.detail);
+  }
+  if (health && !health.ok) {
+    logger.info(formatLocalLLMRecoveryGuide(provider));
+  }
+
+  const defaultModel = provider === 'ollama-local'
+    ? localInference.getDefaultOllamaModel?.(null) ?? 'qwen2.5:7b'
+    : 'vllm-local';
+  const modelRaw = await ask(rl, `Local LLM model [${defaultModel}]: `);
+  const model = modelRaw || defaultModel;
+  const defaultBaseURL = localInference.getLocalProviderValidationBaseUrl?.(provider)
+    ?? (provider === 'ollama-local' ? 'http://127.0.0.1:11434/v1' : 'http://127.0.0.1:8000/v1');
+  const baseUrlRaw = await ask(rl, `Local LLM base URL [${defaultBaseURL}]: `);
+  const defaultApiKey = defaultSetupCredentialValue(provider) ?? 'ollama';
+  const apiKeyRaw = await ask(rl, `Local LLM API key/token [${defaultApiKey}]: `);
+
+  if (provider === 'ollama-local' && health?.ok) {
+    const validation = localInference.validateOllamaModel?.(model);
+    if (validation && !validation.ok) {
+      logger.info(validation.message ?? `Ollama model '${model}' did not pass validation.`);
+    }
+  }
+
+  return {
+    provider,
+    model,
+    baseURL: baseUrlRaw || defaultBaseURL,
+    apiKey: apiKeyRaw || defaultApiKey,
+  };
+}
+
+function formatLocalLLMRecoveryGuide(provider: LocalModelProvider): string {
+  if (provider === 'vllm-local') {
+    return [
+      '',
+      'Local vLLM was not detected.',
+      'To recover:',
+      '1. Start your vLLM OpenAI-compatible server.',
+      '2. Make sure it is reachable at http://127.0.0.1:8000/v1.',
+      '3. Confirm that /v1/models responds before running CleanClaw again.',
+      '4. If your vLLM server uses a different URL, enter that URL as the local base URL.',
+      '',
+    ].join('\n');
+  }
+
+  return [
+    '',
+    'Local Ollama was not detected.',
+    'To recover:',
+    '1. Install Ollama from https://ollama.com/download.',
+    '2. Start Ollama.',
+    '3. Pull a coding model, for example: ollama pull qwen2.5:7b',
+    '4. Confirm Ollama is responding: ollama list',
+    '5. Run CleanClaw again after Ollama is running.',
+    '',
+  ].join('\n');
+}
+
+export async function runGlobalSetupWizard(
+  logger: CleanClawLogger = createConsoleLogger(),
+): Promise<void> {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    await runGlobalConfigWizard(rl, logger);
+  } finally {
+    rl.close();
+  }
 }
 
 export function defaultSetupCredentialValue(provider: CleanClawProvider): string | null {
